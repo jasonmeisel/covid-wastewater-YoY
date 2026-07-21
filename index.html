@@ -228,11 +228,11 @@
       </div>
     </div>
 
-    <!-- Main Section: Chart & Side Panel -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Main Section: Chart with Expanded Bottom Insights Panel -->
+    <div class="grid grid-cols-1 gap-6">
       
       <!-- Primary Interactive Chart Card -->
-      <div class="lg:col-span-2 bg-slate-800/50 backdrop-blur-md border border-slate-700/60 rounded-xl p-5 md:p-6 hover:border-slate-600/40 transition-all-300 flex flex-col justify-between">
+      <div class="bg-slate-800/50 backdrop-blur-md border border-slate-700/60 rounded-xl p-5 md:p-6 hover:border-slate-600/40 transition-all-300 flex flex-col justify-between">
         
         <!-- Chart Controls Header -->
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-700/50 pb-4 mb-4">
@@ -331,22 +331,18 @@
 
       </div>
 
-      <!-- Right Column: Interactive Insights & Comparison panel -->
+      <!-- Bottom Insights Panel: Developer toolbox + Yearly statistics -->
       <div class="flex flex-col gap-6">
         
-        <!-- Year Insights Summary Card -->
-        <div class="bg-slate-800/50 backdrop-blur-md border border-slate-700/60 rounded-xl p-5 hover:border-slate-600/40 transition-all-300 flex-grow">
-          <h3 class="text-lg font-bold text-slate-100 mb-4 border-b border-slate-700 pb-2">Yearly Statistics Breakdown</h3>
-          
-          <div class="space-y-4 max-h-[340px] overflow-y-auto pr-1" id="yearlyStatsSummary">
-            <div class="text-sm text-slate-400 py-4 text-center">Awaiting original data file...</div>
-          </div>
-        </div>
-
-        <!-- Utility download & import widget -->
+        <!-- Developer Toolbox -->
         <div class="bg-slate-800/50 backdrop-blur-md border border-slate-700/60 rounded-xl p-5 hover:border-slate-600/40 transition-all-300">
-          <h3 class="text-sm font-bold text-slate-100 mb-3 uppercase tracking-wide">Developer Toolbox</h3>
-          <div class="grid grid-cols-2 gap-3">
+          <button onclick="togglePanel('developerToolContent','developerToolIcon')" class="w-full flex items-center justify-between gap-3 text-left">
+            <div>
+              <h3 class="text-sm font-bold text-slate-100 uppercase tracking-wide">Developer Toolbox</h3>
+            </div>
+            <span id="developerToolIcon" class="text-teal-400 font-bold text-xl leading-none">+</span>
+          </button>
+          <div id="developerToolContent" class="hidden mt-4 grid grid-cols-2 gap-3">
             <button onclick="downloadCSV()" class="flex items-center justify-center gap-2 bg-slate-700/60 hover:bg-slate-700 text-slate-200 py-2.5 px-3 rounded-lg border border-slate-600/80 hover:border-slate-500 font-semibold text-xs transition-all-300">
               <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
               <span>Export CSV</span>
@@ -355,6 +351,20 @@
               <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
               <span>Save Chart Image</span>
             </button>
+          </div>
+        </div>
+
+        <!-- Year Insights Summary Card -->
+        <div class="bg-slate-800/50 backdrop-blur-md border border-slate-700/60 rounded-xl p-5 hover:border-slate-600/40 transition-all-300">
+          <button onclick="togglePanel('yearlyStatsSummary','yearlyStatsIcon')" class="w-full flex items-center justify-between gap-3 text-left">
+            <div>
+              <h3 class="text-lg font-bold text-slate-100 mb-0.5">Yearly Statistics Breakdown</h3>
+              <p class="text-xs text-slate-400">Overview of each year's seasonal profile.</p>
+            </div>
+            <span id="yearlyStatsIcon" class="text-teal-400 font-bold text-xl leading-none">+</span>
+          </button>
+          <div id="yearlyStatsSummary" class="hidden mt-4 space-y-4 max-h-[340px] overflow-y-auto pr-1">
+            <div class="text-sm text-slate-400 py-4 text-center">Awaiting original data file...</div>
           </div>
         </div>
 
@@ -367,7 +377,10 @@
       
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-700 pb-4 mb-4">
         <div>
-          <h3 class="text-lg font-bold text-slate-100">Data Table Explorer</h3>
+          <button onclick="togglePanel('dataExplorerContent','dataExplorerIcon')" class="flex items-center gap-2 text-left">
+            <h3 class="text-lg font-bold text-slate-100">Data Table Explorer</h3>
+            <span id="dataExplorerIcon" class="text-teal-400 font-bold text-xl leading-none">+</span>
+          </button>
           <p class="text-xs text-slate-400">Searchable and sorted chronologically</p>
         </div>
         
@@ -382,9 +395,10 @@
         </div>
       </div>
 
-      <!-- Responsive Table Container -->
-      <div class="overflow-x-auto min-h-[250px]">
-        <table class="w-full text-left text-xs text-slate-300 border-collapse">
+      <div id="dataExplorerContent" class="hidden">
+        <!-- Responsive Table Container -->
+        <div class="overflow-x-auto min-h-[250px]">
+          <table class="w-full text-left text-xs text-slate-300 border-collapse">
           <thead>
             <tr class="border-b border-slate-700 bg-slate-900/40">
               <th scope="col" class="py-3 px-4 font-bold text-slate-400 uppercase tracking-wider cursor-pointer hover:text-white" onclick="sortTableByDate()">
@@ -402,6 +416,7 @@
             <!-- Programmatically populated -->
           </tbody>
         </table>
+      </div>
       </div>
 
       <!-- Pagination Controls -->
@@ -1400,6 +1415,17 @@
         
         if (loader) loader.classList.add('hidden');
       }, 300);
+    }
+
+    // Toggle collapsible panel content visibility
+    function togglePanel(contentId, iconId) {
+      const content = document.getElementById(contentId);
+      const icon = document.getElementById(iconId);
+      if (!content || !icon) return;
+
+      const isCollapsed = content.classList.contains('hidden');
+      content.classList.toggle('hidden');
+      icon.innerText = isCollapsed ? '−' : '+';
     }
 
     // Primary Async Loader fetching from GCS Target URL
