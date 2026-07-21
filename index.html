@@ -1,0 +1,1243 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wastewater YoY Analytics Tracker</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+    /* Smooth transitions for interactive elements */
+    .transition-all-300 {
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    /* Customized scrollbar for raw table and logs */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .dark ::-webkit-scrollbar-thumb {
+      background: #475569;
+      border-radius: 4px;
+    }
+    .light ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+  </style>
+
+  <script>
+    // Configure Tailwind theme extensions
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f0fdfa',
+              100: '#ccfbf1',
+              500: '#14b8a6',
+              600: '#0d9488',
+              700: '#0f766e',
+              950: '#042f2e',
+            }
+          }
+        }
+      }
+    }
+  </script>
+</head>
+
+<body class="h-full bg-slate-900 text-slate-100 transition-colors duration-300 dark flex flex-col overflow-x-hidden">
+
+  <!-- Top Announcement Bar for Connection Status/Manual Action Requirements -->
+  <div id="statusBanner" class="bg-amber-600 text-white text-xs md:text-sm font-medium py-2 px-4 text-center relative hidden transition-all-300">
+    <div class="flex items-center justify-center gap-2 flex-wrap">
+      <span class="flex h-2 w-2 relative">
+        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-300 opacity-75"></span>
+        <span class="relative inline-flex rounded-full h-2 w-2 bg-amber-400"></span>
+      </span>
+      <span id="statusBannerText">External fetch blocked by CORS. Please load your authentic JSON dataset locally.</span>
+      <button onclick="toggleSetupModal()" class="underline font-semibold hover:text-amber-100 transition ml-2">Click to Upload JSON</button>
+    </div>
+  </div>
+
+  <!-- Main Container -->
+  <div class="flex-grow flex flex-col max-w-7xl w-full mx-auto p-4 md:p-6 gap-6">
+    
+    <!-- Header -->
+    <header class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-slate-800 pb-5">
+      <div>
+        <div class="flex items-center gap-2">
+          <div class="bg-gradient-to-tr from-brand-500 to-indigo-500 p-2 rounded-lg text-white shadow-lg shadow-brand-500/20">
+            <!-- Biohazard/Water stylized icon -->
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path>
+            </svg>
+          </div>
+          <h1 class="text-2xl font-extrabold tracking-tight bg-gradient-to-r from-teal-400 to-indigo-400 bg-clip-text text-transparent">Wastewater PMMoV YoY Dashboard</h1>
+        </div>
+        <p class="text-xs md:text-sm text-slate-400 mt-1">
+          Tracking SARS-CoV-2 (N Gene) copies normalized by Pepper Mild Mottle Virus (PMMoV) — scaled (<span class="font-semibold text-teal-400">× 1,000,000</span>)
+        </p>
+      </div>
+
+      <!-- Action Utilities -->
+      <div class="flex items-center gap-3 self-stretch md:self-auto justify-between md:justify-end">
+        <button onclick="toggleTheme()" class="p-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 hover:border-slate-600 transition-all-300" title="Toggle Light/Dark Theme">
+          <!-- Sun Icon -->
+          <svg id="themeSun" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m12.728 0l-.707-.707M6.343 6.343l-.707-.707M12 8a4 4 0 100 8 4 4 0 000-8z"></path>
+          </svg>
+          <!-- Moon Icon -->
+          <svg id="themeMoon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+          </svg>
+        </button>
+
+        <button onclick="toggleSetupModal()" class="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-100 px-4 py-2 rounded-lg border border-slate-700 hover:border-slate-600 font-semibold text-sm transition-all-300">
+          <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+          </svg>
+          <span>Data Management</span>
+        </button>
+
+        <button onclick="loadRawData(true)" class="bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white px-4 py-2 rounded-lg font-semibold text-sm shadow-md shadow-teal-500/10 hover:shadow-teal-500/20 active:scale-95 transition-all-300">
+          Sync Live GCS
+        </button>
+      </div>
+    </header>
+
+    <!-- Metrics Grid -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" id="metricsGrid">
+      <!-- Latest Sample Card -->
+      <div class="bg-slate-800/50 backdrop-blur-md border border-slate-700/60 p-5 rounded-xl flex flex-col justify-between hover:border-slate-600/80 transition-all-300 group">
+        <div class="flex items-center justify-between mb-3">
+          <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Latest Sample</span>
+          <span class="p-1.5 rounded-lg bg-teal-500/10 text-teal-400">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+          </span>
+        </div>
+        <div>
+          <h3 class="text-3xl font-extrabold text-slate-100 group-hover:text-teal-400 transition" id="metricLatestVal">- -</h3>
+          <p class="text-xs text-slate-400 mt-1 flex items-center justify-between">
+            <span id="metricLatestDate">No data</span>
+            <span class="font-semibold text-rose-400" id="metricLatestChange"></span>
+          </p>
+        </div>
+      </div>
+
+      <!-- Historical Peak Card -->
+      <div class="bg-slate-800/50 backdrop-blur-md border border-slate-700/60 p-5 rounded-xl flex flex-col justify-between hover:border-slate-600/80 transition-all-300 group">
+        <div class="flex items-center justify-between mb-3">
+          <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">All-Time Peak</span>
+          <span class="p-1.5 rounded-lg bg-indigo-500/10 text-indigo-400">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
+          </span>
+        </div>
+        <div>
+          <h3 class="text-3xl font-extrabold text-slate-100 group-hover:text-indigo-400 transition" id="metricPeakVal">- -</h3>
+          <p class="text-xs text-slate-400 mt-1 flex items-center justify-between">
+            <span id="metricPeakDate">No data</span>
+            <span class="text-[10px] bg-indigo-500/20 text-indigo-300 px-1.5 py-0.5 rounded font-mono" id="metricPeakYear">N/A</span>
+          </p>
+        </div>
+      </div>
+
+      <!-- All-Time Mean Card -->
+      <div class="bg-slate-800/50 backdrop-blur-md border border-slate-700/60 p-5 rounded-xl flex flex-col justify-between hover:border-slate-600/80 transition-all-300 group">
+        <div class="flex items-center justify-between mb-3">
+          <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Overall Mean</span>
+          <span class="p-1.5 rounded-lg bg-pink-500/10 text-pink-400">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+          </span>
+        </div>
+        <div>
+          <h3 class="text-3xl font-extrabold text-slate-100 group-hover:text-pink-400 transition" id="metricMeanVal">- -</h3>
+          <p class="text-xs text-slate-400 mt-1" id="metricMeanDesc">Across all years</p>
+        </div>
+      </div>
+
+      <!-- Dataset Completeness Card -->
+      <div class="bg-slate-800/50 backdrop-blur-md border border-slate-700/60 p-5 rounded-xl flex flex-col justify-between hover:border-slate-600/80 transition-all-300 group">
+        <div class="flex items-center justify-between mb-3">
+          <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Reporting Range</span>
+          <span class="p-1.5 rounded-lg bg-amber-500/10 text-amber-400">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+          </span>
+        </div>
+        <div>
+          <h3 class="text-3xl font-extrabold text-slate-100 group-hover:text-amber-400 transition" id="metricSpanYears">0 Years</h3>
+          <p class="text-xs text-slate-400 mt-1 flex items-center justify-between">
+            <span id="metricSamplesCount">0 total samples</span>
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Section: Chart & Side Panel -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      
+      <!-- Primary Interactive Chart Card -->
+      <div class="lg:col-span-2 bg-slate-800/50 backdrop-blur-md border border-slate-700/60 rounded-xl p-5 md:p-6 hover:border-slate-600/40 transition-all-300 flex flex-col justify-between">
+        
+        <!-- Chart Controls Header -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-700/50 pb-4 mb-4">
+          <div>
+            <h2 class="text-lg font-bold text-slate-100">Year-over-Year Seasonal Overlay</h2>
+            <p class="text-xs text-slate-400 mt-0.5">Aligned to standard non-leap calendar year (Jan 1 – Dec 31)</p>
+          </div>
+          
+          <!-- Select Controls -->
+          <div class="flex flex-wrap items-center gap-2">
+            <!-- Y Scale Mode Selector (New Feature) -->
+            <div class="flex flex-col">
+              <label class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Y-Axis Scale</label>
+              <select id="scaleTypeSelector" onchange="updateYScale(this.value)" class="bg-slate-700/80 border border-slate-600 text-slate-200 text-xs rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-brand-500 cursor-pointer">
+                <option value="linear" selected>Linear Scale</option>
+                <option value="logarithmic">Logarithmic</option>
+              </select>
+            </div>
+
+            <!-- Smoothing Option -->
+            <div class="flex flex-col">
+              <label class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Smoothing Filter</label>
+              <select id="smoothingSelector" onchange="updateSmoothing(this.value)" class="bg-slate-700/80 border border-slate-600 text-slate-200 text-xs rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-brand-500 cursor-pointer">
+                <option value="1">No Smoothing (Raw)</option>
+                <option value="3" selected>3-Point Moving Average</option>
+                <option value="7">7-Point Moving Average</option>
+                <option value="14">14-Point Moving Average</option>
+              </select>
+            </div>
+
+            <!-- Seasonal Highlights -->
+            <div class="flex flex-col">
+              <label class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Highlight Season</label>
+              <select id="seasonHighlightSelector" onchange="updateSeasonHighlight(this.value)" class="bg-slate-700/80 border border-slate-600 text-slate-200 text-xs rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-brand-500 cursor-pointer">
+                <option value="none" selected>None</option>
+                <option value="winter">Winter Waves (Nov - Feb)</option>
+                <option value="summer">Summer Fluctuations (Jul - Aug)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Dynamic Skeletal Loader / Chart Canvas Container -->
+        <div class="relative min-h-[300px] md:min-h-[400px] flex items-center justify-center">
+          <div id="chartLoader" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-900/90 backdrop-blur-sm z-10 p-6 text-center">
+            <div id="loaderSpinner" class="flex flex-col items-center gap-3">
+              <svg class="animate-spin h-10 w-10 text-teal-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              <p class="text-sm font-semibold text-slate-300">Fetching live GCS wastewater dataset...</p>
+            </div>
+            
+            <!-- Real JSON Fallback Dialog Panel shown in place of simulator -->
+            <div id="loaderErrorPanel" class="hidden max-w-md bg-slate-800/95 border border-slate-700 p-6 rounded-xl flex flex-col items-center gap-4 text-center">
+              <div class="p-3 bg-amber-500/10 text-amber-400 rounded-full">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                </svg>
+              </div>
+              <div>
+                <h4 class="font-bold text-slate-200">Unable to Fetch Live Data Directly</h4>
+                <p class="text-xs text-slate-400 mt-2 leading-relaxed">
+                  Due to browser sandbox restrictions (CORS rules), we can't directly load the GCS file from the external domain.
+                </p>
+              </div>
+              
+              <!-- Direct Click Trigger Local File Selection -->
+              <div class="w-full">
+                <button onclick="toggleSetupModal()" class="w-full bg-teal-600 hover:bg-teal-500 text-white font-semibold text-xs py-2 px-4 rounded-lg transition">
+                  Upload Authentic b9c02d34.json File
+                </button>
+                <a href="https://storage.googleapis.com/wastewater-dev-data/json/b9c02d34.json" target="_blank" class="block text-[11px] text-teal-400 hover:underline mt-2">
+                  1. Click here to download original JSON file first
+                </a>
+              </div>
+            </div>
+          </div>
+          <canvas id="yoyChart" class="w-full h-full"></canvas>
+        </div>
+
+        <!-- Custom HTML Interactive Legend -->
+        <div class="mt-5 border-t border-slate-700/50 pt-4">
+          <div class="flex items-center justify-between mb-2">
+            <h4 class="text-xs font-semibold uppercase tracking-wider text-slate-400">Select Years to Compare</h4>
+            <div class="flex gap-2">
+              <button onclick="toggleAllYears(true)" class="text-[10px] text-teal-400 hover:text-teal-300 transition uppercase font-semibold">Select All</button>
+              <span class="text-slate-600 text-[10px]">•</span>
+              <button onclick="toggleAllYears(false)" class="text-[10px] text-slate-400 hover:text-slate-300 transition uppercase font-semibold">Clear All</button>
+            </div>
+          </div>
+          <div id="legendContainer" class="flex flex-wrap gap-2">
+            <!-- Programmatically populated -->
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Right Column: Interactive Insights & Comparison panel -->
+      <div class="flex flex-col gap-6">
+        
+        <!-- Year Insights Summary Card -->
+        <div class="bg-slate-800/50 backdrop-blur-md border border-slate-700/60 rounded-xl p-5 hover:border-slate-600/40 transition-all-300 flex-grow">
+          <h3 class="text-lg font-bold text-slate-100 mb-4 border-b border-slate-700 pb-2">Yearly Statistics Breakdown</h3>
+          
+          <div class="space-y-4 max-h-[340px] overflow-y-auto pr-1" id="yearlyStatsSummary">
+            <div class="text-sm text-slate-400 py-4 text-center">Awaiting original data file...</div>
+          </div>
+        </div>
+
+        <!-- Utility download & import widget -->
+        <div class="bg-slate-800/50 backdrop-blur-md border border-slate-700/60 rounded-xl p-5 hover:border-slate-600/40 transition-all-300">
+          <h3 class="text-sm font-bold text-slate-100 mb-3 uppercase tracking-wide">Developer Toolbox</h3>
+          <div class="grid grid-cols-2 gap-3">
+            <button onclick="downloadCSV()" class="flex items-center justify-center gap-2 bg-slate-700/60 hover:bg-slate-700 text-slate-200 py-2.5 px-3 rounded-lg border border-slate-600/80 hover:border-slate-500 font-semibold text-xs transition-all-300">
+              <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+              <span>Export CSV</span>
+            </button>
+            <button onclick="downloadChart()" class="flex items-center justify-center gap-2 bg-slate-700/60 hover:bg-slate-700 text-slate-200 py-2.5 px-3 rounded-lg border border-slate-600/80 hover:border-slate-500 font-semibold text-xs transition-all-300">
+              <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+              <span>Save Chart Image</span>
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- Data Explorer Table Card -->
+    <div class="bg-slate-800/50 backdrop-blur-md border border-slate-700/60 rounded-xl p-5 hover:border-slate-600/40 transition-all-300">
+      
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-700 pb-4 mb-4">
+        <div>
+          <h3 class="text-lg font-bold text-slate-100">Data Table Explorer</h3>
+          <p class="text-xs text-slate-400">Searchable and sorted chronologically</p>
+        </div>
+        
+        <!-- Search and Filter input -->
+        <div class="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+          <div class="relative w-full sm:w-64">
+            <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+              <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+            </span>
+            <input type="text" id="tableSearchInput" oninput="handleSearch(this.value)" placeholder="Search year, month, or value..." class="w-full bg-slate-900 border border-slate-700 text-slate-100 text-xs rounded-lg pl-9 pr-4 py-2 focus:outline-none focus:ring-2 focus:ring-brand-500 placeholder-slate-500">
+          </div>
+        </div>
+      </div>
+
+      <!-- Responsive Table Container -->
+      <div class="overflow-x-auto min-h-[250px]">
+        <table class="w-full text-left text-xs text-slate-300 border-collapse">
+          <thead>
+            <tr class="border-b border-slate-700 bg-slate-900/40">
+              <th scope="col" class="py-3 px-4 font-bold text-slate-400 uppercase tracking-wider cursor-pointer hover:text-white" onclick="sortTableByDate()">
+                <div class="flex items-center gap-1.5">
+                  <span>Sample Date</span>
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                </div>
+              </th>
+              <th scope="col" class="py-3 px-4 font-bold text-slate-400 uppercase tracking-wider">Normalized PMMoV Ratio</th>
+              <th scope="col" class="py-3 px-4 font-bold text-slate-400 uppercase tracking-wider text-teal-400">YoY Metric (Value * 1,000,000)</th>
+              <th scope="col" class="py-3 px-4 font-bold text-slate-400 uppercase tracking-wider">Status / Severity</th>
+            </tr>
+          </thead>
+          <tbody id="rawTableBody">
+            <!-- Programmatically populated -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination Controls -->
+      <div class="flex items-center justify-between border-t border-slate-700 mt-4 pt-4 text-xs text-slate-400">
+        <span id="tablePaginationInfo">Showing 0 to 0 of 0 entries</span>
+        <div class="flex items-center gap-2">
+          <button onclick="changePage(-1)" id="prevPageBtn" class="bg-slate-700 hover:bg-slate-600 disabled:opacity-50 disabled:hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded font-semibold transition" disabled>
+            Previous
+          </button>
+          <button onclick="changePage(1)" id="nextPageBtn" class="bg-slate-700 hover:bg-slate-600 disabled:opacity-50 disabled:hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded font-semibold transition" disabled>
+            Next
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- Setup Options Modal (Sources, CORS configuration, custom JSON inputs) -->
+  <div id="setupModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 z-50 hidden transition-all-300">
+    <div class="bg-slate-900 border border-slate-700 rounded-xl max-w-lg w-full overflow-hidden shadow-2xl relative">
+      <div class="bg-gradient-to-r from-brand-600 to-indigo-600 p-5 text-white flex justify-between items-center">
+        <div>
+          <h2 class="text-lg font-bold">Wastewater Source Config</h2>
+          <p class="text-xs text-indigo-100">Input URL connection or drag & drop genuine database JSON</p>
+        </div>
+        <button onclick="toggleSetupModal()" class="text-indigo-200 hover:text-white transition">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+      </div>
+
+      <div class="p-6 space-y-5 text-sm">
+        <!-- Live GCS URL connection -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Google Cloud Storage Public URL</label>
+          <div class="flex gap-2">
+            <input type="text" id="gcsUrlInput" value="https://storage.googleapis.com/wastewater-dev-data/json/b9c02d34.json" class="flex-grow bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500">
+            <button onclick="applyUrlAndFetch()" class="bg-brand-600 hover:bg-brand-500 text-white font-semibold text-xs px-4 py-2 rounded-lg transition shrink-0">Apply</button>
+          </div>
+          <p class="text-[11px] text-slate-500 mt-1.5 leading-normal">
+            Note: Standard browsers might block direct fetch queries due to lack of wildcard CORS configuration on the GCS resource. Uploading the downloaded file below bypasses this constraint safely.
+          </p>
+        </div>
+
+        <!-- Drag-and-drop local file area -->
+        <div class="border-2 border-dashed border-slate-700 hover:border-brand-500 rounded-xl p-6 text-center cursor-pointer transition-all-300 relative group" id="dropZone" ondragover="event.preventDefault()" ondrop="handleFileDrop(event)">
+          <div class="flex flex-col items-center justify-center gap-2">
+            <svg class="w-8 h-8 text-slate-500 group-hover:text-brand-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+            <p class="text-xs font-semibold text-slate-300">Drag & Drop <span class="text-teal-400 underline">b9c02d34.json</span> here</p>
+            <p class="text-[10px] text-slate-500">Or click to browse and select the authentic downloaded JSON file</p>
+          </div>
+          <input type="file" id="fileSelector" class="absolute inset-0 opacity-0 cursor-pointer" onchange="handleFileSelect(event)">
+        </div>
+
+        <!-- Direct Raw Data Download instruction link -->
+        <div class="p-4 bg-slate-800/50 rounded-lg border border-slate-700/60 flex items-center justify-between text-xs">
+          <span class="text-slate-400 font-medium">Download original from source bucket:</span>
+          <a href="https://storage.googleapis.com/wastewater-dev-data/json/b9c02d34.json" target="_blank" class="bg-teal-600/20 hover:bg-teal-600/40 text-teal-400 font-semibold px-3 py-1.5 rounded transition">Download File</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="mt-auto border-t border-slate-800 py-4 text-center text-xs text-slate-500">
+    <div class="flex flex-col sm:flex-row items-center justify-between max-w-7xl w-full mx-auto px-6 gap-2">
+      <p>&copy; 2026 Wastewater Health Research Analytics. Genuine Epidemiological telemetry assessment.</p>
+      <p class="flex items-center gap-1">
+        <span>Powered by Chart.js & Tailwind CSS</span>
+        <span>•</span>
+        <a href="https://storage.googleapis.com/wastewater-dev-data/json/b9c02d34.json" target="_blank" class="text-teal-500 hover:underline">Raw Source URL</a>
+      </p>
+    </div>
+  </footer>
+
+
+  <script>
+    // Application States
+    let rawSamples = [];
+    let processedData = {}; // Grouped by year: { '2023': [ { x: 120, y: 15.5, originalDate: '2023-04-30', actualYear: 2023 } ], ... }
+    let yearsList = [];
+    let visibleYears = {}; // { '2023': true, '2024': true, ... }
+    let smoothingWindow = 3; // Standard 3-point moving average
+    let yScaleType = 'linear'; // 'linear' or 'logarithmic'
+    let activeSeasonHighlight = 'none'; // 'none' | 'winter' | 'summer'
+    
+    // UI Table States
+    let tablePage = 1;
+    const tableLimit = 10;
+    let tableSortAsc = false;
+    let tableSearchQuery = '';
+    let filteredTableSamples = [];
+
+    // Chart.js Instance
+    let chartInstance = null;
+
+    // Color definitions for individual years
+    const YEAR_COLOR_PALETTE = {
+      2022: { stroke: 'rgba(56, 189, 248, 1)', fill: 'rgba(56, 189, 248, 0.05)', bg: 'bg-sky-400' },
+      2023: { stroke: 'rgba(59, 130, 246, 1)', fill: 'rgba(59, 130, 246, 0.05)', bg: 'bg-blue-500' },
+      2024: { stroke: 'rgba(168, 85, 247, 1)', fill: 'rgba(168, 85, 247, 0.05)', bg: 'bg-purple-500' },
+      2025: { stroke: 'rgba(236, 72, 153, 1)', fill: 'rgba(236, 72, 153, 0.05)', bg: 'bg-pink-500' },
+      2026: { stroke: 'rgba(244, 63, 94, 1)', fill: 'rgba(244, 63, 94, 0.05)', bg: 'bg-rose-500' },
+      default: { stroke: 'rgba(148, 163, 184, 1)', fill: 'rgba(148, 163, 184, 0.05)', bg: 'bg-slate-400' }
+    };
+
+    // Helper functions for dates
+    // Computes continuous Day of Year index (1-365) ensuring leap days align smoothly with regular days
+    function dateToDayOfYear(dateStr) {
+      const d = new Date(dateStr);
+      const start = new Date(d.getFullYear(), 0, 0);
+      const diff = d - start;
+      const oneDay = 24 * 60 * 60 * 1000;
+      let dayNum = Math.floor(diff / oneDay);
+      
+      // If it's a leap year, decrement index by 1 from March 1 onwards so identical calendar dates overlay
+      const isLeap = (d.getFullYear() % 4 === 0 && d.getFullYear() % 100 !== 0) || (d.getFullYear() % 400 === 0);
+      if (isLeap && dayNum > 60) {
+        dayNum -= 1; // Flatten Feb 29 into the timeline seamlessly
+      }
+      return dayNum;
+    }
+
+    // Helper to extract nested PMMOV ratio safely from sample target structures
+    function extractPMMOV(s) {
+      try {
+        if (s.targets && s.targets["N Gene"]) {
+          const val = s.targets["N Gene"].gc_g_dry_weight_trimmed5_pmmov;
+          return val !== undefined && val !== null ? Number(val) : null;
+        }
+      } catch (err) {
+        console.warn("Failed parsing targets for item", s, err);
+      }
+      return null;
+    }
+
+    // Dynamic key discovery for robustness across diverse wastewater GCS schemas
+    function findSampleDate(s) {
+      if (s.date) return s.date;
+      if (s.collection_date) return s.collection_date;
+      if (s.sample_date) return s.sample_date;
+      
+      const potentialKey = Object.keys(s).find(k => k.toLowerCase().includes('date') || k.toLowerCase().includes('time'));
+      return potentialKey ? s[potentialKey] : null;
+    }
+
+    // Central Parsing and Grouping Algorithm
+    function processRawWastewaterSamples(samplesArray) {
+      const grouped = {};
+      const uniqueYears = new Set();
+
+      samplesArray.forEach(s => {
+        const rawDate = findSampleDate(s);
+        const pmmovVal = extractPMMOV(s);
+
+        if (!rawDate || pmmovVal === null || isNaN(pmmovVal)) return;
+
+        const valScaled = pmmovVal * 1000000;
+        
+        // Log scale safety configuration: omit or clamp non-positive numbers
+        if (valScaled <= 0) return; 
+
+        const dObj = new Date(rawDate);
+        if (isNaN(dObj.getTime())) return;
+
+        const year = dObj.getFullYear();
+        uniqueYears.add(year);
+
+        const dayIndex = dateToDayOfYear(rawDate);
+
+        if (!grouped[year]) {
+          grouped[year] = [];
+        }
+
+        grouped[year].push({
+          x: dayIndex, // aligned X coordinate (1-365)
+          y: valScaled, // scaled target ratio value (N Gene / PMMoV * 1,000,000)
+          originalDate: rawDate,
+          actualYear: year,
+          rawRatio: pmmovVal
+        });
+      });
+
+      // Sort chronological values within each year group
+      Object.keys(grouped).forEach(yr => {
+        grouped[yr].sort((a, b) => a.x - b.x);
+      });
+
+      processedData = grouped;
+      yearsList = Array.from(uniqueYears).sort((a, b) => b - a); // descending sort
+      
+      // Default to having all years checked/visible
+      yearsList.forEach(yr => {
+        if (visibleYears[yr] === undefined) {
+          visibleYears[yr] = true;
+        }
+      });
+    }
+
+    // Dynamic moving average smoothing window logic
+    function computeMovingAverage(dataSeries, windowSize) {
+      if (windowSize <= 1 || dataSeries.length <= 1) return dataSeries;
+
+      return dataSeries.map((currentPoint, currentIdx, list) => {
+        let sum = 0;
+        let count = 0;
+        const offset = Math.floor(windowSize / 2);
+
+        for (let i = currentIdx - offset; i <= currentIdx + offset; i++) {
+          if (i >= 0 && i < list.length) {
+            sum += list[i].y;
+            count++;
+          }
+        }
+
+        return {
+          ...currentPoint,
+          y: sum / count // smoothed Y coordinate
+        };
+      });
+    }
+
+    // Build Chart JS configuration and inject into container
+    function initYoYChart() {
+      const canvasElement = document.getElementById('yoyChart');
+      if (!canvasElement) return;
+      
+      const ctx = canvasElement.getContext('2d');
+      const isDark = document.documentElement.classList.contains('dark');
+      
+      // Month labels matching the standardized indices on 365-day grid
+      const monthStarts = [1, 32, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335];
+      const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+      // Setup custom plugin to draw seasonal highlights behind trendlines
+      const seasonalHighlightPlugin = {
+        id: 'seasonalHighlight',
+        beforeDraw: (chart) => {
+          if (!activeSeasonHighlight || activeSeasonHighlight === 'none') return;
+          
+          const { ctx, chartArea: { top, bottom, left, right }, scales: { x } } = chart;
+          ctx.save();
+          
+          const drawSeasonBand = (startIdx, endIdx, color) => {
+            const xStart = x.getPixelForValue(startIdx);
+            const xEnd = x.getPixelForValue(endIdx);
+            ctx.fillStyle = color;
+            ctx.fillRect(Math.max(xStart, left), top, Math.min(xEnd - xStart, right - xStart), bottom - top);
+          };
+
+          if (activeSeasonHighlight === 'winter') {
+            const winterColor = isDark ? 'rgba(56, 189, 248, 0.04)' : 'rgba(14, 165, 233, 0.05)';
+            drawSeasonBand(1, 60, winterColor);    // Jan-Feb
+            drawSeasonBand(305, 365, winterColor);  // Nov-Dec
+          } else if (activeSeasonHighlight === 'summer') {
+            const summerColor = isDark ? 'rgba(234, 179, 8, 0.04)' : 'rgba(202, 138, 4, 0.05)';
+            drawSeasonBand(182, 244, summerColor);  // Jul-Aug
+          }
+          ctx.restore();
+        }
+      };
+
+      if (chartInstance) {
+        chartInstance.destroy();
+      }
+
+      // Generate clean dataset arrays ready for ChartJS insertion
+      const chartDatasets = yearsList.map(yr => {
+        const colorConf = YEAR_COLOR_PALETTE[yr] || YEAR_COLOR_PALETTE.default;
+        const originalSeries = processedData[yr] || [];
+        const finalSeries = computeMovingAverage(originalSeries, smoothingWindow);
+
+        return {
+          label: String(yr),
+          data: finalSeries,
+          borderColor: colorConf.stroke,
+          backgroundColor: colorConf.fill,
+          borderWidth: 2.5,
+          tension: 0.35,
+          pointRadius: 2.5,
+          pointHoverRadius: 6,
+          fill: false,
+          spanGaps: true,
+          hidden: !visibleYears[yr]
+        };
+      });
+
+      // Chart configuration options with dynamic responsive scales and NO background grid lines
+      chartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          datasets: chartDatasets
+        },
+        plugins: [seasonalHighlightPlugin],
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: {
+            mode: 'index',
+            intersect: false,
+          },
+          scales: {
+            x: {
+              type: 'linear',
+              min: 1,
+              max: 365,
+              grid: {
+                display: false, // REMOVED X-AXIS GRID LINES
+                drawOnChartArea: false,
+                drawTicks: true
+              },
+              border: {
+                color: isDark ? '#334155' : '#cbd5e1'
+              },
+              ticks: {
+                color: isDark ? '#94a3b8' : '#475569',
+                font: { family: 'Inter', size: 10 },
+                callback: function(value) {
+                  const monthIndex = monthStarts.indexOf(value);
+                  return monthIndex !== -1 ? monthNames[monthIndex] : '';
+                },
+                stepSize: 1 
+              }
+            },
+            y: {
+              type: yScaleType, // Dynamic toggle between 'linear' and 'logarithmic'
+              grid: {
+                display: false, // REMOVED Y-AXIS GRID LINES
+                drawOnChartArea: false,
+                drawTicks: true
+              },
+              border: {
+                color: isDark ? '#334155' : '#cbd5e1'
+              },
+              ticks: {
+                color: isDark ? '#94a3b8' : '#475569',
+                font: { family: 'Inter', size: 10 },
+                callback: (value) => {
+                  if (yScaleType === 'logarithmic') {
+                    // Filter down to cleaner scientific/base-10 markers if in log mode
+                    const logVal = Math.log10(value);
+                    if (Number.isInteger(logVal)) {
+                      return value.toLocaleString();
+                    }
+                    return ''; // avoid messy intermediate log ticks
+                  }
+                  return value.toLocaleString();
+                }
+              },
+              title: {
+                display: true,
+                text: yScaleType === 'logarithmic' ? 'Scaled Ratio (× 1,000,000) [Log Scale]' : 'Scaled Ratio Value (× 1,000,000)',
+                color: isDark ? '#94a3b8' : '#475569',
+                font: { family: 'Inter', size: 11, weight: 'semibold' }
+              }
+            }
+          },
+          plugins: {
+            legend: {
+              display: false // Using our premium custom interactive HTML legend instead
+            },
+            tooltip: {
+              backgroundColor: isDark ? '#0f172a' : '#ffffff',
+              titleColor: isDark ? '#f8fafc' : '#0f172a',
+              bodyColor: isDark ? '#cbd5e1' : '#334155',
+              borderColor: isDark ? '#334155' : '#e2e8f0',
+              borderWidth: 1,
+              padding: 11,
+              titleFont: { family: 'Inter', weight: 'bold', size: 12 },
+              bodyFont: { family: 'Inter', size: 11 },
+              callbacks: {
+                title: function(context) {
+                  if (context.length > 0 && context[0].raw) {
+                    const origin = context[0].raw.originalDate;
+                    const dateObj = new Date(origin);
+                    return dateObj.toLocaleDateString(undefined, { weekday: 'short', year: 'numeric', month: 'long', day: 'numeric' });
+                  }
+                  return '';
+                },
+                label: function(context) {
+                  const originalY = context.raw.y;
+                  const labelYear = context.dataset.label;
+                  return ` ${labelYear}: ${originalY.toFixed(2)}`;
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    // Render interactive HTML legend items with live analytics values
+    function updateCustomLegendUI() {
+      const container = document.getElementById('legendContainer');
+      if (!container) return;
+      container.innerHTML = '';
+
+      yearsList.forEach(yr => {
+        const colorConf = YEAR_COLOR_PALETTE[yr] || YEAR_COLOR_PALETTE.default;
+        const isChecked = visibleYears[yr];
+        const series = processedData[yr] || [];
+        
+        // Calculate dynamic basic statistics for each year series
+        const averageVal = series.length > 0 ? (series.reduce((sum, item) => sum + item.y, 0) / series.length).toFixed(1) : 'N/A';
+
+        const wrapper = document.createElement('div');
+        wrapper.className = `flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs cursor-pointer select-none transition-all-300 ${
+          isChecked 
+            ? 'bg-slate-800 text-slate-100 border-slate-600' 
+            : 'bg-slate-900/30 text-slate-500 border-slate-800/80 hover:border-slate-700'
+        }`;
+        wrapper.onclick = () => toggleYearVisibility(yr);
+
+        wrapper.innerHTML = `
+          <span class="w-3 h-3 rounded-full ${colorConf.bg} shrink-0 block"></span>
+          <div class="flex items-center gap-1.5">
+            <span class="font-bold">${yr}</span>
+            <span class="text-[10px] text-slate-400 font-mono">(Avg: ${averageVal})</span>
+          </div>
+          <input type="checkbox" ${isChecked ? 'checked' : ''} class="w-3.5 h-3.5 accent-brand-500 ml-1 cursor-pointer pointer-events-none">
+        `;
+
+        container.appendChild(wrapper);
+      });
+    }
+
+    // Render Year Summary Details Panel
+    function updateYearlyStatsSummaryPanel() {
+      const container = document.getElementById('yearlyStatsSummary');
+      if (!container) return;
+      container.innerHTML = '';
+
+      if (yearsList.length === 0) {
+        container.innerHTML = `<div class="text-xs text-slate-500 py-4 text-center">No statistical profile available. Please load database JSON.</div>`;
+        return;
+      }
+
+      yearsList.forEach(yr => {
+        const series = processedData[yr] || [];
+        if (series.length === 0) return;
+
+        const mean = series.reduce((sum, item) => sum + item.y, 0) / series.length;
+        
+        // Find maximum peak
+        let peakVal = 0;
+        let peakDate = 'N/A';
+        series.forEach(item => {
+          if (item.y > peakVal) {
+            peakVal = item.y;
+            peakDate = item.originalDate;
+          }
+        });
+
+        const colorConf = YEAR_COLOR_PALETTE[yr] || YEAR_COLOR_PALETTE.default;
+
+        const card = document.createElement('div');
+        card.className = "p-3 rounded-lg bg-slate-900/40 border border-slate-800 hover:border-slate-700 transition flex items-center justify-between";
+        card.innerHTML = `
+          <div class="flex items-center gap-3">
+            <span class="w-1 h-10 rounded ${colorConf.bg}"></span>
+            <div>
+              <h4 class="font-bold text-slate-200 text-sm">${yr} Baseline</h4>
+              <p class="text-[10px] text-slate-500">Peak recorded on: ${new Date(peakDate).toLocaleDateString(undefined, {month: 'short', day: 'numeric'})}</p>
+            </div>
+          </div>
+          <div class="text-right">
+            <div class="text-xs font-bold text-slate-300">Mean: <span class="text-teal-400 font-mono">${mean.toFixed(1)}</span></div>
+            <div class="text-[10px] text-slate-500">Peak: <span class="text-indigo-400 font-mono font-bold">${peakVal.toFixed(1)}</span></div>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    // Toggle year chart visibility
+    function toggleYearVisibility(year) {
+      visibleYears[year] = !visibleYears[year];
+      updateCustomLegendUI();
+      initYoYChart();
+    }
+
+    // Select/deselect all helper buttons
+    function toggleAllYears(visible) {
+      yearsList.forEach(yr => {
+        visibleYears[yr] = visible;
+      });
+      updateCustomLegendUI();
+      initYoYChart();
+    }
+
+    // Update scale mode (Linear/Logarithmic) dynamically
+    function updateYScale(value) {
+      yScaleType = value;
+      initYoYChart();
+    }
+
+    // Update charts based on smoothing level changed
+    function updateSmoothing(value) {
+      smoothingWindow = parseInt(value, 10);
+      initYoYChart();
+    }
+
+    // Update selected seasonal highlight
+    function updateSeasonHighlight(value) {
+      activeSeasonHighlight = value;
+      initYoYChart();
+    }
+
+    // Render Metrics Row Values dynamically based on calculated states
+    function renderSummaryMetricsRow() {
+      if (rawSamples.length === 0) return;
+
+      // Extract raw points chronologically
+      const allPointsSorted = [];
+      Object.keys(processedData).forEach(yr => {
+        processedData[yr].forEach(pt => {
+          allPointsSorted.push(pt);
+        });
+      });
+      allPointsSorted.sort((a, b) => new Date(a.originalDate) - new Date(b.originalDate));
+
+      if (allPointsSorted.length === 0) return;
+
+      // Current/Latest Sample Statistics
+      const latestItem = allPointsSorted[allPointsSorted.length - 1];
+      const previousItem = allPointsSorted.length > 1 ? allPointsSorted[allPointsSorted.length - 2] : null;
+      
+      document.getElementById('metricLatestVal').innerText = latestItem.y.toFixed(2);
+      document.getElementById('metricLatestDate').innerText = new Date(latestItem.originalDate).toLocaleDateString(undefined, {month: 'short', day: 'numeric', year: 'numeric'});
+
+      const changeElem = document.getElementById('metricLatestChange');
+      if (previousItem) {
+        const deltaPct = ((latestItem.y - previousItem.y) / previousItem.y) * 100;
+        const sign = deltaPct >= 0 ? '+' : '';
+        changeElem.innerText = `${sign}${deltaPct.toFixed(1)}%`;
+        changeElem.className = `text-xs font-semibold ${deltaPct >= 0 ? 'text-rose-400' : 'text-emerald-400'}`;
+      } else {
+        changeElem.innerText = '';
+      }
+
+      // Peak Sample statistics
+      let globalPeakVal = 0;
+      let globalPeakDate = '';
+      allPointsSorted.forEach(pt => {
+        if (pt.y > globalPeakVal) {
+          globalPeakVal = pt.y;
+          globalPeakDate = pt.originalDate;
+        }
+      });
+      document.getElementById('metricPeakVal').innerText = globalPeakVal.toFixed(2);
+      document.getElementById('metricPeakDate').innerText = new Date(globalPeakDate).toLocaleDateString(undefined, {month: 'short', day: 'numeric', year: 'numeric'});
+      document.getElementById('metricPeakYear').innerText = new Date(globalPeakDate).getFullYear();
+
+      // Overall Mean statistics
+      const totalSum = allPointsSorted.reduce((sum, pt) => sum + pt.y, 0);
+      const overallMean = totalSum / allPointsSorted.length;
+      document.getElementById('metricMeanVal').innerText = overallMean.toFixed(2);
+      document.getElementById('metricMeanDesc').innerText = `Across ${allPointsSorted.length} samples`;
+
+      // Dataset Span statistics
+      const firstDate = new Date(allPointsSorted[0].originalDate);
+      const lastDate = new Date(allPointsSorted[allPointsSorted.length - 1].originalDate);
+      const totalYears = lastDate.getFullYear() - firstDate.getFullYear() + 1;
+      
+      document.getElementById('metricSpanYears').innerText = `${totalYears} Years`;
+      document.getElementById('metricSamplesCount').innerText = `${allPointsSorted.length} samples from ${firstDate.getFullYear()} - ${lastDate.getFullYear()}`;
+    }
+
+    // Sync Table Search string
+    function handleSearch(query) {
+      tableSearchQuery = query.toLowerCase().trim();
+      tablePage = 1;
+      applyTableFiltering();
+    }
+
+    // Filter tabular data based on current query string
+    function applyTableFiltering() {
+      const allList = [];
+      Object.keys(processedData).forEach(yr => {
+        processedData[yr].forEach(pt => {
+          allList.push(pt);
+        });
+      });
+
+      // Search matching logic
+      if (!tableSearchQuery) {
+        filteredTableSamples = [...allList];
+      } else {
+        filteredTableSamples = allList.filter(pt => {
+          const dateStr = new Date(pt.originalDate).toLocaleDateString(undefined, {month: 'long', day: 'numeric', year: 'numeric'}).toLowerCase();
+          const pmmovRawStr = pt.rawRatio.toString();
+          const yoyValStr = pt.y.toFixed(2);
+          
+          return pt.originalDate.includes(tableSearchQuery) || 
+                 dateStr.includes(tableSearchQuery) || 
+                 pmmovRawStr.includes(tableSearchQuery) || 
+                 yoyValStr.includes(tableSearchQuery);
+        });
+      }
+
+      // Sort chronological default order (descending)
+      filteredTableSamples.sort((a, b) => {
+        const t1 = new Date(a.originalDate).getTime();
+        const t2 = new Date(b.originalDate).getTime();
+        return tableSortAsc ? t1 - t2 : t2 - t1;
+      });
+
+      renderTableUI();
+    }
+
+    // Switch data sort direction
+    function sortTableByDate() {
+      tableSortAsc = !tableSortAsc;
+      applyTableFiltering();
+    }
+
+    // Draw active filtered items to HTML table body
+    function renderTableUI() {
+      const tbody = document.getElementById('rawTableBody');
+      if (!tbody) return;
+      tbody.innerHTML = '';
+
+      if (filteredTableSamples.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="4" class="text-center py-8 text-slate-500 font-medium bg-slate-900/10">No matching wastewater samples discovered.</td>
+          </tr>
+        `;
+        document.getElementById('tablePaginationInfo').innerText = "Showing 0 to 0 of 0 entries";
+        document.getElementById('prevPageBtn').disabled = true;
+        document.getElementById('nextPageBtn').disabled = true;
+        return;
+      }
+
+      const startIndex = (tablePage - 1) * tableLimit;
+      const endIndex = Math.min(startIndex + tableLimit, filteredTableSamples.length);
+      const visibleRows = filteredTableSamples.slice(startIndex, endIndex);
+
+      visibleRows.forEach(row => {
+        const formattedDate = new Date(row.originalDate).toLocaleDateString(undefined, {weekday: 'short', month: 'short', day: 'numeric', year: 'numeric'});
+        
+        // Severity scale indicators
+        let severityBadge = '';
+        if (row.y < 10) {
+          severityBadge = '<span class="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 font-semibold text-[10px]">Low Baseline</span>';
+        } else if (row.y >= 10 && row.y < 35) {
+          severityBadge = '<span class="px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 font-semibold text-[10px]">Moderate</span>';
+        } else {
+          severityBadge = '<span class="px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-400 font-semibold text-[10px]">High Surge</span>';
+        }
+
+        const tr = document.createElement('tr');
+        tr.className = "border-b border-slate-800 hover:bg-slate-800/30 transition-all-300";
+        tr.innerHTML = `
+          <td class="py-3 px-4 font-semibold text-slate-200">${formattedDate}</td>
+          <td class="py-3 px-4 font-mono text-slate-400">${row.rawRatio.toExponential(4)}</td>
+          <td class="py-3 px-4 font-mono font-bold text-teal-400">${row.y.toFixed(2)}</td>
+          <td class="py-3 px-4">${severityBadge}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      // Pagination dynamic status texts
+      document.getElementById('tablePaginationInfo').innerText = `Showing ${startIndex + 1} to ${endIndex} of ${filteredTableSamples.length} entries`;
+      document.getElementById('prevPageBtn').disabled = tablePage === 1;
+      document.getElementById('nextPageBtn').disabled = endIndex >= filteredTableSamples.length;
+    }
+
+    // Change pages back or forward
+    function changePage(direction) {
+      tablePage += direction;
+      renderTableUI();
+    }
+
+    // Export raw data as styled clean comma-separated values CSV format
+    function downloadCSV() {
+      if (rawSamples.length === 0) return;
+      
+      let csvContent = "data:text/csv;charset=utf-8,Date,Raw Ratio,Scaled Target Ratio (x1M)\n";
+      
+      const allSorted = [];
+      Object.keys(processedData).forEach(yr => {
+        processedData[yr].forEach(pt => allSorted.push(pt));
+      });
+      allSorted.sort((a,b) => new Date(a.originalDate) - new Date(b.originalDate));
+
+      allSorted.forEach(pt => {
+        csvContent += `${pt.originalDate},${pt.rawRatio},${pt.y.toFixed(6)}\n`;
+      });
+
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", `wastewater_analytics_${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    // Export chart layout into clean PNG image
+    function downloadChart() {
+      if (!chartInstance) return;
+      const link = document.createElement('a');
+      link.download = `wastewater_yoy_comparison_${new Date().toISOString().split('T')[0]}.png`;
+      link.href = chartInstance.toBase64Image();
+      link.click();
+    }
+
+    // Theme Switcher support for light / dark dashboards
+    function toggleTheme() {
+      const html = document.documentElement;
+      const isDark = html.classList.contains('dark');
+      const sunIcon = document.getElementById('themeSun');
+      const moonIcon = document.getElementById('themeMoon');
+
+      if (isDark) {
+        html.classList.remove('dark');
+        html.classList.add('light');
+        document.body.classList.remove('bg-slate-900', 'text-slate-100');
+        document.body.classList.add('bg-slate-50', 'text-slate-800');
+        sunIcon.classList.remove('hidden');
+        moonIcon.classList.add('hidden');
+      } else {
+        html.classList.remove('light');
+        html.classList.add('dark');
+        document.body.classList.remove('bg-slate-50', 'text-slate-800');
+        document.body.classList.add('bg-slate-900', 'text-slate-100');
+        sunIcon.classList.add('hidden');
+        moonIcon.classList.remove('hidden');
+      }
+
+      // Re-initialize graph to adapt colors and borders to new theme
+      if (chartInstance) {
+        initYoYChart();
+      }
+    }
+
+    // Open Config Modal view
+    function toggleSetupModal() {
+      const modal = document.getElementById('setupModal');
+      if (modal) {
+        modal.classList.toggle('hidden');
+      }
+    }
+
+    // Handle Drag-and-drop file operations
+    function handleFileDrop(e) {
+      e.preventDefault();
+      const files = e.dataTransfer.files;
+      if (files.length > 0) {
+        parseUploadedJsonFile(files[0]);
+      }
+    }
+
+    function handleFileSelect(e) {
+      const files = e.target.files;
+      if (files.length > 0) {
+        parseUploadedJsonFile(files[0]);
+      }
+    }
+
+    // Parse manual JSON uploads containing original samples structure
+    function parseUploadedJsonFile(file) {
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        try {
+          const uploadedObj = JSON.parse(evt.target.result);
+          if (uploadedObj && uploadedObj.samples) {
+            rawSamples = uploadedObj.samples;
+            processAndDisplayData(); 
+            toggleSetupModal();
+            showStatusBanner("Loaded authentic JSON file successfully.", "success");
+          } else {
+            alert("Uploaded JSON does not contain the required 'samples' list layout.");
+          }
+        } catch (err) {
+          alert("Error parsing file structure as standard JSON.");
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    // Helper banner alert manager
+    function showStatusBanner(text, type = "info") {
+      const banner = document.getElementById('statusBanner');
+      const bannerText = document.getElementById('statusBannerText');
+      if (!banner || !bannerText) return;
+      
+      bannerText.innerText = text;
+      banner.classList.remove('hidden', 'bg-indigo-600', 'bg-emerald-600', 'bg-rose-600', 'bg-amber-600');
+      
+      if (type === "success") {
+        banner.classList.add('bg-emerald-600');
+      } else if (type === "error") {
+        banner.classList.add('bg-rose-600');
+      } else if (type === "warning") {
+        banner.classList.add('bg-amber-600');
+      } else {
+        banner.classList.add('bg-indigo-600');
+      }
+      banner.classList.remove('hidden');
+    }
+
+    // Apply specific URL targets & attempt fetch connection
+    function applyUrlAndFetch() {
+      const inputVal = document.getElementById('gcsUrlInput').value.trim();
+      loadRawData(true, inputVal);
+      toggleSetupModal();
+    }
+
+    // Main data process pipeline orchestrator
+    function processAndDisplayData() {
+      const loader = document.getElementById('chartLoader');
+      if (loader) loader.classList.remove('hidden');
+      
+      setTimeout(() => {
+        processRawWastewaterSamples(rawSamples);
+        initYoYChart();
+        updateCustomLegendUI();
+        updateYearlyStatsSummaryPanel();
+        renderSummaryMetricsRow();
+        applyTableFiltering();
+        
+        if (loader) loader.classList.add('hidden');
+      }, 300);
+    }
+
+    // Primary Async Loader fetching from GCS Target URL
+    async function loadRawData(forceShowSimBanner = false, overrideUrl = null) {
+      const targetUrl = overrideUrl || "https://storage.googleapis.com/wastewater-dev-data/json/b9c02d34.json";
+      const loader = document.getElementById('chartLoader');
+      const spinner = document.getElementById('loaderSpinner');
+      const errorPanel = document.getElementById('loaderErrorPanel');
+      
+      if (loader) loader.classList.remove('hidden');
+      if (spinner) spinner.classList.remove('hidden');
+      if (errorPanel) errorPanel.classList.add('hidden');
+
+      try {
+        const response = await fetch(targetUrl);
+        if (!response.ok) {
+          throw new Error(`HTTP network response failed: ${response.status}`);
+        }
+        const data = await response.json();
+        
+        if (data && data.samples) {
+          rawSamples = data.samples;
+          processAndDisplayData();
+          const banner = document.getElementById('statusBanner');
+          if (banner) banner.classList.add('hidden');
+        } else {
+          throw new Error("Invalid schema structure found within target JSON database.");
+        }
+      } catch (err) {
+        console.warn("Direct live GCS data fetch restricted by sandbox environment or network. Details:", err);
+        
+        // Show non-falsified error panel, asking the user to load original data manually
+        if (spinner) spinner.classList.add('hidden');
+        if (errorPanel) errorPanel.classList.remove('hidden');
+        
+        if (forceShowSimBanner) {
+          showStatusBanner("CORS fetch blocked. Please drag-and-drop the downloaded JSON.", "warning");
+        }
+      }
+    }
+
+    // Bootstrapped entry point
+    window.onload = function() {
+      // First attempt live fetch
+      loadRawData(true);
+    };
+  </script>
+</body>
+</html>
