@@ -125,6 +125,42 @@
       </div>
     </header>
 
+    <!-- Treatment Plant Selector Search Bar -->
+    <div class="relative z-30 bg-slate-800/40 border border-slate-700/60 rounded-xl p-3 md:p-4 backdrop-blur-md flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <div class="p-2 bg-teal-500/10 text-teal-400 rounded-lg">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Treatment Facility</span>
+            <span id="plantPopBadge" class="text-[10px] bg-slate-700 text-slate-300 px-2 py-0.5 rounded-full font-mono">Pop: --</span>
+          </div>
+          <div id="plantTitleDisplay" class="text-sm font-bold text-slate-100 flex items-center gap-2">
+            <span>Loading plant info...</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Fuzzy Search Dropdown Input -->
+      <div class="relative flex-grow max-w-md z-40" id="plantSearchContainer">
+        <div class="relative">
+          <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-400">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+          </span>
+          <input type="text" id="plantSearchInput" onfocus="showPlantDropdown()" oninput="handlePlantQueryChange(this.value)" placeholder="Search plant by city, name, state (e.g. 'los angeles', '94019')..." class="w-full bg-slate-900 border border-slate-700 text-slate-100 text-xs rounded-lg pl-9 pr-8 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand-500 placeholder-slate-500">
+          <button id="clearPlantSearchBtn" onclick="clearPlantSearch()" class="absolute inset-y-0 right-0 flex items-center pr-2.5 text-slate-400 hover:text-slate-200 hidden">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+          </button>
+        </div>
+
+        <!-- Fuzzy Search Results Popover -->
+        <div id="plantSearchResults" class="absolute left-0 right-0 top-full mt-2 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl max-h-80 overflow-y-auto z-50 hidden divide-y divide-slate-800">
+          <!-- Dynamically populated -->
+        </div>
+      </div>
+    </div>
+
     <!-- Metrics Grid -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" id="metricsGrid">
       <!-- Latest Sample Card -->
@@ -260,17 +296,17 @@
               <div>
                 <h4 class="font-bold text-slate-200">Unable to Fetch Live Data Directly</h4>
                 <p class="text-xs text-slate-400 mt-2 leading-relaxed">
-                  Due to browser sandbox restrictions (CORS rules), we can't directly load the GCS file from the external domain.
+                  Due to browser sandbox restrictions (CORS rules), direct fetching from GCS was blocked.
                 </p>
               </div>
               
               <!-- Direct Click Trigger Local File Selection -->
               <div class="w-full">
                 <button onclick="toggleSetupModal()" class="w-full bg-teal-600 hover:bg-teal-500 text-white font-semibold text-xs py-2 px-4 rounded-lg transition">
-                  Upload Authentic b9c02d34.json File
+                  Upload Authentic JSON File
                 </button>
-                <a href="https://storage.googleapis.com/wastewater-dev-data/json/b9c02d34.json" target="_blank" class="block text-[11px] text-teal-400 hover:underline mt-2">
-                  1. Click here to download original JSON file first
+                <a id="directDownloadLink" href="https://storage.googleapis.com/wastewater-dev-data/json/b9c02d34.json" target="_blank" class="block text-[11px] text-teal-400 hover:underline mt-2">
+                  1. Click here to download original plant JSON file first
                 </a>
               </div>
             </div>
@@ -445,6 +481,10 @@
 
   <script>
     // Application States
+    let currentPlantUid = "b9c02d34"; // Default plant UID
+    let plantsCatalog = []; // Full list of plants loaded from plants.json
+    let currentPlantMetadata = null;
+
     let rawSamples = [];
     let processedData = {}; // Grouped by year: { '2023': [ { x: 120, y: 15.5, originalDate: '2023-04-30', actualYear: 2023 } ], ... }
     let yearsList = [];
@@ -472,6 +512,174 @@
       2026: { stroke: 'rgba(244, 63, 94, 1)', fill: 'rgba(244, 63, 94, 0.05)', bg: 'bg-rose-500' },
       default: { stroke: 'rgba(148, 163, 184, 1)', fill: 'rgba(148, 163, 184, 0.05)', bg: 'bg-slate-400' }
     };
+
+    // Fetch plant database catalog
+    async function loadPlantsCatalog() {
+      const catalogUrl = "https://storage.googleapis.com/wastewater-dev-data/json/plants.json";
+      try {
+        const response = await fetch(catalogUrl);
+        if (response.ok) {
+          const data = await response.json();
+          if (data && data.plants) {
+            plantsCatalog = data.plants;
+            updatePlantMetadataUI();
+          }
+        }
+      } catch (err) {
+        console.warn("Could not fetch plants catalog directly due to CORS or network rules.", err);
+      }
+    }
+
+    // Fuzzy matching logic across multiple fields
+    function fuzzyMatchPlant(plant, query) {
+      if (!query || !query.trim()) return true;
+      const tokens = query.toLowerCase().trim().split(/\s+/);
+      
+      const searchableStr = [
+        plant.name,
+        plant.site_name,
+        plant.place_name,
+        plant.city,
+        plant.state,
+        plant.zipcode,
+        plant.country,
+        plant.uid
+      ].filter(Boolean).join(' ').toLowerCase();
+
+      return tokens.every(token => searchableStr.includes(token));
+    }
+
+    function showPlantDropdown() {
+      const resultsContainer = document.getElementById('plantSearchResults');
+      if (resultsContainer) {
+        renderPlantSearchResults(document.getElementById('plantSearchInput').value);
+        resultsContainer.classList.remove('hidden');
+      }
+    }
+
+    function handlePlantQueryChange(val) {
+      const clearBtn = document.getElementById('clearPlantSearchBtn');
+      if (clearBtn) {
+        clearBtn.classList.toggle('hidden', !val);
+      }
+      renderPlantSearchResults(val);
+      const resultsContainer = document.getElementById('plantSearchResults');
+      if (resultsContainer) {
+        resultsContainer.classList.remove('hidden');
+      }
+    }
+
+    function clearPlantSearch() {
+      const input = document.getElementById('plantSearchInput');
+      if (input) {
+        input.value = '';
+        handlePlantQueryChange('');
+      }
+    }
+
+    function renderPlantSearchResults(query) {
+      const container = document.getElementById('plantSearchResults');
+      if (!container) return;
+      container.innerHTML = '';
+
+      const matches = plantsCatalog.filter(p => fuzzyMatchPlant(p, query));
+
+      if (matches.length === 0) {
+        container.innerHTML = `<div class="p-4 text-xs text-slate-500 text-center">No matching treatment plants found.</div>`;
+        return;
+      }
+
+      matches.slice(0, 30).forEach(plant => {
+        const item = document.createElement('div');
+        const isSelected = plant.uid === currentPlantUid;
+        
+        item.className = `p-3 text-xs cursor-pointer hover:bg-slate-800 transition flex items-center justify-between ${
+          isSelected ? 'bg-teal-500/10 border-l-4 border-teal-400' : ''
+        }`;
+
+        const popFormatted = plant.sewershed_pop ? Number(plant.sewershed_pop).toLocaleString() : 'N/A';
+        const locationStr = [plant.city, plant.state].filter(Boolean).join(', ');
+
+        item.innerHTML = `
+          <div class="flex flex-col gap-0.5">
+            <div class="font-bold text-slate-100 flex items-center gap-1.5">
+              <span>${plant.name || plant.site_name || 'Facility'}</span>
+              ${isSelected ? '<span class="text-[10px] bg-teal-500/20 text-teal-300 px-1.5 py-0.2 rounded">Active</span>' : ''}
+            </div>
+            <div class="text-[11px] text-slate-400">${plant.site_name || ''} ${locationStr ? '• ' + locationStr : ''}</div>
+          </div>
+          <div class="text-right shrink-0 ml-2">
+            <span class="text-[10px] font-mono text-slate-400 bg-slate-800 px-1.5 py-0.5 rounded">Pop: ${popFormatted}</span>
+          </div>
+        `;
+
+        item.onclick = () => selectPlant(plant);
+        container.appendChild(item);
+      });
+    }
+
+    function selectPlant(plant) {
+      currentPlantUid = plant.uid;
+      currentPlantMetadata = plant;
+      
+      // Update inputs & hide dropdown
+      const searchInput = document.getElementById('plantSearchInput');
+      if (searchInput) searchInput.value = '';
+      const clearBtn = document.getElementById('clearPlantSearchBtn');
+      if (clearBtn) clearBtn.classList.add('hidden');
+
+      const resultsContainer = document.getElementById('plantSearchResults');
+      if (resultsContainer) resultsContainer.classList.add('hidden');
+
+      updatePlantMetadataUI();
+      
+      // Load selected plant JSON
+      loadRawData(true);
+    }
+
+    function updatePlantMetadataUI() {
+      if (plantsCatalog.length > 0 && !currentPlantMetadata) {
+        currentPlantMetadata = plantsCatalog.find(p => p.uid === currentPlantUid) || null;
+      }
+
+      const titleDisplay = document.getElementById('plantTitleDisplay');
+      const popBadge = document.getElementById('plantPopBadge');
+      const downloadLink = document.getElementById('directDownloadLink');
+      const gcsInput = document.getElementById('gcsUrlInput');
+
+      const plantUrl = `https://storage.googleapis.com/wastewater-dev-data/json/${currentPlantUid}.json`;
+
+      if (gcsInput) gcsInput.value = plantUrl;
+      if (downloadLink) downloadLink.href = plantUrl;
+
+      if (currentPlantMetadata) {
+        const name = currentPlantMetadata.name || currentPlantMetadata.site_name || currentPlantUid;
+        const place = currentPlantMetadata.place_name || [currentPlantMetadata.city, currentPlantMetadata.state].filter(Boolean).join(', ');
+        
+        if (titleDisplay) {
+          titleDisplay.innerHTML = `<span>${name}</span> <span class="text-xs font-normal text-slate-400 font-mono">(${place})</span>`;
+        }
+        if (popBadge) {
+          popBadge.innerText = `Pop: ${currentPlantMetadata.sewershed_pop ? Number(currentPlantMetadata.sewershed_pop).toLocaleString() : 'N/A'}`;
+        }
+      } else {
+        if (titleDisplay) {
+          titleDisplay.innerHTML = `<span>Plant UID: ${currentPlantUid}</span>`;
+        }
+        if (popBadge) {
+          popBadge.innerText = `Pop: --`;
+        }
+      }
+    }
+
+    // Close plant search dropdown on click outside
+    document.addEventListener('click', (e) => {
+      const container = document.getElementById('plantSearchContainer');
+      const dropdown = document.getElementById('plantSearchResults');
+      if (container && dropdown && !container.contains(e.target)) {
+        dropdown.classList.add('hidden');
+      }
+    });
 
     // Helper functions for dates
     // Computes continuous Day of Year index (1-365) ensuring leap days align smoothly with regular days
@@ -1196,7 +1404,7 @@
 
     // Primary Async Loader fetching from GCS Target URL
     async function loadRawData(forceShowSimBanner = false, overrideUrl = null) {
-      const targetUrl = overrideUrl || "https://storage.googleapis.com/wastewater-dev-data/json/b9c02d34.json";
+      const targetUrl = overrideUrl || `https://storage.googleapis.com/wastewater-dev-data/json/${currentPlantUid}.json`;
       const loader = document.getElementById('chartLoader');
       const spinner = document.getElementById('loaderSpinner');
       const errorPanel = document.getElementById('loaderErrorPanel');
@@ -1235,7 +1443,9 @@
 
     // Bootstrapped entry point
     window.onload = function() {
-      // First attempt live fetch
+      // Load plants catalog first
+      loadPlantsCatalog();
+      // Fetch default plant dataset
       loadRawData(true);
     };
   </script>
