@@ -1082,6 +1082,8 @@
             },
             y: {
               type: yScaleType, // Dynamic toggle between 'linear' and 'logarithmic'
+              min: yScaleType === 'linear' ? 0 : 0.1,
+              suggestedMin: yScaleType === 'linear' ? 0 : 0.1,
               grid: {
                 display: false, // REMOVED Y-AXIS GRID LINES
                 drawOnChartArea: false,
