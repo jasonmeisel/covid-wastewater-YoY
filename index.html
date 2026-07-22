@@ -902,9 +902,10 @@
     function getPercentileEmoji(percentile) {
       if (percentile === null || percentile === undefined || Number.isNaN(percentile)) return '—';
       if (percentile <= 1) return '👌';
-      if (percentile <= 5) return '👍';
-      if (percentile <= 25) return '🟢';
-      if (percentile <= 50) return '🙂';
+      if (percentile <= 5) return '🙂';
+      if (percentile <= 10) return '🟢';
+      if (percentile <= 25) return '🟨';
+      if (percentile <= 50) return '😣';
       if (percentile <= 75) return '⚠️';
       return '🚨';
     }
