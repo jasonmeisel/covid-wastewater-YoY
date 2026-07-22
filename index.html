@@ -275,6 +275,15 @@
           </div>
         </div>
 
+        <div id="graphPercentileSummary" class="flex flex-wrap gap-3 items-center text-[11px] text-slate-400 mb-4">
+          <span id="currentValuePercentile" class="font-semibold text-slate-100">Current value percentile: --</span>
+          <span id="currentValueEmoji" class="text-xl">—</span>
+          <span id="medianValueBadge">Median: --</span>
+          <span id="quartileValueBadge">Q1: --, Q3: --</span>
+          <span id="percentile5Badge">5th: --</span>
+          <span id="percentile1Badge">1st: --</span>
+        </div>
+
         <!-- Dynamic Skeletal Loader / Chart Canvas Container -->
         <div class="relative min-h-[300px] md:min-h-[400px] flex items-center justify-center">
           <div id="chartLoader" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-900/90 backdrop-blur-sm z-10 p-6 text-center">
@@ -812,6 +821,123 @@
       });
     }
 
+    // Percentile analytics helper functions
+    let percentileStats = {
+      q1: null,
+      median: null,
+      q3: null,
+      p5: null,
+      p1: null,
+      currentPercentile: null,
+      currentValue: null
+    };
+
+    function computeQuantile(sortedList, ratio) {
+      if (!sortedList.length) return null;
+      const position = (sortedList.length - 1) * ratio;
+      const lowerIndex = Math.floor(position);
+      const upperIndex = Math.ceil(position);
+      if (lowerIndex === upperIndex) return sortedList[lowerIndex];
+      const lowerValue = sortedList[lowerIndex];
+      const upperValue = sortedList[upperIndex];
+      const weight = position - lowerIndex;
+      return lowerValue + (upperValue - lowerValue) * weight;
+    }
+
+    function getVisibleSampleValues() {
+      const values = [];
+      yearsList.forEach(yr => {
+        if (visibleYears[yr]) {
+          (processedData[yr] || []).forEach(pt => values.push(pt.y));
+        }
+      });
+      return values.sort((a, b) => a - b);
+    }
+
+    function getLatestSampleValue() {
+      const allPoints = [];
+      Object.values(processedData).forEach(series => allPoints.push(...series));
+      if (!allPoints.length) return null;
+      allPoints.sort((a, b) => new Date(a.originalDate) - new Date(b.originalDate));
+      return allPoints[allPoints.length - 1].y;
+    }
+
+    function computePercentileStats() {
+      const values = getVisibleSampleValues();
+      const currentValue = getLatestSampleValue();
+      if (!values.length) {
+        percentileStats = {
+          q1: null,
+          median: null,
+          q3: null,
+          p5: null,
+          p1: null,
+          currentPercentile: null,
+          currentValue: null
+        };
+        return percentileStats;
+      }
+
+      const q1 = computeQuantile(values, 0.25);
+      const median = computeQuantile(values, 0.5);
+      const q3 = computeQuantile(values, 0.75);
+      const p5 = computeQuantile(values, 0.05);
+      const p1 = computeQuantile(values, 0.01);
+      const currentPercentile = currentValue === null
+        ? null
+        : (values.filter(v => v <= currentValue).length / values.length) * 100;
+
+      percentileStats = {
+        q1,
+        median,
+        q3,
+        p5,
+        p1,
+        currentPercentile,
+        currentValue
+      };
+      return percentileStats;
+    }
+
+    function getPercentileEmoji(percentile) {
+      if (percentile === null || percentile === undefined || Number.isNaN(percentile)) return '—';
+      if (percentile <= 25) return '🟢';
+      if (percentile <= 50) return '🙂';
+      if (percentile <= 75) return '⚠️';
+      return '🚨';
+    }
+
+    function updatePercentileSummaryUI() {
+      const currentLabel = document.getElementById('currentValuePercentile');
+      const currentEmoji = document.getElementById('currentValueEmoji');
+      const medianLabel = document.getElementById('medianValueBadge');
+      const quartileLabel = document.getElementById('quartileValueBadge');
+      const p5Label = document.getElementById('percentile5Badge');
+      const p1Label = document.getElementById('percentile1Badge');
+
+      const formatStat = value => value === null ? 'N/A' : value.toFixed(1);
+      const formatPercentile = value => value === null ? 'N/A' : `${value.toFixed(1)}%`;
+
+      if (currentLabel) {
+        currentLabel.innerText = `Current value percentile: ${formatPercentile(percentileStats.currentPercentile)}`;
+      }
+      if (currentEmoji) {
+        currentEmoji.innerText = getPercentileEmoji(percentileStats.currentPercentile);
+      }
+      if (medianLabel) {
+        medianLabel.innerText = `Median: ${formatStat(percentileStats.median)}`;
+      }
+      if (quartileLabel) {
+        quartileLabel.innerText = `Q1: ${formatStat(percentileStats.q1)}, Q3: ${formatStat(percentileStats.q3)}`;
+      }
+      if (p5Label) {
+        p5Label.innerText = `5th: ${formatStat(percentileStats.p5)}`;
+      }
+      if (p1Label) {
+        p1Label.innerText = `1st: ${formatStat(percentileStats.p1)}`;
+      }
+    }
+
     // Build Chart JS configuration and inject into container
     function initYoYChart() {
       const canvasElement = document.getElementById('yoyChart');
@@ -856,6 +982,44 @@
         chartInstance.destroy();
       }
 
+      const visibleStats = computePercentileStats();
+      updatePercentileSummaryUI();
+      const percentileLines = [
+        { label: '25th', value: visibleStats.q1, color: 'rgba(16, 185, 129, 0.7)', dash: [4, 4] },
+        { label: 'Median', value: visibleStats.median, color: 'rgba(14, 165, 233, 0.7)', dash: [4, 4] },
+        { label: '75th', value: visibleStats.q3, color: 'rgba(168, 85, 247, 0.7)', dash: [4, 4] },
+        { label: '5th', value: visibleStats.p5, color: 'rgba(245, 158, 11, 0.7)', dash: [4, 4] },
+        { label: '1st', value: visibleStats.p1, color: 'rgba(239, 68, 68, 0.7)', dash: [4, 4] }
+      ].filter(line => line.value !== null);
+
+      const percentileLinesPlugin = {
+        id: 'percentileLines',
+        beforeDraw: (chart) => {
+          const lines = chart.options.plugins?.percentileLines?.lines || [];
+          if (!lines.length) return;
+          const { ctx, chartArea: { top, bottom, left, right }, scales: { y } } = chart;
+          ctx.save();
+          lines.forEach(line => {
+            const yValue = y.getPixelForValue(line.value);
+            if (yValue < top || yValue > bottom) return;
+            ctx.strokeStyle = line.color;
+            ctx.lineWidth = 1;
+            ctx.setLineDash(line.dash || []);
+            ctx.beginPath();
+            ctx.moveTo(left, yValue);
+            ctx.lineTo(right, yValue);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.fillStyle = line.color;
+            ctx.font = '11px Inter';
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'bottom';
+            ctx.fillText(`${line.label}: ${line.value.toFixed(1)}`, right - 6, yValue - 4);
+          });
+          ctx.restore();
+        }
+      };
+
       // Generate clean dataset arrays ready for ChartJS insertion
       const chartDatasets = yearsList.map(yr => {
         const colorConf = YEAR_COLOR_PALETTE[yr] || YEAR_COLOR_PALETTE.default;
@@ -883,7 +1047,7 @@
         data: {
           datasets: chartDatasets
         },
-        plugins: [seasonalHighlightPlugin],
+        plugins: [seasonalHighlightPlugin, percentileLinesPlugin],
         options: {
           responsive: true,
           maintainAspectRatio: false,
@@ -950,6 +1114,9 @@
           plugins: {
             legend: {
               display: false // Using our premium custom interactive HTML legend instead
+            },
+            percentileLines: {
+              lines: percentileLines
             },
             tooltip: {
               backgroundColor: isDark ? '#0f172a' : '#ffffff',
