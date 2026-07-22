@@ -606,7 +606,13 @@
       if (!container) return;
       container.innerHTML = '';
 
-      const matches = plantsCatalog.filter(p => fuzzyMatchPlant(p, query));
+      const matches = plantsCatalog
+        .filter(p => fuzzyMatchPlant(p, query))
+        .sort((a, b) => {
+          const aPop = Number(a.sewershed_pop) || 0;
+          const bPop = Number(b.sewershed_pop) || 0;
+          return bPop - aPop;
+        });
 
       if (matches.length === 0) {
         container.innerHTML = `<div class="p-4 text-xs text-slate-500 text-center">No matching treatment plants found.</div>`;
