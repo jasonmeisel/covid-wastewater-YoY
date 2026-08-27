@@ -21,7 +21,10 @@
   
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  
+
+  <!-- US ZIP code coordinates -->
+  <script src="https://cdn.jsdelivr.net/npm/zipcodes-us@1.1.3/dist/index.umd.min.js"></script>
+
   <!-- Google Fonts: Inter -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -159,7 +162,7 @@
           <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-400">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
           </span>
-          <input type="text" id="plantSearchInput" onfocus="showPlantDropdown()" oninput="handlePlantQueryChange(this.value)" placeholder="Search plant by city, name, state (e.g. 'los angeles', '94019')..." class="w-full bg-slate-900 border border-slate-700 text-slate-100 text-xs rounded-lg pl-9 pr-8 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand-500 placeholder-slate-500">
+          <input type="text" id="plantSearchInput" onfocus="showPlantDropdown()" oninput="handlePlantQueryChange(this.value)" placeholder="Search plant by city, name, state, or ZIP to sort by distance (e.g. 'los angeles', '94019')..." class="w-full bg-slate-900 border border-slate-700 text-slate-100 text-xs rounded-lg pl-9 pr-8 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand-500 placeholder-slate-500">
           <button id="clearPlantSearchBtn" onclick="clearPlantSearch()" class="absolute inset-y-0 right-0 flex items-center pr-2.5 text-slate-400 hover:text-slate-200 hidden">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
           </button>
@@ -648,6 +651,52 @@
       return tokens.every(token => searchableStr.includes(token));
     }
 
+    // ZIP-code distance sorting helpers
+    function isZipCodeQuery(query) {
+      return /^\d{5}(-\d{4})?$/.test(query.trim());
+    }
+
+    function getPlantCoordinates(plant) {
+      if (plant.point && Array.isArray(plant.point.coordinates) && plant.point.coordinates.length >= 2) {
+        return { lng: plant.point.coordinates[0], lat: plant.point.coordinates[1] };
+      }
+      if (plant.longitude !== undefined && plant.latitude !== undefined) {
+        return { lng: Number(plant.longitude), lat: Number(plant.latitude) };
+      }
+      return null;
+    }
+
+    function getReferenceCoordsFromZip(zip) {
+      const normalizedZip = zip.trim().slice(0, 5);
+
+      // Try the plant catalog first for exact facility coordinates
+      const referencePlant = plantsCatalog.find(p => p.zipcode && p.zipcode.trim().slice(0, 5) === normalizedZip);
+      if (referencePlant) {
+        return getPlantCoordinates(referencePlant);
+      }
+
+      // Fall back to the zipcodes-us library for any US ZIP
+      if (typeof window !== 'undefined' && window.zipcodes && typeof window.zipcodes.find === 'function') {
+        const z = window.zipcodes.find(normalizedZip);
+        if (z && z.isValid && z.latitude !== undefined && z.longitude !== undefined) {
+          return { lat: Number(z.latitude), lng: Number(z.longitude) };
+        }
+      }
+
+      return null;
+    }
+
+    function haversineDistance(lat1, lon1, lat2, lon2) {
+      const R = 3958.8; // Earth radius in miles
+      const toRad = deg => deg * (Math.PI / 180);
+      const dLat = toRad(lat2 - lat1);
+      const dLon = toRad(lon2 - lon1);
+      const a = Math.sin(dLat / 2) ** 2 +
+                Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      return R * c;
+    }
+
     function showPlantDropdown() {
       const resultsContainer = document.getElementById('plantSearchResults');
       if (resultsContainer) {
@@ -681,13 +730,60 @@
       if (!container) return;
       container.innerHTML = '';
 
-      const matches = plantsCatalog
-        .filter(p => fuzzyMatchPlant(p, query))
-        .sort((a, b) => {
-          const aPop = Number(a.sewershed_pop) || 0;
-          const bPop = Number(b.sewershed_pop) || 0;
-          return bPop - aPop;
-        });
+      const trimmedQuery = query.trim();
+      const isZip = isZipCodeQuery(trimmedQuery);
+      let matches = [];
+      let distanceMap = new Map();
+
+      if (isZip) {
+        const referenceCoords = getReferenceCoordsFromZip(trimmedQuery);
+        matches = [...plantsCatalog];
+
+        if (referenceCoords) {
+          matches.forEach(plant => {
+            const coords = getPlantCoordinates(plant);
+            if (coords) {
+              const dist = haversineDistance(referenceCoords.lat, referenceCoords.lng, coords.lat, coords.lng);
+              distanceMap.set(plant, dist);
+            }
+          });
+
+          matches.sort((a, b) => {
+            const da = distanceMap.get(a);
+            const db = distanceMap.get(b);
+            if (da === undefined && db === undefined) {
+              return (Number(b.sewershed_pop) || 0) - (Number(a.sewershed_pop) || 0);
+            }
+            if (da === undefined) return 1;
+            if (db === undefined) return -1;
+            return da - db;
+          });
+
+          const header = document.createElement('div');
+          header.className = "p-2 text-[11px] text-slate-400 bg-slate-800/50 border-b border-slate-800 text-center";
+          header.innerText = `Sorting by distance from ZIP ${trimmedQuery.slice(0, 5)}`;
+          container.appendChild(header);
+        } else {
+          matches.sort((a, b) => {
+            const aPop = Number(a.sewershed_pop) || 0;
+            const bPop = Number(b.sewershed_pop) || 0;
+            return bPop - aPop;
+          });
+
+          const header = document.createElement('div');
+          header.className = "p-2 text-[11px] text-amber-400 bg-amber-500/10 border-b border-slate-800 text-center";
+          header.innerText = `ZIP ${trimmedQuery.slice(0, 5)} not in catalog; showing all plants`;
+          container.appendChild(header);
+        }
+      } else {
+        matches = plantsCatalog
+          .filter(p => fuzzyMatchPlant(p, query))
+          .sort((a, b) => {
+            const aPop = Number(a.sewershed_pop) || 0;
+            const bPop = Number(b.sewershed_pop) || 0;
+            return bPop - aPop;
+          });
+      }
 
       if (matches.length === 0) {
         container.innerHTML = `<div class="p-4 text-xs text-slate-500 text-center">No matching treatment plants found.</div>`;
@@ -697,7 +793,11 @@
       matches.slice(0, 30).forEach(plant => {
         const item = document.createElement('div');
         const isSelected = plant.uid === currentPlantUid;
-        
+        const distance = distanceMap.get(plant);
+        const distanceStr = distance !== undefined
+          ? `${distance < 10 ? distance.toFixed(1) : Math.round(distance)} mi`
+          : '';
+
         item.className = `p-3 text-xs cursor-pointer hover:bg-slate-800 transition flex items-center justify-between ${
           isSelected ? 'bg-teal-500/10 border-l-4 border-teal-400' : ''
         }`;
@@ -713,8 +813,9 @@
             </div>
             <div class="text-[11px] text-slate-400">${plant.site_name || ''} ${locationStr ? '• ' + locationStr : ''}</div>
           </div>
-          <div class="text-right shrink-0 ml-2">
+          <div class="text-right shrink-0 ml-2 flex flex-col items-end gap-0.5">
             <span class="text-[10px] font-mono text-slate-400 bg-slate-800 px-1.5 py-0.5 rounded">Pop: ${popFormatted}</span>
+            ${distanceStr ? `<span class="text-[10px] font-mono text-teal-400 bg-teal-500/10 px-1.5 py-0.5 rounded">${distanceStr}</span>` : ''}
           </div>
         `;
 
