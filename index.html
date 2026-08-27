@@ -538,6 +538,7 @@
     let smoothingWindow = 3; // Standard 3-point moving average
     let yScaleType = 'linear'; // 'linear' or 'logarithmic'
     let activeSeasonHighlight = 'none'; // 'none' | 'winter' | 'summer'
+    let inactivePlantUids = new Set();
     
     // UI Table States
     let tablePage = 1;
@@ -625,10 +626,56 @@
           if (data && data.plants) {
             plantsCatalog = data.plants;
             updatePlantMetadataUI();
+            await loadPlantActivityStatus();
           }
         }
       } catch (err) {
         console.warn("Could not fetch plants catalog directly due to CORS or network rules.", err);
+      }
+    }
+
+    function isPlantInactive(plant) {
+      if (!plant || !plant.uid) return false;
+      return inactivePlantUids.has(String(plant.uid));
+    }
+
+    async function loadPlantActivityStatus() {
+      const activityUrl = "https://data.wastewaterscan.org/data/categories/plants.json";
+      try {
+        const response = await fetch(activityUrl);
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+
+        const data = await response.json();
+        const cutoffDate = new Date();
+        cutoffDate.setMonth(cutoffDate.getMonth() - 3);
+        inactivePlantUids = new Set();
+
+        if (data && typeof data === 'object') {
+          Object.entries(data).forEach(([uid, samples]) => {
+            if (!samples || typeof samples !== 'object') return;
+
+            const dates = Object.values(samples)
+              .filter(entry => entry && typeof entry === 'object' && entry.lastSampleDate)
+              .map(entry => new Date(entry.lastSampleDate))
+              .filter(date => !Number.isNaN(date.getTime()));
+
+            if (dates.length === 0) return;
+
+            const latestDate = new Date(Math.max(...dates.map(date => date.getTime())));
+            if (latestDate < cutoffDate) {
+              inactivePlantUids.add(String(uid));
+            }
+          });
+        }
+
+        const searchInput = document.getElementById('plantSearchInput');
+        if (searchInput) {
+          renderPlantSearchResults(searchInput.value || '');
+        }
+      } catch (err) {
+        console.warn("Could not determine inactive plants from Wastewater Scan status feed.", err);
       }
     }
 
@@ -793,6 +840,7 @@
       matches.slice(0, 30).forEach(plant => {
         const item = document.createElement('div');
         const isSelected = plant.uid === currentPlantUid;
+        const isInactive = isPlantInactive(plant);
         const distance = distanceMap.get(plant);
         const distanceStr = distance !== undefined
           ? `${distance < 10 ? distance.toFixed(1) : Math.round(distance)} mi`
@@ -800,16 +848,19 @@
 
         item.className = `p-3 text-xs cursor-pointer hover:bg-slate-800 transition flex items-center justify-between ${
           isSelected ? 'bg-teal-500/10 border-l-4 border-teal-400' : ''
-        }`;
+        } ${isInactive ? 'bg-amber-500/5 border-l-4 border-amber-500/60' : ''}`;
 
         const popFormatted = plant.sewershed_pop ? Number(plant.sewershed_pop).toLocaleString() : 'N/A';
         const locationStr = [plant.city, plant.state].filter(Boolean).join(', ');
+        const statusBadge = isInactive
+          ? '<span class="text-[10px] bg-amber-500/20 text-amber-300 px-1.5 py-0.2 rounded">Inactive</span>'
+          : (isSelected ? '<span class="text-[10px] bg-teal-500/20 text-teal-300 px-1.5 py-0.2 rounded">Active</span>' : '');
 
         item.innerHTML = `
           <div class="flex flex-col gap-0.5">
             <div class="font-bold text-slate-100 flex items-center gap-1.5">
               <span>${plant.name || plant.site_name || 'Facility'}</span>
-              ${isSelected ? '<span class="text-[10px] bg-teal-500/20 text-teal-300 px-1.5 py-0.2 rounded">Active</span>' : ''}
+              ${statusBadge}
             </div>
             <div class="text-[11px] text-slate-400">${plant.site_name || ''} ${locationStr ? '• ' + locationStr : ''}</div>
           </div>
