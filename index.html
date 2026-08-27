@@ -1215,6 +1215,28 @@
         }
       };
 
+      const monthLabelPlugin = {
+        id: 'monthLabels',
+        afterDraw: (chart) => {
+          const { ctx, chartArea: { bottom }, scales: { x } } = chart;
+          ctx.save();
+          ctx.font = '10px Inter';
+          ctx.fillStyle = isDark ? '#94a3b8' : '#475569';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'top';
+
+          const labelY = Math.min(bottom + 12, chart.height - 10);
+
+          monthStarts.forEach((value, index) => {
+            const xPixel = x.getPixelForValue(value);
+            if (xPixel < x.left || xPixel > x.right) return;
+            ctx.fillText(monthNames[index], xPixel, labelY);
+          });
+
+          ctx.restore();
+        }
+      };
+
       if (chartInstance) {
         chartInstance.destroy();
       }
@@ -1284,10 +1306,15 @@
         data: {
           datasets: chartDatasets
         },
-        plugins: [seasonalHighlightPlugin, percentileLinesPlugin],
+        plugins: [seasonalHighlightPlugin, monthLabelPlugin, percentileLinesPlugin],
         options: {
           responsive: true,
           maintainAspectRatio: false,
+          layout: {
+            padding: {
+              bottom: 24
+            }
+          },
           interaction: {
             mode: 'index',
             intersect: false,
@@ -1306,13 +1333,7 @@
                 color: isDark ? '#334155' : '#cbd5e1'
               },
               ticks: {
-                color: isDark ? '#94a3b8' : '#475569',
-                font: { family: 'Inter', size: 10 },
-                callback: function(value) {
-                  const monthIndex = monthStarts.indexOf(value);
-                  return monthIndex !== -1 ? monthNames[monthIndex] : '';
-                },
-                stepSize: 1 
+                display: false
               }
             },
             y: {
