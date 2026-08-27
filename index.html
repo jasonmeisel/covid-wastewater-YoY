@@ -520,6 +520,14 @@
     let plantsCatalog = []; // Full list of plants loaded from plants.json
     let currentPlantMetadata = null;
 
+    // Default option values — defaults are omitted from the URL until modified
+    const DEFAULTS = {
+      plant: "b9c02d34",
+      smoothing: 3,
+      scale: 'linear',
+      season: 'none'
+    };
+
     let rawSamples = [];
     let processedData = {}; // Grouped by year: { '2023': [ { x: 120, y: 15.5, originalDate: '2023-04-30', actualYear: 2023 } ], ... }
     let yearsList = [];
@@ -537,6 +545,62 @@
 
     // Chart.js Instance
     let chartInstance = null;
+
+    // --- URL state synchronization ---
+    // Syncs current option values into the URL query params.
+    // Only non-default values are appended; defaults are removed from the URL.
+    function syncStateToUrl() {
+      const params = new URLSearchParams();
+
+      if (currentPlantUid !== DEFAULTS.plant) params.set('plant', currentPlantUid);
+      if (smoothingWindow !== DEFAULTS.smoothing) params.set('smoothing', String(smoothingWindow));
+      if (yScaleType !== DEFAULTS.scale) params.set('scale', yScaleType);
+      if (activeSeasonHighlight !== DEFAULTS.season) params.set('season', activeSeasonHighlight);
+
+      // Years: only include hidden years (default = all visible)
+      const hiddenYears = yearsList.filter(yr => !visibleYears[yr]).map(String);
+      if (hiddenYears.length > 0) params.set('hide', hiddenYears.join(','));
+
+      const query = params.toString();
+      const newUrl = `${window.location.pathname}${query ? '?' + query : ''}${window.location.hash}`;
+      window.history.replaceState(null, '', newUrl);
+    }
+
+    // Reads option values from the URL query params (called once at startup)
+    function applyStateFromUrl() {
+      const params = new URLSearchParams(window.location.search);
+
+      const plantParam = params.get('plant');
+      if (plantParam) currentPlantUid = plantParam;
+
+      const smoothingParam = parseInt(params.get('smoothing'), 10);
+      if ([1, 3, 7, 14].includes(smoothingParam)) smoothingWindow = smoothingParam;
+
+      const scaleParam = params.get('scale');
+      if (scaleParam === 'linear' || scaleParam === 'logarithmic') yScaleType = scaleParam;
+
+      const seasonParam = params.get('season');
+      if (seasonParam === 'none' || seasonParam === 'winter' || seasonParam === 'summer') activeSeasonHighlight = seasonParam;
+
+      // Hidden years from URL
+      const hideParam = params.get('hide');
+      if (hideParam) {
+        hideParam.split(',').forEach(yrStr => {
+          const yr = parseInt(yrStr, 10);
+          if (!isNaN(yr)) visibleYears[yr] = false;
+        });
+      }
+    }
+
+    // Reflect current state values into the option select elements
+    function syncControlsFromState() {
+      const scaleSel = document.getElementById('scaleTypeSelector');
+      if (scaleSel) scaleSel.value = yScaleType;
+      const smoothSel = document.getElementById('smoothingSelector');
+      if (smoothSel) smoothSel.value = String(smoothingWindow);
+      const seasonSel = document.getElementById('seasonHighlightSelector');
+      if (seasonSel) seasonSel.value = activeSeasonHighlight;
+    }
 
     // Color definitions for individual years
     const YEAR_COLOR_PALETTE = {
@@ -673,6 +737,7 @@
       if (resultsContainer) resultsContainer.classList.add('hidden');
 
       updatePlantMetadataUI();
+      syncStateToUrl();
       
       // Load selected plant JSON
       loadRawData(true);
@@ -1256,6 +1321,7 @@
     // Toggle year chart visibility
     function toggleYearVisibility(year) {
       visibleYears[year] = !visibleYears[year];
+      syncStateToUrl();
       updateCustomLegendUI();
       initYoYChart();
     }
@@ -1265,6 +1331,7 @@
       yearsList.forEach(yr => {
         visibleYears[yr] = visible;
       });
+      syncStateToUrl();
       updateCustomLegendUI();
       initYoYChart();
     }
@@ -1272,18 +1339,21 @@
     // Update scale mode (Linear/Logarithmic) dynamically
     function updateYScale(value) {
       yScaleType = value;
+      syncStateToUrl();
       initYoYChart();
     }
 
     // Update charts based on smoothing level changed
     function updateSmoothing(value) {
       smoothingWindow = parseInt(value, 10);
+      syncStateToUrl();
       initYoYChart();
     }
 
     // Update selected seasonal highlight
     function updateSeasonHighlight(value) {
       activeSeasonHighlight = value;
+      syncStateToUrl();
       initYoYChart();
     }
 
@@ -1658,6 +1728,9 @@
 
     // Bootstrapped entry point
     window.onload = function() {
+      // Apply any options carried in the URL query params
+      applyStateFromUrl();
+      syncControlsFromState();
       // Load plants catalog first
       loadPlantsCatalog();
       // Fetch default plant dataset
