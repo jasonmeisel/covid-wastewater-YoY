@@ -600,9 +600,14 @@
     }
 
     async function loadCountyCovidData() {
+      const url = './pmc-current.json';
+
       try {
-        const response = await fetch('/api/pmc-current');
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const response = await fetch(url);
+        if (!response.ok) {
+          console.warn('Could not load PMC19 county COVID data.');
+          return;
+        }
 
         const data = await response.json();
         countyCovidDataByFips = new Map(
