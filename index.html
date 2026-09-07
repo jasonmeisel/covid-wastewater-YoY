@@ -481,6 +481,7 @@
     let currentPlantUid = "b9c02d34"; // Default plant UID
     let plantsCatalog = []; // Full list of plants loaded from plants.json
     let currentPlantMetadata = null;
+    let selectedPlantUids = [currentPlantUid];
 
     // Default option values — defaults are omitted from the URL until modified
     const DEFAULTS = {
@@ -513,7 +514,8 @@
     function syncStateToUrl() {
       const params = new URLSearchParams();
 
-      if (currentPlantUid !== DEFAULTS.plant) params.set('plant', currentPlantUid);
+      const selectedPlants = selectedPlantUids.join(',');
+      if (selectedPlants !== DEFAULTS.plant) params.set('plant', selectedPlants);
       if (smoothingWindow !== DEFAULTS.smoothing) params.set('smoothing', String(smoothingWindow));
       if (yScaleType !== DEFAULTS.scale) params.set('scale', yScaleType);
 
@@ -531,7 +533,10 @@
       const params = new URLSearchParams(window.location.search);
 
       const plantParam = params.get('plant');
-      if (plantParam) currentPlantUid = plantParam;
+      if (plantParam) {
+        selectedPlantUids = plantParam.split(',').filter(Boolean);
+        currentPlantUid = selectedPlantUids[0] || DEFAULTS.plant;
+      }
 
       const smoothingParam = parseInt(params.get('smoothing'), 10);
       if ([1, 3, 7, 14].includes(smoothingParam)) smoothingWindow = smoothingParam;
@@ -790,7 +795,7 @@
 
       matches.slice(0, 30).forEach(plant => {
         const item = document.createElement('div');
-        const isSelected = plant.uid === currentPlantUid;
+        const isSelected = selectedPlantUids.includes(plant.uid);
         const isInactive = isPlantInactive(plant);
         const distance = distanceMap.get(plant);
         const distanceStr = distance !== undefined
@@ -821,14 +826,27 @@
           </div>
         `;
 
-        item.onclick = () => selectPlant(plant);
+        item.onclick = event => selectPlant(plant, event.shiftKey);
         container.appendChild(item);
       });
     }
 
-    function selectPlant(plant) {
-      currentPlantUid = plant.uid;
-      currentPlantMetadata = plant;
+    function selectPlant(plant, addToSelection = false) {
+      if (addToSelection) {
+        selectedPlantUids = selectedPlantUids.includes(plant.uid)
+          ? selectedPlantUids.filter(uid => uid !== plant.uid)
+          : [...selectedPlantUids, plant.uid];
+
+        if (selectedPlantUids.length === 0) {
+          selectedPlantUids = [plant.uid];
+        }
+      } else {
+        selectedPlantUids = [plant.uid];
+      }
+      currentPlantUid = selectedPlantUids.includes(plant.uid)
+        ? plant.uid
+        : selectedPlantUids[0];
+      currentPlantMetadata = plantsCatalog.find(candidate => candidate.uid === currentPlantUid) || plant;
       
       // Update inputs & hide dropdown
       const searchInput = document.getElementById('plantSearchInput');
@@ -842,7 +860,7 @@
       updatePlantMetadataUI();
       syncStateToUrl();
       
-      // Load selected plant JSON
+      // Load all selected plant JSON files into a single analysis dataset.
       loadRawData(true);
     }
 
@@ -860,6 +878,22 @@
 
       if (gcsInput) gcsInput.value = plantUrl;
       if (downloadLink) downloadLink.href = plantUrl;
+
+      const selectedPlants = plantsCatalog.filter(plant => selectedPlantUids.includes(plant.uid));
+      if (selectedPlants.length > 1) {
+        const names = selectedPlants
+          .map(plant => plant.name || plant.site_name || plant.uid)
+          .join(' + ');
+        const population = selectedPlants.reduce((sum, plant) => sum + (Number(plant.sewershed_pop) || 0), 0);
+
+        if (titleDisplay) {
+          titleDisplay.innerHTML = `<span class="shrink-0">Combined: ${names}</span>`;
+        }
+        if (popBadge) {
+          popBadge.innerText = `Pop: ${population.toLocaleString()}`;
+        }
+        return;
+      }
 
       if (currentPlantMetadata) {
         const name = currentPlantMetadata.name || currentPlantMetadata.site_name || currentPlantUid;
@@ -1919,7 +1953,9 @@
 
     // Primary Async Loader fetching from GCS Target URL
     async function loadRawData(forceShowSimBanner = false, overrideUrl = null) {
-      const targetUrl = overrideUrl || `https://storage.googleapis.com/wastewater-dev-data/json/${currentPlantUid}.json`;
+      const targetUrls = overrideUrl
+        ? [overrideUrl]
+        : selectedPlantUids.map(uid => `https://storage.googleapis.com/wastewater-dev-data/json/${uid}.json`);
       const loader = document.getElementById('chartLoader');
       const spinner = document.getElementById('loaderSpinner');
       const errorPanel = document.getElementById('loaderErrorPanel');
@@ -1929,14 +1965,20 @@
       if (errorPanel) errorPanel.classList.add('hidden');
 
       try {
-        const response = await fetch(targetUrl);
-        if (!response.ok) {
-          throw new Error(`HTTP network response failed: ${response.status}`);
-        }
-        const data = await response.json();
-        
-        if (data && data.samples) {
-          rawSamples = data.samples;
+        const datasets = await Promise.all(targetUrls.map(async targetUrl => {
+          const response = await fetch(targetUrl);
+          if (!response.ok) {
+            throw new Error(`HTTP network response failed: ${response.status}`);
+          }
+          const data = await response.json();
+          if (!data || !Array.isArray(data.samples)) {
+            throw new Error("Invalid schema structure found within target JSON database.");
+          }
+          return data.samples;
+        }));
+
+        if (datasets.length > 0) {
+          rawSamples = datasets.flat();
           processAndDisplayData();
           const banner = document.getElementById('statusBanner');
           if (banner) banner.classList.add('hidden');
