@@ -107,9 +107,6 @@
           </div>
           <h1 class="text-2xl font-extrabold tracking-tight bg-gradient-to-r from-teal-400 to-indigo-400 bg-clip-text text-transparent whitespace-nowrap overflow-hidden text-ellipsis">COVID Wastewater YoY</h1>
         </div>
-        <p class="text-xs md:text-sm text-slate-400 mt-1">
-          Tracking SARS-CoV-2 (N Gene) copies normalized by Pepper Mild Mottle Virus (PMMoV) — scaled (<span class="font-semibold text-teal-400">× 1,000,000</span>)
-        </p>
       </div>
 
     </header>
@@ -214,27 +211,26 @@
       <div class="bg-slate-800/50 backdrop-blur-md border border-slate-700/60 rounded-xl p-3 md:p-4 hover:border-slate-600/40 transition-all-300 flex flex-col justify-between">
         
         <!-- Chart Controls Header -->
-        <div class="flex flex-row flex-wrap items-center justify-between gap-3 mb-3">
-          <div>
-            <h2 class="text-lg font-bold text-slate-100">Year-over-Year Seasonal Overlay</h2>
-            <p class="text-xs text-slate-400 mt-0.5">Aligned to standard non-leap calendar year (Jan 1 – Dec 31)</p>
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-2 mb-2">
+          <div class="min-w-0">
+            <h2 class="text-base md:text-lg font-bold text-slate-100 whitespace-nowrap overflow-hidden text-ellipsis">Year-over-Year Seasonal Overlay</h2>
           </div>
           
           <!-- Select Controls -->
-          <div class="flex flex-wrap items-center gap-2">
+          <div class="grid grid-cols-2 gap-2 md:flex md:items-center" aria-label="Chart controls">
             <!-- Y Scale Mode Selector (New Feature) -->
-            <div class="flex flex-col">
-              <label class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Y-Axis Scale</label>
-              <select id="scaleTypeSelector" onchange="updateYScale(this.value)" class="bg-slate-700/80 border border-slate-600 text-slate-200 text-xs rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-brand-500 cursor-pointer">
+            <div class="flex min-w-0 flex-col gap-0.5 md:flex-row md:items-center md:gap-1.5">
+              <label class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider whitespace-nowrap">Y-Axis Scale</label>
+              <select id="scaleTypeSelector" onchange="updateYScale(this.value)" class="w-full min-w-0 bg-slate-700/80 border border-slate-600 text-slate-200 text-xs rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-brand-500 cursor-pointer md:w-auto">
                 <option value="linear" selected>Linear Scale</option>
                 <option value="logarithmic">Logarithmic</option>
               </select>
             </div>
 
             <!-- Smoothing Option -->
-            <div class="flex flex-col">
-              <label class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Smoothing Filter</label>
-              <select id="smoothingSelector" onchange="updateSmoothing(this.value)" class="bg-slate-700/80 border border-slate-600 text-slate-200 text-xs rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-brand-500 cursor-pointer">
+            <div class="flex min-w-0 flex-col gap-0.5 md:flex-row md:items-center md:gap-1.5">
+              <label class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider whitespace-nowrap">Smoothing Filter</label>
+              <select id="smoothingSelector" onchange="updateSmoothing(this.value)" class="w-full min-w-0 bg-slate-700/80 border border-slate-600 text-slate-200 text-xs rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-brand-500 cursor-pointer md:w-auto">
                 <option value="1">No Smoothing (Raw)</option>
                 <option value="3" selected>3-Point Moving Average</option>
                 <option value="7">7-Point Moving Average</option>
@@ -242,29 +238,23 @@
               </select>
             </div>
 
-            <!-- Seasonal Highlights -->
-            <div class="flex flex-col">
-              <label class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Highlight Season</label>
-              <select id="seasonHighlightSelector" onchange="updateSeasonHighlight(this.value)" class="bg-slate-700/80 border border-slate-600 text-slate-200 text-xs rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-brand-500 cursor-pointer">
-                <option value="none" selected>None</option>
-                <option value="winter">Winter Waves (Nov - Feb)</option>
-                <option value="summer">Summer Fluctuations (Jul - Aug)</option>
-              </select>
-            </div>
           </div>
         </div>
 
-        <div id="graphPercentileSummary" class="flex flex-wrap items-center gap-2 text-[11px] text-slate-400 mb-3">
-          <span id="currentValuePercentile" class="font-semibold text-slate-100">Current value percentile: --</span>
-          <span id="currentValueEmoji" class="text-xl">—</span>
-          <span id="medianValueBadge">Median: --</span>
-          <span id="quartileValueBadge">Q1: --, Q3: --</span>
-          <span id="percentile5Badge">5th: --</span>
-          <span id="percentile1Badge">1st: --</span>
-          <button onclick="resetChartZoom()" class="ml-auto inline-flex items-center gap-1.5 bg-slate-700/70 hover:bg-slate-700 text-slate-200 px-2.5 py-1.5 rounded-lg border border-slate-600/80 hover:border-slate-500 text-[10px] font-semibold uppercase tracking-wider transition-all-300">
+        <div id="graphPercentileSummary" class="flex flex-col gap-1.5 text-[11px] text-slate-400 mb-3">
+          <div class="flex items-center gap-2">
+            <span id="currentValuePercentile" class="font-semibold text-slate-100">Current value percentile: --</span>
+            <span id="currentValueEmoji" class="text-xl">—</span>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <span id="medianValueBadge">Median: --</span>
+            <span id="quartileValueBadge">Q1: --, Q3: --</span>
+            <span id="percentile5Badge">5th: --</span>
+            <span id="percentile1Badge">1st: --</span>
+            <button onclick="resetChartZoom()" class="ml-auto inline-flex items-center justify-center bg-slate-700/70 hover:bg-slate-700 text-slate-200 p-1.5 rounded-lg border border-slate-600/80 hover:border-slate-500 transition-all-300" title="Reset zoom" aria-label="Reset zoom">
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 12V4m0 0h8M4 4l5 5m11-1V20m0 0h-8m8 0l-5-5"></path></svg>
-            Reset Zoom
-          </button>
+            </button>
+          </div>
         </div>
 
         <!-- Dynamic Skeletal Loader / Chart Canvas Container -->
@@ -497,7 +487,6 @@
       plant: "b9c02d34",
       smoothing: 3,
       scale: 'linear',
-      season: 'none'
     };
 
     let rawSamples = [];
@@ -506,7 +495,6 @@
     let visibleYears = {}; // { '2023': true, '2024': true, ... }
     let smoothingWindow = 3; // Standard 3-point moving average
     let yScaleType = 'linear'; // 'linear' or 'logarithmic'
-    let activeSeasonHighlight = 'none'; // 'none' | 'winter' | 'summer'
     let inactivePlantUids = new Set();
     
     // UI Table States
@@ -528,7 +516,6 @@
       if (currentPlantUid !== DEFAULTS.plant) params.set('plant', currentPlantUid);
       if (smoothingWindow !== DEFAULTS.smoothing) params.set('smoothing', String(smoothingWindow));
       if (yScaleType !== DEFAULTS.scale) params.set('scale', yScaleType);
-      if (activeSeasonHighlight !== DEFAULTS.season) params.set('season', activeSeasonHighlight);
 
       // Years: only include hidden years (default = all visible)
       const hiddenYears = yearsList.filter(yr => !visibleYears[yr]).map(String);
@@ -552,9 +539,6 @@
       const scaleParam = params.get('scale');
       if (scaleParam === 'linear' || scaleParam === 'logarithmic') yScaleType = scaleParam;
 
-      const seasonParam = params.get('season');
-      if (seasonParam === 'none' || seasonParam === 'winter' || seasonParam === 'summer') activeSeasonHighlight = seasonParam;
-
       // Hidden years from URL
       const hideParam = params.get('hide');
       if (hideParam) {
@@ -571,8 +555,6 @@
       if (scaleSel) scaleSel.value = yScaleType;
       const smoothSel = document.getElementById('smoothingSelector');
       if (smoothSel) smoothSel.value = String(smoothingWindow);
-      const seasonSel = document.getElementById('seasonHighlightSelector');
-      if (seasonSel) seasonSel.value = activeSeasonHighlight;
     }
 
     // Color definitions for individual years
@@ -1156,34 +1138,6 @@
       const monthStarts = [1, 32, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335];
       const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-      // Setup custom plugin to draw seasonal highlights behind trendlines
-      const seasonalHighlightPlugin = {
-        id: 'seasonalHighlight',
-        beforeDraw: (chart) => {
-          if (!activeSeasonHighlight || activeSeasonHighlight === 'none') return;
-          
-          const { ctx, chartArea: { top, bottom, left, right }, scales: { x } } = chart;
-          ctx.save();
-          
-          const drawSeasonBand = (startIdx, endIdx, color) => {
-            const xStart = x.getPixelForValue(startIdx);
-            const xEnd = x.getPixelForValue(endIdx);
-            ctx.fillStyle = color;
-            ctx.fillRect(Math.max(xStart, left), top, Math.min(xEnd - xStart, right - xStart), bottom - top);
-          };
-
-          if (activeSeasonHighlight === 'winter') {
-            const winterColor = isDark ? 'rgba(56, 189, 248, 0.04)' : 'rgba(14, 165, 233, 0.05)';
-            drawSeasonBand(1, 60, winterColor);    // Jan-Feb
-            drawSeasonBand(305, 365, winterColor);  // Nov-Dec
-          } else if (activeSeasonHighlight === 'summer') {
-            const summerColor = isDark ? 'rgba(234, 179, 8, 0.04)' : 'rgba(202, 138, 4, 0.05)';
-            drawSeasonBand(182, 244, summerColor);  // Jul-Aug
-          }
-          ctx.restore();
-        }
-      };
-
       const monthLabelPlugin = {
         id: 'monthLabels',
         afterDraw: (chart) => {
@@ -1399,7 +1353,7 @@
         data: {
           datasets: chartDatasets
         },
-        plugins: [seasonalHighlightPlugin, monthLabelPlugin, percentileLinesPlugin],
+        plugins: [monthLabelPlugin, percentileLinesPlugin],
         options: {
           responsive: true,
           maintainAspectRatio: false,
@@ -1629,13 +1583,6 @@
     // Update charts based on smoothing level changed
     function updateSmoothing(value) {
       smoothingWindow = parseInt(value, 10);
-      syncStateToUrl();
-      initYoYChart();
-    }
-
-    // Update selected seasonal highlight
-    function updateSeasonHighlight(value) {
-      activeSeasonHighlight = value;
       syncStateToUrl();
       initYoYChart();
     }
