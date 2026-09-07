@@ -1307,9 +1307,49 @@
         startMin: 1,
         startMax: 365
       };
+      const activePointers = new Map();
+      const pinchState = {
+        active: false,
+        startDistance: 0,
+        startCenterData: 0,
+        startRange: 364
+      };
+
+      const getPointerDistance = () => {
+        const [firstPointer, secondPointer] = [...activePointers.values()];
+        return Math.hypot(secondPointer.clientX - firstPointer.clientX, secondPointer.clientY - firstPointer.clientY);
+      };
+
+      const getPointerCenterX = () => {
+        const [firstPointer, secondPointer] = [...activePointers.values()];
+        return (firstPointer.clientX + secondPointer.clientX) / 2;
+      };
+
+      const startPinch = () => {
+        const xScale = chartInstance?.scales?.x;
+        const rect = canvasElement.getBoundingClientRect();
+        if (!xScale || rect.width === 0 || activePointers.size < 2) return;
+
+        const centerRatio = Math.min(Math.max((getPointerCenterX() - rect.left) / rect.width, 0), 1);
+        pinchState.active = true;
+        pinchState.startDistance = getPointerDistance();
+        pinchState.startRange = xScale.max - xScale.min;
+        pinchState.startCenterData = xScale.min + pinchState.startRange * centerRatio;
+        customPanState.active = false;
+        canvasElement.style.cursor = 'grabbing';
+      };
 
       const handleCustomPanStart = (event) => {
         if (event.button !== 0) return;
+        activePointers.set(event.pointerId, event);
+        canvasElement.setPointerCapture(event.pointerId);
+
+        if (activePointers.size === 2) {
+          startPinch();
+          return;
+        }
+        if (activePointers.size > 1) return;
+
         const xScale = chartInstance?.scales?.x;
         if (!xScale) return;
         if (xScale.min <= 1 && xScale.max >= 365) return;
@@ -1323,7 +1363,25 @@
       };
 
       const handleCustomPanMove = (event) => {
-        if (!customPanState.active || !chartInstance?.scales?.x) return;
+        if (!activePointers.has(event.pointerId) || !chartInstance?.scales?.x) return;
+        activePointers.set(event.pointerId, event);
+
+        if (pinchState.active && activePointers.size >= 2) {
+          const rect = canvasElement.getBoundingClientRect();
+          const distance = getPointerDistance();
+          if (rect.width === 0 || distance === 0 || pinchState.startDistance === 0) return;
+
+          const scale = distance / pinchState.startDistance;
+          const nextRange = pinchState.startRange / scale;
+          const centerRatio = Math.min(Math.max((getPointerCenterX() - rect.left) / rect.width, 0), 1);
+          applyXAxisRange(
+            pinchState.startCenterData - nextRange * centerRatio,
+            pinchState.startCenterData + nextRange * (1 - centerRatio)
+          );
+          return;
+        }
+
+        if (!customPanState.active) return;
         const xScale = chartInstance.scales.x;
         const chartArea = chartInstance.chartArea;
         if (!chartArea) return;
@@ -1344,8 +1402,14 @@
         chartInstance.update('none');
       };
 
-      const handleCustomPanEnd = () => {
-        if (!customPanState.active) return;
+      const handleCustomPanEnd = (event) => {
+        activePointers.delete(event.pointerId);
+        if (activePointers.size < 2) pinchState.active = false;
+
+        if (!customPanState.active) {
+          canvasElement.style.cursor = 'grab';
+          return;
+        }
         customPanState.active = false;
         canvasElement.style.cursor = 'grab';
       };
@@ -1377,6 +1441,7 @@
       canvasElement.onpointerdown = handleCustomPanStart;
       canvasElement.onpointermove = handleCustomPanMove;
       canvasElement.onpointerup = handleCustomPanEnd;
+      canvasElement.onpointercancel = handleCustomPanEnd;
       canvasElement.onpointerleave = handleCustomPanEnd;
       canvasElement.style.cursor = 'grab';
       canvasElement.style.touchAction = 'none';
