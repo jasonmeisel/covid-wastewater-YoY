@@ -147,6 +147,8 @@
       </div>
     </div>
 
+    <div id="countyCovidSummary" class="hidden my-0 bg-transparent px-0 py-0 text-center text-[11px] leading-relaxed text-slate-300"></div>
+
     <!-- Metrics Grid -->
     <div class="grid grid-cols-4 gap-1 md:gap-1.5" id="metricsGrid">
       <!-- Latest Sample Card -->
@@ -482,6 +484,7 @@
     let plantsCatalog = []; // Full list of plants loaded from plants.json
     let currentPlantMetadata = null;
     let selectedPlantUids = [currentPlantUid];
+    let countyCovidDataByFips = new Map();
 
     // Default option values — defaults are omitted from the URL until modified
     const DEFAULTS = {
@@ -582,6 +585,7 @@
           if (data && data.plants) {
             plantsCatalog = data.plants;
             updatePlantMetadataUI();
+            updateCountyCovidSummary();
             await loadPlantActivityStatus();
           }
         }
@@ -593,6 +597,48 @@
     function isPlantInactive(plant) {
       if (!plant || !plant.uid) return false;
       return inactivePlantUids.has(String(plant.uid));
+    }
+
+    async function loadCountyCovidData() {
+      try {
+        const response = await fetch('/api/pmc-current');
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+        const data = await response.json();
+        countyCovidDataByFips = new Map(
+          (data.rows || []).map(county => [String(county.fips).padStart(5, '0'), county])
+        );
+        updateCountyCovidSummary();
+      } catch (err) {
+        console.warn('Could not load PMC19 county COVID data.', err);
+      }
+    }
+
+    function updateCountyCovidSummary() {
+      const summary = document.getElementById('countyCovidSummary');
+      const countyFips = currentPlantMetadata?.counties_served?.[0];
+      if (!summary || !countyFips || countyCovidDataByFips.size === 0) {
+        if (summary) summary.classList.add('hidden');
+        return;
+      }
+
+      const countyData = countyCovidDataByFips.get(String(countyFips).padStart(5, '0'));
+      if (!countyData || !countyData.hover) {
+        summary.classList.add('hidden');
+        return;
+      }
+
+      const hoverHtml = String(countyData.hover || '');
+      const estimateMatch = hoverHtml.match(/An estimated .*?are actively infectious with SARS-CoV-2\./i);
+      const estimateText = estimateMatch ? estimateMatch[0].replace(/^An estimated\s+/i, '').replace(/SARS-CoV-2\./i, 'COVID').replace(/<br\s*\/?\s*>/gi, ' ').replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim() : '';
+
+      if (!estimateText) {
+        summary.classList.add('hidden');
+        return;
+      }
+
+      summary.innerHTML = `<a href="https://pmc19.com" target="_blank" rel="noopener noreferrer" class="inline-block text-slate-200 hover:text-teal-300 underline decoration-teal-400/70 underline-offset-2">${estimateText}</a>`;
+      summary.classList.remove('hidden');
     }
 
     async function loadPlantActivityStatus() {
@@ -858,6 +904,7 @@
       if (resultsContainer) resultsContainer.classList.add('hidden');
 
       updatePlantMetadataUI();
+      updateCountyCovidSummary();
       syncStateToUrl();
       
       // Load all selected plant JSON files into a single analysis dataset.
@@ -2072,6 +2119,7 @@
       syncControlsFromState();
       // Load plants catalog first
       loadPlantsCatalog();
+      loadCountyCovidData();
       // Fetch default plant dataset
       loadRawData(true);
     };
