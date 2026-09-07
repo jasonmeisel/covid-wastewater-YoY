@@ -1359,7 +1359,7 @@
         const px = Math.min(Math.max(event.clientX - rect.left, 0), rect.width);
         const ratio = rect.width ? px / rect.width : 0.5;
         const range = xScale.max - xScale.min;
-        const nextRange = event.deltaY < 0 ? range * 0.8 : range * 1.2;
+        const nextRange = event.deltaY < 0 ? range * 0.96 : range * 1.04;
 
         if (nextRange >= 364) {
           applyXAxisRange(1, 365);
@@ -1396,6 +1396,7 @@
               bottom: 24
             }
           },
+          events: ['click'],
           interaction: {
             mode: 'index',
             intersect: false,
@@ -1460,6 +1461,7 @@
               lines: percentileLines
             },
             tooltip: {
+              enabled: false,
               backgroundColor: isDark ? '#0f172a' : '#ffffff',
               titleColor: isDark ? '#f8fafc' : '#0f172a',
               bodyColor: isDark ? '#cbd5e1' : '#334155',
