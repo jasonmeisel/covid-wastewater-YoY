@@ -1280,10 +1280,12 @@
       };
 
       // Generate clean dataset arrays ready for ChartJS insertion
+      const latestYear = yearsList.reduce((max, yr) => Math.max(max, Number(yr)), 0);
       const chartDatasets = yearsList.map(yr => {
         const colorConf = YEAR_COLOR_PALETTE[yr] || YEAR_COLOR_PALETTE.default;
         const originalSeries = processedData[yr] || [];
         const finalSeries = computeMovingAverage(originalSeries, smoothingWindow);
+        const isLatestYear = Number(yr) === latestYear;
 
         return {
           label: String(yr),
@@ -1292,8 +1294,17 @@
           backgroundColor: colorConf.fill,
           borderWidth: 2.5,
           tension: 0.35,
-          pointRadius: 2.5,
-          pointHoverRadius: 6,
+          pointRadius: (context) => {
+            const isLatestSample = isLatestYear && context.dataIndex === context.dataset.data.length - 1;
+            return isLatestSample ? 4 : 0;
+          },
+          pointHoverRadius: (context) => {
+            const isLatestSample = isLatestYear && context.dataIndex === context.dataset.data.length - 1;
+            return isLatestSample ? 6 : 0;
+          },
+          pointBackgroundColor: colorConf.stroke,
+          pointBorderColor: colorConf.stroke,
+          pointBorderWidth: 1,
           fill: false,
           spanGaps: true,
           hidden: !visibleYears[yr]
