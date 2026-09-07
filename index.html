@@ -93,19 +93,19 @@
   </div>
 
   <!-- Main Container -->
-  <div class="flex-grow flex flex-col max-w-7xl w-full mx-auto p-4 md:p-6 gap-6">
+  <div class="flex-grow flex flex-col max-w-7xl w-full mx-auto p-3 md:p-5 gap-3">
     
     <!-- Header -->
-    <header class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-slate-800 pb-5">
-      <div>
-        <div class="flex items-center gap-2">
-          <div class="bg-gradient-to-tr from-brand-500 to-indigo-500 p-2 rounded-lg text-white shadow-lg shadow-brand-500/20">
+    <header class="flex flex-row items-start justify-between gap-4">
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center gap-2 min-w-0">
+          <div class="bg-gradient-to-tr from-brand-500 to-indigo-500 p-2 rounded-lg text-white shadow-lg shadow-brand-500/20 flex-shrink-0">
             <!-- Biohazard/Water stylized icon -->
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path>
             </svg>
           </div>
-          <h1 class="text-2xl font-extrabold tracking-tight bg-gradient-to-r from-teal-400 to-indigo-400 bg-clip-text text-transparent">Wastewater PMMoV YoY Dashboard</h1>
+          <h1 class="text-2xl font-extrabold tracking-tight bg-gradient-to-r from-teal-400 to-indigo-400 bg-clip-text text-transparent whitespace-nowrap overflow-hidden text-ellipsis">COVID Wastewater YoY</h1>
         </div>
         <p class="text-xs md:text-sm text-slate-400 mt-1">
           Tracking SARS-CoV-2 (N Gene) copies normalized by Pepper Mild Mottle Virus (PMMoV) — scaled (<span class="font-semibold text-teal-400">× 1,000,000</span>)
@@ -113,34 +113,35 @@
       </div>
 
       <!-- Action Utilities -->
-      <div class="flex items-center gap-3 self-stretch md:self-auto justify-between md:justify-end">
-        <button onclick="toggleTheme()" class="p-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 hover:border-slate-600 transition-all-300" title="Toggle Light/Dark Theme">
+      <div class="flex flex-col items-stretch gap-2 shrink-0">
+        <button onclick="toggleTheme()" class="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 hover:border-slate-600 transition-all-300" title="Toggle Light/Dark Theme" aria-label="Toggle theme">
           <!-- Sun Icon -->
-          <svg id="themeSun" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg id="themeSun" class="w-4 h-4 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m12.728 0l-.707-.707M6.343 6.343l-.707-.707M12 8a4 4 0 100 8 4 4 0 000-8z"></path>
           </svg>
           <!-- Moon Icon -->
-          <svg id="themeMoon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg id="themeMoon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
           </svg>
         </button>
 
-        <button onclick="toggleSetupModal()" class="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-100 px-4 py-2 rounded-lg border border-slate-700 hover:border-slate-600 font-semibold text-sm transition-all-300">
-          <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <button onclick="toggleSetupModal()" class="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-100 border border-slate-700 hover:border-slate-600 transition-all-300" aria-label="Data management">
+          <svg class="w-4 h-4 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
           </svg>
-          <span>Data Management</span>
         </button>
 
-        <button onclick="loadRawData(true)" class="bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white px-4 py-2 rounded-lg font-semibold text-sm shadow-md shadow-teal-500/10 hover:shadow-teal-500/20 active:scale-95 transition-all-300">
-          Sync Live GCS
+        <button onclick="loadRawData(true)" class="p-1.5 rounded-lg bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white shadow-md shadow-teal-500/10 hover:shadow-teal-500/20 active:scale-95 transition-all-300" aria-label="Sync live GCS">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 12a8 8 0 0113.292-5.708M20 12a8 8 0 01-13.292 5.708M12 8v4l2.5 2.5"></path>
+          </svg>
         </button>
       </div>
     </header>
 
     <!-- Treatment Plant Selector Search Bar -->
-    <div class="relative z-30 bg-slate-800/40 border border-slate-700/60 rounded-xl p-3 md:p-4 backdrop-blur-md flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+    <div class="relative z-30 bg-slate-800/40 border border-slate-700/60 rounded-xl p-2.5 md:p-3 backdrop-blur-md flex flex-row items-center justify-between gap-3">
       <div class="flex items-center gap-3">
         <div class="p-2 bg-teal-500/10 text-teal-400 rounded-lg">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
@@ -157,7 +158,7 @@
       </div>
 
       <!-- Fuzzy Search Dropdown Input -->
-      <div class="relative flex-grow max-w-md z-40" id="plantSearchContainer">
+      <div class="relative flex-grow max-w-sm z-40" id="plantSearchContainer">
         <div class="relative">
           <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-400">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
@@ -176,68 +177,58 @@
     </div>
 
     <!-- Metrics Grid -->
-    <div class="grid grid-cols-4 gap-2 md:gap-3" id="metricsGrid">
+    <div class="grid grid-cols-4 gap-1 md:gap-1.5" id="metricsGrid">
       <!-- Latest Sample Card -->
-      <div class="bg-slate-800/50 backdrop-blur-md border border-slate-700/60 p-3 md:p-4 rounded-xl flex flex-col justify-between hover:border-slate-600/80 transition-all-300 group">
-        <div class="flex items-center justify-between mb-2">
-          <span class="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Latest Sample</span>
-          <span class="p-1.5 rounded-lg bg-teal-500/10 text-teal-400">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-          </span>
+      <div class="bg-slate-900/10 border border-slate-700/20 rounded-md px-2 py-1.5 flex flex-col justify-between min-h-[92px] hover:border-slate-600/30 transition-all-300 group">
+        <div class="flex items-center justify-between gap-1 mb-1">
+          <span class="text-[6px] font-semibold uppercase tracking-[0.18em] text-slate-400 leading-none whitespace-nowrap">Latest Sample</span>
+          <svg class="w-3 h-3 text-teal-300 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
         </div>
         <div>
-          <h3 class="text-2xl md:text-3xl font-extrabold text-slate-100 group-hover:text-teal-400 transition" id="metricLatestVal">- -</h3>
-          <p class="text-[11px] text-slate-400 mt-1 flex items-center justify-between gap-2">
+          <h3 class="text-[22px] md:text-[24px] font-extrabold leading-none tracking-[-0.06em] text-slate-100 group-hover:text-teal-400 transition" id="metricLatestVal">- -</h3>
+          <div class="mt-1 flex items-end justify-between gap-2 text-[8px] text-slate-400 leading-none">
             <span id="metricLatestDate">No data</span>
             <span class="font-semibold text-rose-400" id="metricLatestChange"></span>
-          </p>
+          </div>
         </div>
       </div>
 
       <!-- Historical Peak Card -->
-      <div class="bg-slate-800/50 backdrop-blur-md border border-slate-700/60 p-3 md:p-4 rounded-xl flex flex-col justify-between hover:border-slate-600/80 transition-all-300 group">
-        <div class="flex items-center justify-between mb-2">
-          <span class="text-[10px] font-semibold uppercase tracking-wider text-slate-400">All-Time Peak</span>
-          <span class="p-1.5 rounded-lg bg-indigo-500/10 text-indigo-400">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
-          </span>
+      <div class="bg-slate-900/10 border border-slate-700/20 rounded-md px-2 py-1.5 flex flex-col justify-between min-h-[92px] hover:border-slate-600/30 transition-all-300 group">
+        <div class="flex items-center justify-between gap-1 mb-1">
+          <span class="text-[6px] font-semibold uppercase tracking-[0.18em] text-slate-400 leading-none whitespace-nowrap">All-Time Peak</span>
+          <svg class="w-3 h-3 text-indigo-300 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
         </div>
         <div>
-          <h3 class="text-2xl md:text-3xl font-extrabold text-slate-100 group-hover:text-indigo-400 transition" id="metricPeakVal">- -</h3>
-          <p class="text-[11px] text-slate-400 mt-1 flex items-center justify-between gap-2">
+          <h3 class="text-[22px] md:text-[24px] font-extrabold leading-none tracking-[-0.06em] text-slate-100 group-hover:text-indigo-400 transition" id="metricPeakVal">- -</h3>
+          <div class="mt-1 flex items-end justify-between gap-2 text-[8px] text-slate-400 leading-none">
             <span id="metricPeakDate">No data</span>
-            <span class="text-[10px] bg-indigo-500/20 text-indigo-300 px-1.5 py-0.5 rounded font-mono" id="metricPeakYear">N/A</span>
-          </p>
+            <span class="text-[7px] bg-indigo-500/20 text-indigo-300 px-1 py-0.5 rounded font-mono" id="metricPeakYear">N/A</span>
+          </div>
         </div>
       </div>
 
       <!-- All-Time Mean Card -->
-      <div class="bg-slate-800/50 backdrop-blur-md border border-slate-700/60 p-3 md:p-4 rounded-xl flex flex-col justify-between hover:border-slate-600/80 transition-all-300 group">
-        <div class="flex items-center justify-between mb-2">
-          <span class="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Overall Mean</span>
-          <span class="p-1.5 rounded-lg bg-pink-500/10 text-pink-400">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
-          </span>
+      <div class="bg-slate-900/10 border border-slate-700/20 rounded-md px-2 py-1.5 flex flex-col justify-between min-h-[92px] hover:border-slate-600/30 transition-all-300 group">
+        <div class="flex items-center justify-between gap-1 mb-1">
+          <span class="text-[6px] font-semibold uppercase tracking-[0.18em] text-slate-400 leading-none whitespace-nowrap">Overall Mean</span>
+          <svg class="w-3 h-3 text-pink-300 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
         </div>
         <div>
-          <h3 class="text-2xl md:text-3xl font-extrabold text-slate-100 group-hover:text-pink-400 transition" id="metricMeanVal">- -</h3>
-          <p class="text-[11px] text-slate-400 mt-1" id="metricMeanDesc">Across all years</p>
+          <h3 class="text-[22px] md:text-[24px] font-extrabold leading-none tracking-[-0.06em] text-slate-100 group-hover:text-pink-400 transition" id="metricMeanVal">- -</h3>
+          <p class="mt-1 text-[8px] text-slate-400 leading-none" id="metricMeanDesc">Across all years</p>
         </div>
       </div>
 
       <!-- Dataset Completeness Card -->
-      <div class="bg-slate-800/50 backdrop-blur-md border border-slate-700/60 p-3 md:p-4 rounded-xl flex flex-col justify-between hover:border-slate-600/80 transition-all-300 group">
-        <div class="flex items-center justify-between mb-2">
-          <span class="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Reporting Range</span>
-          <span class="p-1.5 rounded-lg bg-amber-500/10 text-amber-400">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-          </span>
+      <div class="bg-slate-900/10 border border-slate-700/20 rounded-md px-2 py-1.5 flex flex-col justify-between min-h-[92px] hover:border-slate-600/30 transition-all-300 group">
+        <div class="flex items-center justify-between gap-1 mb-1">
+          <span class="text-[6px] font-semibold uppercase tracking-[0.18em] text-slate-400 leading-none whitespace-nowrap">Reporting Range</span>
+          <svg class="w-3 h-3 text-amber-300 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
         </div>
         <div>
-          <h3 class="text-2xl md:text-3xl font-extrabold text-slate-100 group-hover:text-amber-400 transition" id="metricSpanYears">0 Years</h3>
-          <p class="text-[11px] text-slate-400 mt-1 flex items-center justify-between">
-            <span id="metricSamplesCount">0 total samples</span>
-          </p>
+          <h3 class="text-[22px] md:text-[24px] font-extrabold leading-none tracking-[-0.06em] text-slate-100 group-hover:text-amber-400 transition" id="metricSpanYears">0 Years</h3>
+          <p class="mt-1 text-[8px] text-slate-400 leading-none" id="metricSamplesCount">0 total samples</p>
         </div>
       </div>
     </div>
@@ -246,10 +237,10 @@
     <div class="grid grid-cols-1 gap-6">
       
       <!-- Primary Interactive Chart Card -->
-      <div class="bg-slate-800/50 backdrop-blur-md border border-slate-700/60 rounded-xl p-5 md:p-6 hover:border-slate-600/40 transition-all-300 flex flex-col justify-between">
+      <div class="bg-slate-800/50 backdrop-blur-md border border-slate-700/60 rounded-xl p-3 md:p-4 hover:border-slate-600/40 transition-all-300 flex flex-col justify-between">
         
         <!-- Chart Controls Header -->
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-700/50 pb-4 mb-4">
+        <div class="flex flex-row flex-wrap items-center justify-between gap-3 mb-3">
           <div>
             <h2 class="text-lg font-bold text-slate-100">Year-over-Year Seasonal Overlay</h2>
             <p class="text-xs text-slate-400 mt-0.5">Aligned to standard non-leap calendar year (Jan 1 – Dec 31)</p>
@@ -289,7 +280,7 @@
           </div>
         </div>
 
-        <div id="graphPercentileSummary" class="flex flex-wrap items-center gap-3 text-[11px] text-slate-400 mb-4">
+        <div id="graphPercentileSummary" class="flex flex-wrap items-center gap-2 text-[11px] text-slate-400 mb-3">
           <span id="currentValuePercentile" class="font-semibold text-slate-100">Current value percentile: --</span>
           <span id="currentValueEmoji" class="text-xl">—</span>
           <span id="medianValueBadge">Median: --</span>
@@ -342,7 +333,7 @@
         </div>
 
         <!-- Custom HTML Interactive Legend -->
-        <div class="mt-5 border-t border-slate-700/50 pt-4">
+        <div class="mt-3 pt-3">
           <div class="flex items-center justify-between mb-2">
             <h4 class="text-xs font-semibold uppercase tracking-wider text-slate-400">Select Years to Compare</h4>
             <div class="flex gap-2">
@@ -359,17 +350,17 @@
       </div>
 
       <!-- Bottom Insights Panel: Developer toolbox + Yearly statistics -->
-      <div class="flex flex-col gap-6">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
         
         <!-- Developer Toolbox -->
-        <div class="bg-slate-800/50 backdrop-blur-md border border-slate-700/60 rounded-xl p-5 hover:border-slate-600/40 transition-all-300">
+        <div class="bg-slate-800/50 backdrop-blur-md border border-slate-700/60 rounded-xl p-3 hover:border-slate-600/40 transition-all-300">
           <button onclick="togglePanel('developerToolContent','developerToolIcon')" class="w-full flex items-center justify-between gap-3 text-left">
             <div>
               <h3 class="text-sm font-bold text-slate-100 uppercase tracking-wide">Developer Toolbox</h3>
             </div>
             <span id="developerToolIcon" class="text-teal-400 font-bold text-xl leading-none">+</span>
           </button>
-          <div id="developerToolContent" class="hidden mt-4 grid grid-cols-2 gap-3">
+          <div id="developerToolContent" class="hidden mt-3 grid grid-cols-2 gap-2">
             <button onclick="downloadCSV()" class="flex items-center justify-center gap-2 bg-slate-700/60 hover:bg-slate-700 text-slate-200 py-2.5 px-3 rounded-lg border border-slate-600/80 hover:border-slate-500 font-semibold text-xs transition-all-300">
               <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
               <span>Export CSV</span>
@@ -382,7 +373,7 @@
         </div>
 
         <!-- Year Insights Summary Card -->
-        <div class="bg-slate-800/50 backdrop-blur-md border border-slate-700/60 rounded-xl p-5 hover:border-slate-600/40 transition-all-300">
+        <div class="bg-slate-800/50 backdrop-blur-md border border-slate-700/60 rounded-xl p-3 hover:border-slate-600/40 transition-all-300">
           <button onclick="togglePanel('yearlyStatsSummary','yearlyStatsIcon')" class="w-full flex items-center justify-between gap-3 text-left">
             <div>
               <h3 class="text-lg font-bold text-slate-100 mb-0.5">Yearly Statistics Breakdown</h3>
@@ -390,7 +381,7 @@
             </div>
             <span id="yearlyStatsIcon" class="text-teal-400 font-bold text-xl leading-none">+</span>
           </button>
-          <div id="yearlyStatsSummary" class="hidden mt-4 space-y-4 max-h-[340px] overflow-y-auto pr-1">
+          <div id="yearlyStatsSummary" class="hidden mt-3 space-y-3 max-h-[340px] overflow-y-auto pr-1">
             <div class="text-sm text-slate-400 py-4 text-center">Awaiting original data file...</div>
           </div>
         </div>
@@ -400,9 +391,9 @@
     </div>
 
     <!-- Data Explorer Table Card -->
-    <div class="bg-slate-800/50 backdrop-blur-md border border-slate-700/60 rounded-xl p-5 hover:border-slate-600/40 transition-all-300">
+    <div class="bg-slate-800/50 backdrop-blur-md border border-slate-700/60 rounded-xl p-3 hover:border-slate-600/40 transition-all-300">
       
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-700 pb-4 mb-4">
+      <div class="flex flex-row items-center justify-between gap-3 mb-3">
         <div>
           <button onclick="togglePanel('dataExplorerContent','dataExplorerIcon')" class="flex items-center gap-2 text-left">
             <h3 class="text-lg font-bold text-slate-100">Data Table Explorer</h3>
@@ -447,7 +438,7 @@
       </div>
 
       <!-- Pagination Controls -->
-      <div class="flex items-center justify-between border-t border-slate-700 mt-4 pt-4 text-xs text-slate-400">
+      <div class="flex items-center justify-between mt-3 pt-3 text-xs text-slate-400">
         <span id="tablePaginationInfo">Showing 0 to 0 of 0 entries</span>
         <div class="flex items-center gap-2">
           <button onclick="changePage(-1)" id="prevPageBtn" class="bg-slate-700 hover:bg-slate-600 disabled:opacity-50 disabled:hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded font-semibold transition" disabled>
@@ -509,8 +500,8 @@
   </div>
 
   <!-- Footer -->
-  <footer class="mt-auto border-t border-slate-800 py-4 text-center text-xs text-slate-500">
-    <div class="flex flex-col sm:flex-row items-center justify-between max-w-7xl w-full mx-auto px-6 gap-2">
+  <footer class="mt-auto py-2 text-center text-xs text-slate-500">
+    <div class="flex flex-col sm:flex-row items-center justify-between max-w-7xl w-full mx-auto px-4 gap-1">
       <p>&copy; 2026 Wastewater Health Research Analytics. Genuine Epidemiological telemetry assessment.</p>
       <p class="flex items-center gap-1">
         <span>Powered by Chart.js & Tailwind CSS</span>
