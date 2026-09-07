@@ -176,18 +176,18 @@
     </div>
 
     <!-- Metrics Grid -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" id="metricsGrid">
+    <div class="grid grid-cols-4 gap-2 md:gap-3" id="metricsGrid">
       <!-- Latest Sample Card -->
-      <div class="bg-slate-800/50 backdrop-blur-md border border-slate-700/60 p-5 rounded-xl flex flex-col justify-between hover:border-slate-600/80 transition-all-300 group">
-        <div class="flex items-center justify-between mb-3">
-          <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Latest Sample</span>
+      <div class="bg-slate-800/50 backdrop-blur-md border border-slate-700/60 p-3 md:p-4 rounded-xl flex flex-col justify-between hover:border-slate-600/80 transition-all-300 group">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Latest Sample</span>
           <span class="p-1.5 rounded-lg bg-teal-500/10 text-teal-400">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
           </span>
         </div>
         <div>
-          <h3 class="text-3xl font-extrabold text-slate-100 group-hover:text-teal-400 transition" id="metricLatestVal">- -</h3>
-          <p class="text-xs text-slate-400 mt-1 flex items-center justify-between">
+          <h3 class="text-2xl md:text-3xl font-extrabold text-slate-100 group-hover:text-teal-400 transition" id="metricLatestVal">- -</h3>
+          <p class="text-[11px] text-slate-400 mt-1 flex items-center justify-between gap-2">
             <span id="metricLatestDate">No data</span>
             <span class="font-semibold text-rose-400" id="metricLatestChange"></span>
           </p>
@@ -195,16 +195,16 @@
       </div>
 
       <!-- Historical Peak Card -->
-      <div class="bg-slate-800/50 backdrop-blur-md border border-slate-700/60 p-5 rounded-xl flex flex-col justify-between hover:border-slate-600/80 transition-all-300 group">
-        <div class="flex items-center justify-between mb-3">
-          <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">All-Time Peak</span>
+      <div class="bg-slate-800/50 backdrop-blur-md border border-slate-700/60 p-3 md:p-4 rounded-xl flex flex-col justify-between hover:border-slate-600/80 transition-all-300 group">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-[10px] font-semibold uppercase tracking-wider text-slate-400">All-Time Peak</span>
           <span class="p-1.5 rounded-lg bg-indigo-500/10 text-indigo-400">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
           </span>
         </div>
         <div>
-          <h3 class="text-3xl font-extrabold text-slate-100 group-hover:text-indigo-400 transition" id="metricPeakVal">- -</h3>
-          <p class="text-xs text-slate-400 mt-1 flex items-center justify-between">
+          <h3 class="text-2xl md:text-3xl font-extrabold text-slate-100 group-hover:text-indigo-400 transition" id="metricPeakVal">- -</h3>
+          <p class="text-[11px] text-slate-400 mt-1 flex items-center justify-between gap-2">
             <span id="metricPeakDate">No data</span>
             <span class="text-[10px] bg-indigo-500/20 text-indigo-300 px-1.5 py-0.5 rounded font-mono" id="metricPeakYear">N/A</span>
           </p>
@@ -212,30 +212,30 @@
       </div>
 
       <!-- All-Time Mean Card -->
-      <div class="bg-slate-800/50 backdrop-blur-md border border-slate-700/60 p-5 rounded-xl flex flex-col justify-between hover:border-slate-600/80 transition-all-300 group">
-        <div class="flex items-center justify-between mb-3">
-          <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Overall Mean</span>
+      <div class="bg-slate-800/50 backdrop-blur-md border border-slate-700/60 p-3 md:p-4 rounded-xl flex flex-col justify-between hover:border-slate-600/80 transition-all-300 group">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Overall Mean</span>
           <span class="p-1.5 rounded-lg bg-pink-500/10 text-pink-400">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
           </span>
         </div>
         <div>
-          <h3 class="text-3xl font-extrabold text-slate-100 group-hover:text-pink-400 transition" id="metricMeanVal">- -</h3>
-          <p class="text-xs text-slate-400 mt-1" id="metricMeanDesc">Across all years</p>
+          <h3 class="text-2xl md:text-3xl font-extrabold text-slate-100 group-hover:text-pink-400 transition" id="metricMeanVal">- -</h3>
+          <p class="text-[11px] text-slate-400 mt-1" id="metricMeanDesc">Across all years</p>
         </div>
       </div>
 
       <!-- Dataset Completeness Card -->
-      <div class="bg-slate-800/50 backdrop-blur-md border border-slate-700/60 p-5 rounded-xl flex flex-col justify-between hover:border-slate-600/80 transition-all-300 group">
-        <div class="flex items-center justify-between mb-3">
-          <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Reporting Range</span>
+      <div class="bg-slate-800/50 backdrop-blur-md border border-slate-700/60 p-3 md:p-4 rounded-xl flex flex-col justify-between hover:border-slate-600/80 transition-all-300 group">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Reporting Range</span>
           <span class="p-1.5 rounded-lg bg-amber-500/10 text-amber-400">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
           </span>
         </div>
         <div>
-          <h3 class="text-3xl font-extrabold text-slate-100 group-hover:text-amber-400 transition" id="metricSpanYears">0 Years</h3>
-          <p class="text-xs text-slate-400 mt-1 flex items-center justify-between">
+          <h3 class="text-2xl md:text-3xl font-extrabold text-slate-100 group-hover:text-amber-400 transition" id="metricSpanYears">0 Years</h3>
+          <p class="text-[11px] text-slate-400 mt-1 flex items-center justify-between">
             <span id="metricSamplesCount">0 total samples</span>
           </p>
         </div>
