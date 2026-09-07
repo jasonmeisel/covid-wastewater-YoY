@@ -289,13 +289,17 @@
           </div>
         </div>
 
-        <div id="graphPercentileSummary" class="flex flex-wrap gap-3 items-center text-[11px] text-slate-400 mb-4">
+        <div id="graphPercentileSummary" class="flex flex-wrap items-center gap-3 text-[11px] text-slate-400 mb-4">
           <span id="currentValuePercentile" class="font-semibold text-slate-100">Current value percentile: --</span>
           <span id="currentValueEmoji" class="text-xl">—</span>
           <span id="medianValueBadge">Median: --</span>
           <span id="quartileValueBadge">Q1: --, Q3: --</span>
           <span id="percentile5Badge">5th: --</span>
           <span id="percentile1Badge">1st: --</span>
+          <button onclick="resetChartZoom()" class="ml-auto inline-flex items-center gap-1.5 bg-slate-700/70 hover:bg-slate-700 text-slate-200 px-2.5 py-1.5 rounded-lg border border-slate-600/80 hover:border-slate-500 text-[10px] font-semibold uppercase tracking-wider transition-all-300">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 12V4m0 0h8M4 4l5 5m11-1V20m0 0h-8m8 0l-5-5"></path></svg>
+            Reset Zoom
+          </button>
         </div>
 
         <!-- Dynamic Skeletal Loader / Chart Canvas Container -->
@@ -1311,6 +1315,119 @@
         };
       });
 
+      const clampXAxisRange = (min, max) => {
+        const fullMin = 1;
+        const fullMax = 365;
+        if (min <= fullMin && max >= fullMax) {
+          return { min: fullMin, max: fullMax };
+        }
+
+        let nextMin = Math.max(fullMin, Math.min(fullMax - 1, min));
+        let nextMax = Math.max(nextMin + 1, Math.min(fullMax, max));
+
+        if (nextMax - nextMin >= fullMax - fullMin) {
+          return { min: fullMin, max: fullMax };
+        }
+
+        return { min: nextMin, max: nextMax };
+      };
+
+      const applyXAxisRange = (min, max) => {
+        const xScale = chartInstance?.scales?.x;
+        if (!xScale) return;
+
+        const clamped = clampXAxisRange(min, max);
+        xScale.min = clamped.min;
+        xScale.max = clamped.max;
+
+        if (chartInstance.options?.scales?.x) {
+          chartInstance.options.scales.x.min = clamped.min;
+          chartInstance.options.scales.x.max = clamped.max;
+        }
+
+        chartInstance.update('none');
+      };
+
+      const customPanState = {
+        active: false,
+        startX: 0,
+        startMin: 1,
+        startMax: 365
+      };
+
+      const handleCustomPanStart = (event) => {
+        if (event.button !== 0) return;
+        const xScale = chartInstance?.scales?.x;
+        if (!xScale) return;
+        if (xScale.min <= 1 && xScale.max >= 365) return;
+
+        event.preventDefault();
+        customPanState.active = true;
+        customPanState.startX = event.clientX;
+        customPanState.startMin = xScale.min;
+        customPanState.startMax = xScale.max;
+        canvasElement.style.cursor = 'grabbing';
+      };
+
+      const handleCustomPanMove = (event) => {
+        if (!customPanState.active || !chartInstance?.scales?.x) return;
+        const xScale = chartInstance.scales.x;
+        const chartArea = chartInstance.chartArea;
+        if (!chartArea) return;
+
+        const deltaPixels = event.clientX - customPanState.startX;
+        const deltaUnits = (deltaPixels / Math.max(1, chartArea.right - chartArea.left)) * (customPanState.startMax - customPanState.startMin);
+
+        const newMin = customPanState.startMin - deltaUnits;
+        const newMax = customPanState.startMax - deltaUnits;
+        const nextRange = clampXAxisRange(newMin, newMax);
+
+        xScale.min = nextRange.min;
+        xScale.max = nextRange.max;
+        if (chartInstance.options?.scales?.x) {
+          chartInstance.options.scales.x.min = nextRange.min;
+          chartInstance.options.scales.x.max = nextRange.max;
+        }
+        chartInstance.update('none');
+      };
+
+      const handleCustomPanEnd = () => {
+        if (!customPanState.active) return;
+        customPanState.active = false;
+        canvasElement.style.cursor = 'grab';
+      };
+
+      const handleWheelZoom = (event) => {
+        const xScale = chartInstance?.scales?.x;
+        if (!xScale) return;
+
+        event.preventDefault();
+        const rect = canvasElement.getBoundingClientRect();
+        const px = Math.min(Math.max(event.clientX - rect.left, 0), rect.width);
+        const ratio = rect.width ? px / rect.width : 0.5;
+        const range = xScale.max - xScale.min;
+        const nextRange = event.deltaY < 0 ? range * 0.8 : range * 1.2;
+
+        if (nextRange >= 364) {
+          applyXAxisRange(1, 365);
+          return;
+        }
+
+        const center = xScale.min + range * ratio;
+        const newMin = center - nextRange * ratio;
+        const newMax = center + nextRange * (1 - ratio);
+
+        applyXAxisRange(newMin, newMax);
+      };
+
+      canvasElement.onwheel = handleWheelZoom;
+      canvasElement.onpointerdown = handleCustomPanStart;
+      canvasElement.onpointermove = handleCustomPanMove;
+      canvasElement.onpointerup = handleCustomPanEnd;
+      canvasElement.onpointerleave = handleCustomPanEnd;
+      canvasElement.style.cursor = 'grab';
+      canvasElement.style.touchAction = 'none';
+
       // Chart configuration options with dynamic responsive scales and NO background grid lines
       chartInstance = new Chart(ctx, {
         type: 'line',
@@ -1417,6 +1534,23 @@
           }
         }
       });
+    }
+
+    function resetChartZoom() {
+      if (!chartInstance) return;
+      if (typeof chartInstance.resetZoom === 'function') {
+        chartInstance.resetZoom();
+        return;
+      }
+
+      const xScale = chartInstance.scales?.x;
+      if (xScale) {
+        xScale.options.min = 1;
+        xScale.options.max = 365;
+        xScale.min = 1;
+        xScale.max = 365;
+        chartInstance.update();
+      }
     }
 
     // Render interactive HTML legend items with live analytics values
