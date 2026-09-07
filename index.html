@@ -220,7 +220,7 @@
           <div class="grid grid-cols-2 gap-2 md:flex md:items-center" aria-label="Chart controls">
             <!-- Y Scale Mode Selector (New Feature) -->
             <div class="flex min-w-0 flex-col gap-0.5 md:flex-row md:items-center md:gap-1.5">
-              <label class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider whitespace-nowrap">Y-Axis Scale</label>
+              <!-- <label class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider whitespace-nowrap">Y-Axis Scale</label> -->
               <select id="scaleTypeSelector" onchange="updateYScale(this.value)" class="w-full min-w-0 bg-slate-700/80 border border-slate-600 text-slate-200 text-xs rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-brand-500 cursor-pointer md:w-auto">
                 <option value="linear" selected>Linear Scale</option>
                 <option value="logarithmic">Logarithmic</option>
@@ -229,7 +229,7 @@
 
             <!-- Smoothing Option -->
             <div class="flex min-w-0 flex-col gap-0.5 md:flex-row md:items-center md:gap-1.5">
-              <label class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider whitespace-nowrap">Smoothing Filter</label>
+              <!-- <label class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider whitespace-nowrap">Smoothing Filter</label> -->
               <select id="smoothingSelector" onchange="updateSmoothing(this.value)" class="w-full min-w-0 bg-slate-700/80 border border-slate-600 text-slate-200 text-xs rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-brand-500 cursor-pointer md:w-auto">
                 <option value="1">No Smoothing (Raw)</option>
                 <option value="3" selected>3-Point Moving Average</option>
