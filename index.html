@@ -1348,7 +1348,7 @@
           data: finalSeries,
           borderColor: colorConf.stroke,
           backgroundColor: colorConf.fill,
-          borderWidth: 2.5,
+          borderWidth: isLatestYear ? 2.5 : 1,
           tension: 0.35,
           pointRadius: (context) => {
             const isLatestSample = isLatestYear && context.dataIndex === context.dataset.data.length - 1;
