@@ -204,7 +204,7 @@
       </div>
     </div>
 
-    <div id="countyCovidSummary" class="hidden my-0 bg-transparent px-0 py-0 text-center text-[11px] leading-relaxed text-slate-300"></div>
+    <div id="countyCovidSummary" class="hidden bg-slate-800/50 backdrop-blur-md border border-slate-700/60 rounded-xl px-3 py-2.5 hover:border-slate-600/40 transition-all-300 text-left text-[11px] leading-relaxed text-slate-300"></div>
 
     <!-- Main Section: Chart with Expanded Bottom Insights Panel -->
     <div class="grid grid-cols-1 gap-6">
@@ -485,6 +485,7 @@
     let currentPlantMetadata = null;
     let selectedPlantUids = [currentPlantUid];
     let countyCovidDataByFips = new Map();
+    let countyCovidMetadata = null;
 
     // Default option values — defaults are omitted from the URL until modified
     const DEFAULTS = {
@@ -610,6 +611,7 @@
         }
 
         const data = await response.json();
+        countyCovidMetadata = data;
         countyCovidDataByFips = new Map(
           (data.rows || []).map(county => [String(county.fips).padStart(5, '0'), county])
         );
@@ -628,7 +630,7 @@
       }
 
       const countyData = countyCovidDataByFips.get(String(countyFips).padStart(5, '0'));
-      if (!countyData || !countyData.hover) {
+      if (!countyData || !countyData.hover || !countyCovidMetadata?.date_last_updated) {
         summary.classList.add('hidden');
         return;
       }
@@ -642,7 +644,13 @@
         return;
       }
 
-      summary.innerHTML = `<a href="https://pmc19.com" target="_blank" rel="noopener noreferrer" class="inline-block text-slate-200 hover:text-teal-300 underline decoration-teal-400/70 underline-offset-2">${estimateText}</a>`;
+      const countyLabel = countyData.place_label || `${countyData.county_name || 'Unknown'} County${countyData.state ? `, ${countyData.state}` : ''}`;
+      const updatedDate = new Date(`${countyCovidMetadata.date_last_updated}T00:00:00`).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+      const weekEnding = countyCovidMetadata.week_end
+        ? new Date(`${countyCovidMetadata.week_end}T00:00:00`).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
+        : null;
+      const contextText = `County: ${countyLabel} | Updated: ${updatedDate}${weekEnding ? ` | Week ending: ${weekEnding}` : ''}`;
+      summary.innerHTML = `<div class="flex items-center gap-2"><span class="flex h-6 w-6 items-center justify-center rounded-md bg-teal-500/10 text-teal-400"><svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5-2V6l5 2m0 12l6-2m-6 2V8m6 10l5 2V6l-5-2m0 14V8m0 0L9 6"></path></svg></span><div><div class="flex items-center gap-2"><div class="text-[10px] font-bold uppercase tracking-wider text-slate-300">PMC19.com Data</div><a href="https://pmc19.com" target="_blank" rel="noopener noreferrer" class="inline-flex shrink-0 items-center gap-1 text-[10px] font-semibold text-teal-400 hover:text-teal-300 hover:underline">View source <span aria-hidden="true">↗</span></a></div><div class="text-[10px] text-slate-500">${contextText}</div></div></div><div><a href="https://pmc19.com" target="_blank" rel="noopener noreferrer" class="text-slate-200 hover:text-teal-300 underline decoration-teal-400/70 underline-offset-2">${estimateText}</a></div>`;
       summary.classList.remove('hidden');
     }
 
