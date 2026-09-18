@@ -21,9 +21,10 @@ jobs:
       - name: Run PMC fetch
         run: ./fetch-pmc.sh
 
+      - name: Prepare commit message
+        run: printf 'COMMIT_MESSAGE=Update PMC19 county COVID data (%s)\n' "$(date -u +'%Y-%m-%d')" >> "$GITHUB_ENV"
+
       - name: Commit updated PMC data
-        env:
-          COMMIT_MESSAGE: "Update PMC19 county COVID data ($(date -u +'%Y-%m-%d'))"
         uses: stefanzweifel/git-auto-commit-action@v7
         with:
           commit_message: ${{ env.COMMIT_MESSAGE }}
