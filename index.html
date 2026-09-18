@@ -487,6 +487,7 @@
     let countyCovidDataByFips = new Map();
     let countyCovidMetadata = null;
     let selectedZipCountyFips = null;
+    let selectedPmcZip = null;
 
     // Default option values — defaults are omitted from the URL until modified
     const DEFAULTS = {
@@ -521,6 +522,7 @@
 
       const selectedPlants = selectedPlantUids.join(',');
       if (selectedPlants !== DEFAULTS.plant) params.set('plant', selectedPlants);
+      if (selectedPmcZip) params.set('pmcZip', selectedPmcZip);
       if (smoothingWindow !== DEFAULTS.smoothing) params.set('smoothing', String(smoothingWindow));
       if (yScaleType !== DEFAULTS.scale) params.set('scale', yScaleType);
 
@@ -541,6 +543,11 @@
       if (plantParam) {
         selectedPlantUids = plantParam.split(',').filter(Boolean);
         currentPlantUid = selectedPlantUids[0] || DEFAULTS.plant;
+      }
+
+      const pmcZipParam = params.get('pmcZip');
+      if (pmcZipParam && isZipCodeQuery(pmcZipParam)) {
+        selectedPmcZip = pmcZipParam.slice(0, 5);
       }
 
       const smoothingParam = parseInt(params.get('smoothing'), 10);
@@ -618,7 +625,9 @@
         );
         updateCountyCovidSummary();
         const searchInput = document.getElementById('plantSearchInput');
-        if (searchInput && isZipCodeQuery(searchInput.value)) {
+        if (selectedPmcZip) {
+          resolveZipToCountyFips(selectedPmcZip);
+        } else if (searchInput && isZipCodeQuery(searchInput.value)) {
           resolveZipToCountyFips(searchInput.value);
         }
       } catch (err) {
@@ -655,12 +664,14 @@
         ? new Date(`${countyCovidMetadata.week_end}T00:00:00`).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
         : null;
       const contextText = `County: ${countyLabel} | Updated: ${updatedDate}${weekEnding ? ` | Week ending: ${weekEnding}` : ''}`;
-      summary.innerHTML = `<div class="flex items-center gap-2"><span class="flex h-6 w-6 items-center justify-center rounded-md bg-teal-500/10 text-teal-400"><svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5-2V6l5 2m0 12l6-2m-6 2V8m6 10l5 2V6l-5-2m0 14V8m0 0L9 6"></path></svg></span><div><div class="flex items-center gap-2"><div class="text-[10px] font-bold uppercase tracking-wider text-slate-300">PMC19.com Data</div><a href="https://pmc19.com" target="_blank" rel="noopener noreferrer" class="inline-flex shrink-0 items-center gap-1 text-[10px] font-semibold text-teal-400 hover:text-teal-300 hover:underline">View source <span aria-hidden="true">↗</span></a></div><div class="text-[10px] text-slate-500">${contextText}</div></div></div><div class="text-center"><a href="https://pmc19.com" target="_blank" rel="noopener noreferrer" class="text-slate-200 hover:text-teal-300 underline decoration-teal-400/70 underline-offset-2">${estimateText}</a></div>`;
+      const zipLabel = selectedPmcZip ? `ZIP: ${selectedPmcZip}` : '';
+      summary.innerHTML = `<div class="flex flex-nowrap items-center justify-between gap-3"><div class="min-w-0"><div class="flex items-center gap-2 whitespace-nowrap"><div class="text-[10px] font-bold uppercase tracking-wider text-slate-300">PMC19.com Data</div><a href="https://pmc19.com" target="_blank" rel="noopener noreferrer" class="inline-flex shrink-0 items-center gap-1 text-[10px] font-semibold text-teal-400 hover:text-teal-300 hover:underline">View source <span aria-hidden="true">↗</span></a><span class="text-[10px] font-mono text-slate-400">${zipLabel}</span></div><div class="text-[10px] text-slate-500">${contextText}</div></div></div><div class="text-center"><a href="https://pmc19.com" target="_blank" rel="noopener noreferrer" class="text-slate-200 hover:text-teal-300 underline decoration-teal-400/70 underline-offset-2">${estimateText}</a></div>`;
       summary.classList.remove('hidden');
     }
 
     function resolveZipToCountyFips(zip) {
       const normalizedZip = zip.trim().slice(0, 5);
+      selectedPmcZip = normalizedZip;
       const zipcodes = window.zipcodes;
       const zipInfo = zipcodes?.find?.(normalizedZip);
 
@@ -802,6 +813,8 @@
         resolveZipToCountyFips(val);
       } else {
         selectedZipCountyFips = null;
+        selectedPmcZip = null;
+        syncStateToUrl();
         updateCountyCovidSummary();
       }
       renderPlantSearchResults(val);
@@ -929,6 +942,7 @@
         resolveZipToCountyFips(selectedQuery);
       } else {
         selectedZipCountyFips = null;
+        selectedPmcZip = null;
       }
 
       if (addToSelection) {
