@@ -226,6 +226,7 @@
               <select id="scaleTypeSelector" onchange="updateYScale(this.value)" class="w-full min-w-0 bg-slate-700/80 border border-slate-600 text-slate-200 text-xs rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-brand-500 cursor-pointer md:w-auto">
                 <option value="linear" selected>Linear Scale</option>
                 <option value="logarithmic">Logarithmic</option>
+                <option value="percentile">Percentile Scale</option>
               </select>
             </div>
 
@@ -551,7 +552,7 @@
       if ([1, 3, 7, 14].includes(smoothingParam)) smoothingWindow = smoothingParam;
 
       const scaleParam = params.get('scale');
-      if (scaleParam === 'linear' || scaleParam === 'logarithmic') yScaleType = scaleParam;
+      if (scaleParam === 'linear' || scaleParam === 'logarithmic' || scaleParam === 'percentile') yScaleType = scaleParam;
 
       // Hidden years from URL
       const hideParam = params.get('hide');
@@ -1183,6 +1184,23 @@
       return values.sort((a, b) => a - b);
     }
 
+    // Return the inclusive percentile rank using binary search over sorted values.
+    function getInclusivePercentile(value, sortedValues) {
+      let lower = 0;
+      let upper = sortedValues.length;
+
+      while (lower < upper) {
+        const middle = Math.floor((lower + upper) / 2);
+        if (sortedValues[middle] <= value) {
+          lower = middle + 1;
+        } else {
+          upper = middle;
+        }
+      }
+
+      return sortedValues.length ? (lower / sortedValues.length) * 100 : null;
+    }
+
     function getLatestSampleValue() {
       const allPoints = [];
       Object.values(processedData).forEach(series => allPoints.push(...series));
@@ -1191,8 +1209,7 @@
       return allPoints[allPoints.length - 1].y;
     }
 
-    function computePercentileStats() {
-      const values = getVisibleSampleValues();
+    function computePercentileStats(values = getVisibleSampleValues()) {
       const currentValue = getLatestSampleValue();
       if (!values.length) {
         percentileStats = {
@@ -1308,8 +1325,11 @@
         chartInstance.destroy();
       }
 
-      const visibleStats = computePercentileStats();
+      const isPercentileScale = yScaleType === 'percentile';
+      const percentileValues = getVisibleSampleValues();
+      const visibleStats = computePercentileStats(percentileValues);
       updatePercentileSummaryUI();
+      const percentileLookup = value => getInclusivePercentile(value, percentileValues);
       const percentileLines = [
         { label: '25th', value: visibleStats.q1, color: 'rgba(16, 185, 129, 0.7)', dash: [4, 4] },
         { label: 'Median', value: visibleStats.median, color: 'rgba(14, 165, 233, 0.7)', dash: [4, 4] },
@@ -1352,11 +1372,18 @@
         const colorConf = YEAR_COLOR_PALETTE[yr] || YEAR_COLOR_PALETTE.default;
         const originalSeries = processedData[yr] || [];
         const finalSeries = computeMovingAverage(originalSeries, smoothingWindow);
+        const chartSeries = isPercentileScale
+          ? finalSeries.map(point => ({
+              ...point,
+              value: point.y,
+              y: percentileLookup(point.y)
+            }))
+          : finalSeries;
         const isLatestYear = Number(yr) === latestYear;
 
         return {
           label: String(yr),
-          data: finalSeries,
+          data: chartSeries,
           borderColor: colorConf.stroke,
           backgroundColor: colorConf.fill,
           borderWidth: isLatestYear ? 2.5 : 1,
@@ -1562,7 +1589,7 @@
         data: {
           datasets: chartDatasets
         },
-        plugins: [monthLabelPlugin, percentileLinesPlugin],
+        plugins: [monthLabelPlugin, ...(isPercentileScale ? [] : [percentileLinesPlugin])],
         options: {
           responsive: true,
           maintainAspectRatio: false,
@@ -1594,9 +1621,11 @@
               }
             },
             y: {
-              type: yScaleType, // Dynamic toggle between 'linear' and 'logarithmic'
-              min: yScaleType === 'linear' ? 0 : 0.1,
-              suggestedMin: yScaleType === 'linear' ? 0 : 0.1,
+              type: isPercentileScale ? 'linear' : yScaleType,
+              min: isPercentileScale ? 0 : yScaleType === 'linear' ? 0 : 0.1,
+              max: isPercentileScale ? 100 : undefined,
+              suggestedMin: isPercentileScale ? 0 : yScaleType === 'linear' ? 0 : 0.1,
+              suggestedMax: isPercentileScale ? 100 : undefined,
               grid: {
                 display: false, // REMOVED Y-AXIS GRID LINES
                 drawOnChartArea: false,
@@ -1609,6 +1638,9 @@
                 color: isDark ? '#94a3b8' : '#475569',
                 font: { family: 'Inter', size: 10 },
                 callback: (value) => {
+                  if (isPercentileScale) {
+                    return `${value}%`;
+                  }
                   if (yScaleType === 'logarithmic') {
                     // Filter down to cleaner scientific/base-10 markers if in log mode
                     const logVal = Math.log10(value);
@@ -1622,7 +1654,9 @@
               },
               title: {
                 display: true,
-                text: yScaleType === 'logarithmic' ? 'Scaled Ratio (× 1,000,000) [Log Scale]' : 'Scaled Ratio Value (× 1,000,000)',
+                text: isPercentileScale
+                  ? 'Percentile'
+                  : yScaleType === 'logarithmic' ? 'Scaled Ratio (× 1,000,000) [Log Scale]' : 'Scaled Ratio Value (× 1,000,000)',
                 color: isDark ? '#94a3b8' : '#475569',
                 font: { family: 'Inter', size: 11, weight: 'semibold' }
               }
@@ -1633,7 +1667,7 @@
               display: false // Using our premium custom interactive HTML legend instead
             },
             percentileLines: {
-              lines: percentileLines
+              lines: isPercentileScale ? [] : percentileLines
             },
             tooltip: {
               enabled: false,
@@ -1655,9 +1689,10 @@
                   return '';
                 },
                 label: function(context) {
-                  const originalY = context.raw.y;
+                  const originalY = context.raw.value ?? context.raw.y;
                   const labelYear = context.dataset.label;
-                  return ` ${labelYear}: ${originalY.toFixed(2)}`;
+                  const percentileLabel = isPercentileScale ? ` (${context.raw.y.toFixed(1)}th percentile)` : '';
+                  return ` ${labelYear}: ${originalY.toFixed(2)}${percentileLabel}`;
                 }
               }
             }
