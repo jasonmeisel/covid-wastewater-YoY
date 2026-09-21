@@ -216,6 +216,7 @@
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-2 mb-2">
           <div class="min-w-0">
             <h2 class="text-base md:text-lg font-bold text-slate-100 whitespace-nowrap overflow-hidden text-ellipsis">Year-over-Year Seasonal Overlay</h2>
+            <p class="mt-0.5 text-[10px] leading-relaxed text-slate-400">Daily SARS-CoV-2 levels normalized by PMMoV; each line is a calendar year aligned by day of year.</p>
           </div>
           
           <!-- Select Controls -->
@@ -244,6 +245,7 @@
           </div>
         </div>
 
+        <div id="chartTakeaway" class="mb-2 rounded-lg border border-teal-500/20 bg-teal-500/5 px-2.5 py-2 text-[11px] leading-relaxed text-slate-300">Latest normalized reading: awaiting data.</div>
         <div id="graphPercentileSummary" class="flex flex-col gap-1.5 text-[11px] text-slate-400 mb-3">
           <div class="flex items-center gap-2">
             <span id="currentValuePercentile" class="font-semibold text-slate-100">Current value percentile: --</span>
@@ -1201,12 +1203,20 @@
       return sortedValues.length ? (lower / sortedValues.length) * 100 : null;
     }
 
+    function getLatestSamplePoint() {
+      let latestPoint = null;
+      Object.values(processedData).forEach(series => {
+        series.forEach(point => {
+          if (!latestPoint || new Date(point.originalDate) > new Date(latestPoint.originalDate)) {
+            latestPoint = point;
+          }
+        });
+      });
+      return latestPoint;
+    }
+
     function getLatestSampleValue() {
-      const allPoints = [];
-      Object.values(processedData).forEach(series => allPoints.push(...series));
-      if (!allPoints.length) return null;
-      allPoints.sort((a, b) => new Date(a.originalDate) - new Date(b.originalDate));
-      return allPoints[allPoints.length - 1].y;
+      return getLatestSamplePoint()?.y ?? null;
     }
 
     function computePercentileStats(values = getVisibleSampleValues()) {
@@ -1285,6 +1295,29 @@
       if (p1Label) {
         p1Label.innerText = `1st: ${formatStat(percentileStats.p1)}`;
       }
+
+      updateChartTakeaway();
+    }
+
+    function updateChartTakeaway() {
+      const takeaway = document.getElementById('chartTakeaway');
+      const latestPoint = getLatestSamplePoint();
+      if (!takeaway || !latestPoint) return;
+
+      const latestYear = yearsList.reduce((max, year) => Math.max(max, Number(year)), 0);
+      const latestYearSeries = processedData[latestYear] || [];
+      const yearMean = latestYearSeries.length
+        ? latestYearSeries.reduce((sum, point) => sum + point.y, 0) / latestYearSeries.length
+        : null;
+      const percentileText = percentileStats.currentPercentile === null
+        ? ''
+        : ` — ${percentileStats.currentPercentile.toFixed(1)}th percentile of selected history`;
+      const meanText = yearMean && yearMean > 0
+        ? `; ${ (latestPoint.y / yearMean).toFixed(1) }× the ${latestYear} average`
+        : '';
+      const dateText = new Date(latestPoint.originalDate).toLocaleDateString(undefined, {month: 'short', day: 'numeric', year: 'numeric'});
+
+      takeaway.innerText = `Latest normalized reading: ${latestPoint.y.toFixed(1)} (${dateText})${percentileText}${meanText}.`;
     }
 
     // Build Chart JS configuration and inject into container
@@ -1380,24 +1413,27 @@
             }))
           : finalSeries;
         const isLatestYear = Number(yr) === latestYear;
+        const lineColor = isLatestYear
+          ? colorConf.stroke
+          : colorConf.stroke.replace(/,\s*1\)$/, ', 0.45)');
 
         return {
           label: String(yr),
           data: chartSeries,
-          borderColor: colorConf.stroke,
+          borderColor: lineColor,
           backgroundColor: colorConf.fill,
-          borderWidth: isLatestYear ? 2.5 : 1,
+          borderWidth: isLatestYear ? 3 : 1,
           pointRadius: (context) => {
             const isLatestSample = isLatestYear && context.dataIndex === context.dataset.data.length - 1;
-            return isLatestSample ? 4 : 0;
+            return isLatestSample ? 5 : 0;
           },
           pointHoverRadius: (context) => {
             const isLatestSample = isLatestYear && context.dataIndex === context.dataset.data.length - 1;
-            return isLatestSample ? 6 : 0;
+            return isLatestSample ? 7 : 0;
           },
-          pointBackgroundColor: colorConf.stroke,
-          pointBorderColor: colorConf.stroke,
-          pointBorderWidth: 1,
+          pointBackgroundColor: lineColor,
+          pointBorderColor: lineColor,
+          pointBorderWidth: isLatestYear ? 2 : 1,
           fill: false,
           spanGaps: true,
           hidden: !visibleYears[yr]
@@ -1655,7 +1691,7 @@
                 display: true,
                 text: isPercentileScale
                   ? 'Percentile'
-                  : yScaleType === 'logarithmic' ? 'Scaled Ratio (× 1,000,000) [Log Scale]' : 'Scaled Ratio Value (× 1,000,000)',
+                  : yScaleType === 'logarithmic' ? 'N Gene / PMMoV (× 1,000,000) [Log Scale]' : 'N Gene / PMMoV (× 1,000,000)',
                 color: isDark ? '#94a3b8' : '#475569',
                 font: { family: 'Inter', size: 11, weight: 'semibold' }
               }
@@ -1723,9 +1759,11 @@
       if (!container) return;
       container.innerHTML = '';
 
+      const latestYear = yearsList.reduce((max, year) => Math.max(max, Number(year)), 0);
       yearsList.forEach(yr => {
         const colorConf = YEAR_COLOR_PALETTE[yr] || YEAR_COLOR_PALETTE.default;
         const isChecked = visibleYears[yr];
+        const isLatestYear = Number(yr) === latestYear;
         const series = processedData[yr] || [];
         
         // Calculate dynamic basic statistics for each year series
@@ -1736,13 +1774,14 @@
           isChecked 
             ? 'bg-slate-800 text-slate-100 border-slate-600' 
             : 'bg-slate-900/30 text-slate-500 border-slate-800/80 hover:border-slate-700'
-        }`;
+        }${isLatestYear && isChecked ? ' ring-1 ring-rose-400/40' : ''}`;
         wrapper.onclick = () => toggleYearVisibility(yr);
 
         wrapper.innerHTML = `
           <span class="w-3 h-3 rounded-full ${colorConf.bg} shrink-0 block"></span>
           <div class="flex items-center gap-1.5">
             <span class="font-bold">${yr}</span>
+            ${isLatestYear ? '<span class="text-[9px] font-semibold uppercase tracking-wide text-rose-300">Latest</span>' : ''}
             <span class="text-[10px] text-slate-400 font-mono">(Avg: ${averageVal})</span>
           </div>
           <input type="checkbox" ${isChecked ? 'checked' : ''} class="w-3.5 h-3.5 accent-brand-500 ml-1 cursor-pointer pointer-events-none">
