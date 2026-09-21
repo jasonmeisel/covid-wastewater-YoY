@@ -1131,10 +1131,13 @@
     }
 
     // Dynamic moving average smoothing window logic
-    function computeMovingAverage(dataSeries, windowSize) {
+    function computeMovingAverage(dataSeries, windowSize, preserveLastPoint = false) {
       if (windowSize <= 1 || dataSeries.length <= 1) return dataSeries;
 
       return dataSeries.map((currentPoint, currentIdx, list) => {
+        // Keep only the current year's endpoint tied to the latest observed sample.
+        if (preserveLastPoint && currentIdx === list.length - 1) return currentPoint;
+
         let sum = 0;
         let count = 0;
         const offset = Math.floor(windowSize / 2);
@@ -1404,7 +1407,8 @@
       const chartDatasets = yearsList.map(yr => {
         const colorConf = YEAR_COLOR_PALETTE[yr] || YEAR_COLOR_PALETTE.default;
         const originalSeries = processedData[yr] || [];
-        const finalSeries = computeMovingAverage(originalSeries, smoothingWindow);
+        const isLatestYear = Number(yr) === latestYear;
+        const finalSeries = computeMovingAverage(originalSeries, smoothingWindow, isLatestYear);
         const chartSeries = isPercentileScale
           ? finalSeries.map(point => ({
               ...point,
@@ -1412,7 +1416,6 @@
               y: percentileLookup(point.y)
             }))
           : finalSeries;
-        const isLatestYear = Number(yr) === latestYear;
         const lineColor = isLatestYear
           ? colorConf.stroke
           : colorConf.stroke.replace(/,\s*1\)$/, ', 0.45)');
