@@ -3,9 +3,9 @@
 import { formatShortDate, formatMonthDay, parseDateParts, escapeHtml } from './util.js';
 import { state, syncStateToUrl, sortedSamples } from './state.js';
 import { resolveZipToCountyFips, updateCountyCovidSummary } from './county.js';
-import { YEAR_COLOR_PALETTE, getLatestSampleValue, summarize, inclusivePercentile } from './stats.js';
+import { pickYearColor, getLatestSampleValue, summarize, inclusivePercentile } from './stats.js';
 import { fuzzyMatchPlant, isZipCodeQuery, getPlantCoordinates, getReferenceCoordsFromZip, haversineDistance, isPlantInactive, loadAndRenderPlantSamples } from './data.js';
-import { resetChartZoom, toggleAllYears, updateYScale, updateSmoothing, updateChart } from './chart.js';
+import { resetChartZoom, toggleAllYears, updateYScale, updateSmoothing } from './chart.js';
 import { downloadCSV, sortTableByDate, changePage, handleSearch } from './table.js';
 
     export function showPlantDropdown() {
@@ -257,7 +257,7 @@ import { downloadCSV, sortTableByDate, changePage, handleSearch } from './table.
           ? null
           : inclusivePercentile(currentValue, yearValues);
 
-        const colorConf = YEAR_COLOR_PALETTE[yr] || YEAR_COLOR_PALETTE.default;
+        const colorConf = pickYearColor(yr);
 
         const card = document.createElement('div');
         card.className = "p-3 rounded-lg bg-slate-900/40 border border-slate-800 hover:border-slate-700 transition flex items-center justify-between";
@@ -282,6 +282,22 @@ import { downloadCSV, sortTableByDate, changePage, handleSearch } from './table.
       });
     }
 
+    // Honest accounting for samples that could not be plotted.
+    export function renderSampleAccounting() {
+      const target = document.getElementById('sampleAccounting');
+      if (!target) return;
+
+      const total = state.rawSamples.length;
+      const plotted = sortedSamples().length;
+      const skipped = state.skipped || {};
+
+      let text = `Plotted ${plotted} of ${total} samples`;
+      if (skipped.total > 0) {
+        text += ` — ${skipped.missingValue} without an N-gene/PMMoV value, ${skipped.nonPositive} non-positive, ${skipped.unparseableDate} unparseable date`;
+      }
+      target.innerText = text;
+    }
+
     // Render Metrics Row Values dynamically based on calculated states
     export function renderSummaryMetricsRow() {
       if (state.rawSamples.length === 0) return;
@@ -302,8 +318,8 @@ import { downloadCSV, sortTableByDate, changePage, handleSearch } from './table.
       if (previousItem) {
         const deltaPct = ((latestItem.y - previousItem.y) / previousItem.y) * 100;
         const sign = deltaPct >= 0 ? '+' : '';
-        changeElem.innerText = `${sign}${deltaPct.toFixed(1)}%`;
-        changeElem.className = `text-xs font-semibold ${deltaPct >= 0 ? 'text-rose-400' : 'text-emerald-400'}`;
+        changeElem.innerText = `${sign}${deltaPct.toFixed(1)}% vs ${formatShortDate(previousItem.originalDate)}`;
+        changeElem.className = `text-[8px] font-semibold ${deltaPct >= 0 ? 'text-rose-400' : 'text-emerald-400'}`;
       } else {
         changeElem.innerText = '';
       }
@@ -332,35 +348,6 @@ import { downloadCSV, sortTableByDate, changePage, handleSearch } from './table.
       link.download = `wastewater_yoy_comparison_${new Date().toISOString().split('T')[0]}.png`;
       link.href = state.chartInstance.toBase64Image();
       link.click();
-    }
-
-    // Theme Switcher support for light / dark dashboards
-    export function toggleTheme() {
-      const html = document.documentElement;
-      const isDark = html.classList.contains('dark');
-      const sunIcon = document.getElementById('themeSun');
-      const moonIcon = document.getElementById('themeMoon');
-
-      if (isDark) {
-        html.classList.remove('dark');
-        html.classList.add('light');
-        document.body.classList.remove('bg-slate-900', 'text-slate-100');
-        document.body.classList.add('bg-slate-50', 'text-slate-800');
-        sunIcon.classList.remove('hidden');
-        moonIcon.classList.add('hidden');
-      } else {
-        html.classList.remove('light');
-        html.classList.add('dark');
-        document.body.classList.remove('bg-slate-50', 'text-slate-800');
-        document.body.classList.add('bg-slate-900', 'text-slate-100');
-        sunIcon.classList.add('hidden');
-        moonIcon.classList.remove('hidden');
-      }
-
-      // Re-render the chart so its colors follow the new theme
-      if (state.chartInstance) {
-        updateChart();
-      }
     }
 
     // Helper banner alert manager

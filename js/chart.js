@@ -2,7 +2,7 @@
 
 import { formatShortDate, formatDate } from './util.js';
 import { state, syncStateToUrl } from './state.js';
-import { YEAR_COLOR_PALETTE, movingAverage, sortedSeriesValues, inclusivePercentile, percentileStats, getLatestSamplePoint, getPercentileEmoji, summarize } from './stats.js';
+import { pickYearColor, movingAverage, sortedSeriesValues, inclusivePercentile, percentileStats, getLatestSamplePoint, getPercentileEmoji, summarize } from './stats.js';
 
     export function updatePercentileSummaryUI(stats) {
       const currentLabel = document.getElementById('currentValuePercentile');
@@ -112,7 +112,7 @@ import { YEAR_COLOR_PALETTE, movingAverage, sortedSeriesValues, inclusivePercent
       const latestYear = state.years.reduce((max, yr) => Math.max(max, Number(yr)), 0);
 
       return state.years.map(yr => {
-        const colorConf = YEAR_COLOR_PALETTE[yr] || YEAR_COLOR_PALETTE.default;
+        const colorConf = pickYearColor(yr);
         const originalSeries = state.series[yr] || [];
         const isLatestYear = Number(yr) === latestYear;
         const finalSeries = movingAverage(originalSeries, state.smoothingWindow, isLatestYear);
@@ -523,7 +523,7 @@ import { YEAR_COLOR_PALETTE, movingAverage, sortedSeriesValues, inclusivePercent
 
       const latestYear = state.years.reduce((max, year) => Math.max(max, Number(year)), 0);
       state.years.forEach(yr => {
-        const colorConf = YEAR_COLOR_PALETTE[yr] || YEAR_COLOR_PALETTE.default;
+        const colorConf = pickYearColor(yr);
         const isChecked = state.visibleYears[yr];
         const isLatestYear = Number(yr) === latestYear;
         const series = state.series[yr] || [];

@@ -3,15 +3,33 @@
 import { state } from './state.js';
 import { parseDateParts } from './util.js';
 
-// Color definitions for individual years (Tailwind `bg-*` classes are consumed by the legend cards)
-export const YEAR_COLOR_PALETTE = {
+// Color definitions for individual years (Tailwind `bg-*` classes are consumed by the legend cards).
+// Unknown years fall through to an ordered 6-entry cycle so consecutive years stay distinguishable.
+const YEAR_COLORS = {
   2022: { stroke: 'rgba(56, 189, 248, 1)', fill: 'rgba(56, 189, 248, 0.05)', bg: 'bg-sky-400' },
   2023: { stroke: 'rgba(59, 130, 246, 1)', fill: 'rgba(59, 130, 246, 0.05)', bg: 'bg-blue-500' },
   2024: { stroke: 'rgba(168, 85, 247, 1)', fill: 'rgba(168, 85, 247, 0.05)', bg: 'bg-purple-500' },
   2025: { stroke: 'rgba(236, 72, 153, 1)', fill: 'rgba(236, 72, 153, 0.05)', bg: 'bg-pink-500' },
   2026: { stroke: 'rgba(244, 63, 94, 1)', fill: 'rgba(244, 63, 94, 0.05)', bg: 'bg-rose-500' },
-  default: { stroke: 'rgba(148, 163, 184, 1)', fill: 'rgba(148, 163, 184, 0.05)', bg: 'bg-slate-400' }
+  2027: { stroke: 'rgba(20, 184, 166, 1)', fill: 'rgba(20, 184, 166, 0.05)', bg: 'bg-teal-500' },
+  2028: { stroke: 'rgba(245, 158, 11, 1)', fill: 'rgba(245, 158, 11, 0.05)', bg: 'bg-amber-500' }
 };
+
+const FALLBACK_YEAR_COLORS = [
+  { stroke: 'rgba(148, 163, 184, 1)', fill: 'rgba(148, 163, 184, 0.05)', bg: 'bg-slate-400' },
+  { stroke: 'rgba(34, 211, 238, 1)', fill: 'rgba(34, 211, 238, 0.05)', bg: 'bg-cyan-400' },
+  { stroke: 'rgba(132, 204, 22, 1)', fill: 'rgba(132, 204, 22, 0.05)', bg: 'bg-lime-400' },
+  { stroke: 'rgba(249, 115, 22, 1)', fill: 'rgba(249, 115, 22, 0.05)', bg: 'bg-orange-500' },
+  { stroke: 'rgba(139, 92, 246, 1)', fill: 'rgba(139, 92, 246, 0.05)', bg: 'bg-violet-500' },
+  { stroke: 'rgba(244, 114, 182, 1)', fill: 'rgba(244, 114, 182, 0.05)', bg: 'bg-fuchsia-400' }
+];
+
+export function pickYearColor(year) {
+  const value = Number(year);
+  if (YEAR_COLORS[value]) return YEAR_COLORS[value];
+  const offset = ((value - 2029) % FALLBACK_YEAR_COLORS.length + FALLBACK_YEAR_COLORS.length) % FALLBACK_YEAR_COLORS.length;
+  return FALLBACK_YEAR_COLORS[offset];
+}
 
 // Cumulative days before each month on a non-leap calendar (Jan 1 → index 1).
 const CUMULATIVE_DAYS = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334];

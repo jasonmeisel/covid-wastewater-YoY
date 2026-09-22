@@ -44,16 +44,3 @@ const HTML_ESCAPES = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'
 export function escapeHtml(value) {
   return String(value).replace(/[&<>"']/g, ch => HTML_ESCAPES[ch]);
 }
-
-export function formatBytes(bytes) {
-  const value = Number(bytes);
-  if (!Number.isFinite(value) || value < 0) return 'N/A';
-  const units = ['B', 'KB', 'MB', 'GB'];
-  let scaled = value;
-  let unitIndex = 0;
-  while (scaled >= 1024 && unitIndex < units.length - 1) {
-    scaled /= 1024;
-    unitIndex++;
-  }
-  return `${scaled.toFixed(unitIndex === 0 ? 0 : 2)} ${units[unitIndex]}`;
-}

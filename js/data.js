@@ -5,7 +5,7 @@ import { updateCountyCovidSummary, resolveZipToCountyFips, showCountyDataError }
 import { buildSeries } from './stats.js';
 import { updateChart, updateCustomLegendUI } from './chart.js';
 import { applyTableFiltering } from './table.js';
-import { updatePlantMetadataUI, renderPlantSearchResults, updateYearlyStatsSummaryPanel, renderSummaryMetricsRow, showStatusBanner } from './ui.js';
+import { updatePlantMetadataUI, renderPlantSearchResults, updateYearlyStatsSummaryPanel, renderSummaryMetricsRow, renderSampleAccounting, showStatusBanner } from './ui.js';
 
     function reportPlantCatalogError() {
       const container = document.getElementById('plantSearchResults');
@@ -203,6 +203,7 @@ import { updatePlantMetadataUI, renderPlantSearchResults, updateYearlyStatsSumma
       updateCustomLegendUI();
       updateYearlyStatsSummaryPanel();
       renderSummaryMetricsRow();
+      renderSampleAccounting();
       applyTableFiltering();
 
       if (loader) loader.classList.add('hidden');
