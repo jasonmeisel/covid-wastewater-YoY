@@ -1,0 +1,46 @@
+name: Update data feeds
+
+on:
+  schedule:
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+
+jobs:
+  fetch-feeds:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Make fetch scripts executable
+        run: chmod +x ./fetch-pmc.sh ./fetch-plants.sh
+
+      - name: Prepare commit message
+        run: printf 'COMMIT_MESSAGE=Update PMC19 county and plant catalog data (%s)\n' "$(date -u +'%Y-%m-%d')" >> "$GITHUB_ENV"
+
+      # The two feeds are fetched independently so one failing upstream cannot
+      # stop the other from refreshing.
+      - name: Refresh PMC19 county data
+        id: pmc
+        continue-on-error: true
+        run: ./fetch-pmc.sh
+
+      - name: Refresh plant catalog
+        id: plants
+        continue-on-error: true
+        run: ./fetch-plants.sh
+
+      - name: Commit refreshed data
+        uses: stefanzweifel/git-auto-commit-action@v7
+        with:
+          commit_message: ${{ env.COMMIT_MESSAGE }}
+          file_pattern: data/pmc-counties.json data/plants.json
+
+      - name: Fail when a feed could not be refreshed
+        if: steps.pmc.outcome == 'failure' || steps.plants.outcome == 'failure'
+        run: |
+          echo "pmc=${{ steps.pmc.outcome }} plants=${{ steps.plants.outcome }}" >&2
+          exit 1

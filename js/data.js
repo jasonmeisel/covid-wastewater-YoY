@@ -15,9 +15,9 @@ import { updatePlantMetadataUI, renderPlantSearchResults, updateYearlyStatsSumma
       }
     }
 
-    // Fetch plant database catalog
+    // Fetch plant database catalog (slimmed into data/plants.json by fetch-plants.sh)
     export async function loadPlantsCatalog() {
-      const catalogUrl = "https://storage.googleapis.com/wastewater-dev-data/json/plants.json";
+      const catalogUrl = './data/plants.json';
       try {
         const response = await fetch(catalogUrl);
         if (!response.ok) throw new Error(`HTTP ${response.status} for ${catalogUrl}`);

@@ -18,6 +18,12 @@ Served statically with no build step (GitHub Pages publishes the repo root).
 | `js/{data,chart,table,ui}.js` | Fetching, Chart.js, the table, and DOM rendering |
 | `tools/build-zip-data.mjs` | Regenerates `data/zip-lookup.json` from GeoNames `US.txt` |
 | `fetch-pmc.sh` | Slims the PMC19 feed into `data/pmc-counties.json` |
+| `fetch-plants.sh` | Slims the GCS plant catalog into `data/plants.json` |
+
+The two `fetch-*.sh` scripts run daily from `.github/workflows/update-data.yml`.
+Both upstream feeds are much larger than the app needs (11.6 MB of plant
+polygons, 12.6 MB of PMC19 hover markup), so only the fields the UI renders
+or matches on are committed and served.
 
 ## Development
 
@@ -25,6 +31,7 @@ Served statically with no build step (GitHub Pages publishes the repo root).
 python3 -m http.server 8765      # module scripts and fetch() need HTTP, not file://
 node --test test/*.test.mjs      # unit tests (node:test only, no dependencies)
 ./fetch-pmc.sh                   # refresh data/pmc-counties.json from pmc19.com
+./fetch-plants.sh                # refresh data/plants.json from the GCS catalog
 ```
 
 Sample dates are parsed and bucketed in UTC arithmetic, so the rendered

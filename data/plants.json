@@ -1,0 +1,4076 @@
+{
+  "source": "https://storage.googleapis.com/wastewater-dev-data/json/plants.json",
+  "generated_at": "2026-09-22T09:35:56Z",
+  "plants": [
+    {
+      "uid": "74d026bd",
+      "name": "West Contra Costa County, CA",
+      "site_name": "West County Wastewater District",
+      "place_name": "Richmond, California",
+      "city": "Richmond",
+      "state": "California",
+      "zipcode": "94801",
+      "country": "United States",
+      "sewershed_pop": 100000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -122.3198807534459,
+          37.97274582125353
+        ]
+      },
+      "counties_served": [
+        "06013"
+      ]
+    },
+    {
+      "uid": "e136c15f",
+      "name": "Union Beach, NJ",
+      "site_name": "Bayshore Regional Sewerage Authority",
+      "place_name": "Union Beach, New Jersey",
+      "city": "Union Beach",
+      "state": "New Jersey",
+      "zipcode": "07735",
+      "country": "United States",
+      "sewershed_pop": 100000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -74.17774894655108,
+          40.4501164095054
+        ]
+      },
+      "counties_served": [
+        "34025"
+      ]
+    },
+    {
+      "uid": "07ced721",
+      "name": "Redwood City, CA",
+      "site_name": "Silicon Valley Clean Water",
+      "place_name": "Silicon Valley, California",
+      "city": "Silicon Valley",
+      "state": "California",
+      "zipcode": "94065",
+      "country": "United States",
+      "sewershed_pop": 199000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -122.22837987178035,
+          37.4630262118534
+        ]
+      },
+      "counties_served": [
+        "06081"
+      ]
+    },
+    {
+      "uid": "b723ae76",
+      "name": "Napa, CA",
+      "site_name": "Soscol Water Recycling Facility",
+      "place_name": "Napa, California",
+      "city": "Napa",
+      "state": "California",
+      "zipcode": "94558",
+      "country": "United States",
+      "sewershed_pop": 83300,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -122.30524438521414,
+          38.30319602005173
+        ]
+      },
+      "counties_served": [
+        "06055"
+      ]
+    },
+    {
+      "uid": "173560dc",
+      "name": "Hollywood, MD",
+      "site_name": "Marlay Taylor Water Reclamation Facility",
+      "place_name": "Hollywood, Maryland",
+      "city": "Hollywood",
+      "state": "Maryland",
+      "zipcode": "20653",
+      "country": "United States",
+      "sewershed_pop": 55000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -76.40913246150139,
+          38.266150391208406
+        ]
+      },
+      "counties_served": [
+        "24037"
+      ]
+    },
+    {
+      "uid": "0feadeb0",
+      "name": "Bloomington, IN",
+      "site_name": "Dillman Road WWTP",
+      "place_name": "Bloomington, Indiana",
+      "city": "Bloomington",
+      "state": "Indiana",
+      "zipcode": "47403",
+      "country": "United States",
+      "sewershed_pop": 56090,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -86.52615484574056,
+          39.14634574261009
+        ]
+      },
+      "counties_served": [
+        "18105"
+      ]
+    },
+    {
+      "uid": "3032c81b",
+      "name": "Petaluma, CA",
+      "site_name": "Ellis Creek Water Recycling Facility",
+      "place_name": "Petaluma, California",
+      "city": "Petaluma",
+      "state": "California",
+      "zipcode": "94954",
+      "country": "United States",
+      "sewershed_pop": 65000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -122.63185605828048,
+          38.24195998654342
+        ]
+      },
+      "counties_served": [
+        "06097"
+      ]
+    },
+    {
+      "uid": "12d2b614",
+      "name": "Snohomish, WA",
+      "site_name": "City of Snohomish Wastewater Treatment Plant",
+      "place_name": "Snohomish, Washington",
+      "city": "Snohomish",
+      "state": "Washington",
+      "zipcode": "98290",
+      "country": "United States",
+      "sewershed_pop": 10150,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -122.11259294213255,
+          47.91619141051111
+        ]
+      },
+      "counties_served": [
+        "53061"
+      ]
+    },
+    {
+      "uid": "b9e3224c",
+      "name": "Mt. Pleasant, MI",
+      "site_name": "Mt. Pleasant WRRF",
+      "place_name": "Mt. Pleasant, Michigan",
+      "city": "Mt. Pleasant",
+      "state": "Michigan",
+      "zipcode": "48858",
+      "country": "United States",
+      "sewershed_pop": 21690,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -84.77563135517093,
+          43.61480187329005
+        ]
+      },
+      "counties_served": [
+        "26073"
+      ]
+    },
+    {
+      "uid": "71bae77a",
+      "name": "Ann Arbor, MI",
+      "site_name": "City of Ann Arbor Wastewater Treatment Plant",
+      "place_name": "Ann Arbor, Michigan",
+      "city": "Ann Arbor",
+      "state": "Michigan",
+      "zipcode": "48105",
+      "country": "United States",
+      "sewershed_pop": 125000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -83.72857107592273,
+          42.28425193087033
+        ]
+      },
+      "counties_served": [
+        "26161"
+      ]
+    },
+    {
+      "uid": "24d03049",
+      "name": "Las Gallinas, San Rafael, CA",
+      "site_name": "Las Gallinas Valley Sanitary District",
+      "place_name": "San Rafael, California",
+      "city": "San Rafael",
+      "state": "California",
+      "zipcode": "94903",
+      "country": "United States",
+      "sewershed_pop": 30000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -122.54638518123006,
+          38.01560831494
+        ]
+      },
+      "counties_served": [
+        "06041"
+      ]
+    },
+    {
+      "uid": "31ed3c36",
+      "name": "Johns Creek, Roswell, GA",
+      "site_name": "Johns Creek Environmental Campus",
+      "place_name": "Roswell, Georgia",
+      "city": "Roswell",
+      "state": "Georgia",
+      "zipcode": "30022",
+      "country": "United States",
+      "sewershed_pop": 84486,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -84.25336258230507,
+          33.980927467037354
+        ]
+      },
+      "counties_served": [
+        "13121"
+      ]
+    },
+    {
+      "uid": "d1a4b8ae",
+      "name": "Memphis, TN",
+      "site_name": "M.C. Stiles Wastewater Treatment Facility",
+      "place_name": "Memphis, Tennessee",
+      "city": "Memphis",
+      "state": "Tennessee",
+      "zipcode": "38127",
+      "country": "United States",
+      "sewershed_pop": 400000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -90.05086683863189,
+          35.1897049165955
+        ]
+      },
+      "counties_served": [
+        "47157"
+      ]
+    },
+    {
+      "uid": "14ef078f",
+      "name": "South, Laredo, TX",
+      "site_name": "South Laredo WWTP",
+      "place_name": "Laredo, Texas",
+      "city": "Laredo",
+      "state": "Texas",
+      "zipcode": "78046",
+      "country": "United States",
+      "sewershed_pop": 120000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -99.48376426847231,
+          27.4502653319436
+        ]
+      },
+      "counties_served": [
+        "48479"
+      ]
+    },
+    {
+      "uid": "e00a1b45",
+      "name": "Wolcott, Kansas City, KS",
+      "site_name": "Wolcott Wastewater Treatment Facility",
+      "place_name": "Kansas City, Kansas",
+      "city": "Kansas City",
+      "state": "Kansas",
+      "zipcode": "66109",
+      "country": "United States",
+      "sewershed_pop": 15000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -94.79910653478922,
+          39.189663237982124
+        ]
+      },
+      "counties_served": [
+        "20209"
+      ]
+    },
+    {
+      "uid": "9f898013",
+      "name": "East Bank, New Orleans, LA",
+      "site_name": "SWBNO East Bank Wastewater Treatment Plant",
+      "place_name": "New Orleans, Louisiana",
+      "city": "New Orleans",
+      "state": "Louisiana",
+      "zipcode": "70117",
+      "country": "United States",
+      "sewershed_pop": 333406,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -90.00021852079348,
+          29.984718685716036
+        ]
+      },
+      "counties_served": [
+        "22071"
+      ]
+    },
+    {
+      "uid": "21e1e010",
+      "name": "University Park, PA",
+      "site_name": "University Park Water Reclamation Plant",
+      "place_name": "State College, Pennsylvania",
+      "city": "State College",
+      "state": "Pennsylvania",
+      "zipcode": "16801",
+      "country": "United States",
+      "sewershed_pop": 16000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -77.85897473201182,
+          40.80750386571751
+        ]
+      },
+      "counties_served": [
+        "42027"
+      ]
+    },
+    {
+      "uid": "8009e040",
+      "name": "Columbus, GA",
+      "site_name": "South Columbus Water Resources Facility",
+      "place_name": "Columbus, Georgia",
+      "city": "Columbus",
+      "state": "Georgia",
+      "zipcode": "31903",
+      "country": "United States",
+      "sewershed_pop": 278000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -84.975145,
+          32.412170332894334
+        ]
+      },
+      "counties_served": [
+        "13053",
+        "13215"
+      ]
+    },
+    {
+      "uid": "4d981d48",
+      "name": "Hillsville, VA",
+      "site_name": "Town of Hillsville Wastewater Treatment Plant",
+      "place_name": "Hillsville, Virginia",
+      "city": "Hillsville",
+      "state": "Virginia",
+      "zipcode": "24343",
+      "country": "United States",
+      "sewershed_pop": 3000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -80.75173047659378,
+          36.789972545948
+        ]
+      },
+      "counties_served": [
+        "51035"
+      ]
+    },
+    {
+      "uid": "1107b609",
+      "name": "Coastal, Laguna Niguel, CA",
+      "site_name": "Coastal Treatment Plant",
+      "place_name": "Laguna Niguel, California",
+      "city": "Laguna Niguel",
+      "state": "California",
+      "zipcode": "92677",
+      "country": "United States",
+      "sewershed_pop": 48000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -117.72552251723306,
+          33.5205833303638
+        ]
+      },
+      "counties_served": [
+        "06059"
+      ]
+    },
+    {
+      "uid": "d3ff13c4",
+      "name": "North Miami, FL",
+      "site_name": "MDWASD North District WWTF",
+      "place_name": "North Miami, Florida",
+      "city": "North Miami",
+      "state": "Florida",
+      "zipcode": "33160",
+      "country": "United States",
+      "sewershed_pop": 776150,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -80.14965667845807,
+          25.920149081950242
+        ]
+      },
+      "counties_served": [
+        "12086"
+      ]
+    },
+    {
+      "uid": "6c057b14",
+      "name": "Jenison, MI",
+      "site_name": "Grandville Clean Water Plant",
+      "place_name": "Jenison, Michigan",
+      "city": "Jenison",
+      "state": "Michigan",
+      "zipcode": "49428",
+      "country": "United States",
+      "sewershed_pop": 75000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -85.82647510599168,
+          42.90708669809859
+        ]
+      },
+      "counties_served": [
+        "26081"
+      ]
+    },
+    {
+      "uid": "500f9a43",
+      "name": "Stamford, CT",
+      "site_name": "City of Stamford, Water Pollution Control Authority",
+      "place_name": "Stamford, Connecticut",
+      "city": "Stamford",
+      "state": "Connecticut",
+      "zipcode": "06902",
+      "country": "United States",
+      "sewershed_pop": 140000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -73.52884132284692,
+          41.04508415404652
+        ]
+      },
+      "counties_served": [
+        "09001"
+      ]
+    },
+    {
+      "uid": "8bed9020",
+      "name": "Portland, ME",
+      "site_name": "Portland Water District (East End Wastewater Treatment Facility)",
+      "place_name": "Portland, Maine",
+      "city": "Portland",
+      "state": "Maine",
+      "zipcode": "04102",
+      "country": "United States",
+      "sewershed_pop": 65000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -70.29214078652961,
+          43.6790087073437
+        ]
+      },
+      "counties_served": [
+        "23005"
+      ]
+    },
+    {
+      "uid": "ca90b5f7",
+      "name": "Winston-Salem, NC",
+      "site_name": "Archie Elledge WWTP",
+      "place_name": "Winston-Salem, North Carolina",
+      "city": "Winston-Salem",
+      "state": "North Carolina",
+      "zipcode": "27103",
+      "country": "United States",
+      "sewershed_pop": 92000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -80.31020992176889,
+          36.03858001356675
+        ]
+      },
+      "counties_served": [
+        "37067"
+      ]
+    },
+    {
+      "uid": "3efce49f",
+      "name": "Hilo, HI",
+      "site_name": "Hilo Wastewater Treatment Plant",
+      "place_name": "Hilo, Hawaii",
+      "city": "Hilo",
+      "state": "Hawaii",
+      "zipcode": "96720",
+      "country": "United States",
+      "sewershed_pop": 16257,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -155.07384107969847,
+          19.712435987787366
+        ]
+      },
+      "counties_served": [
+        "15001"
+      ]
+    },
+    {
+      "uid": "7a8be281",
+      "name": "Big Creek, Roswell, GA",
+      "site_name": "Big Creek Water Reclamation Facility",
+      "place_name": "Roswell, Georgia",
+      "city": "Roswell",
+      "state": "Georgia",
+      "zipcode": "30075",
+      "country": "United States",
+      "sewershed_pop": 189593,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -84.37939023370546,
+          34.00645342094399
+        ]
+      },
+      "counties_served": [
+        "13121"
+      ]
+    },
+    {
+      "uid": "4e88b3c6",
+      "name": "Muscatine, IA",
+      "site_name": "Muscatine STP",
+      "place_name": "Muscatine, Iowa",
+      "city": "Muscatine",
+      "state": "Iowa",
+      "zipcode": "52761",
+      "country": "United States",
+      "sewershed_pop": 24400,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -91.07041806725759,
+          41.4082067973807
+        ]
+      },
+      "counties_served": [
+        "19139"
+      ]
+    },
+    {
+      "uid": "d13b26bf",
+      "name": "Northeast, Lincoln, NE",
+      "site_name": "Northeast Water Resource Recovery Facility",
+      "place_name": "Lincoln, Nebraska",
+      "city": "Lincoln",
+      "state": "Nebraska",
+      "zipcode": "68521",
+      "country": "United States",
+      "sewershed_pop": 60000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -96.61759883257899,
+          40.88271717330706
+        ]
+      },
+      "counties_served": [
+        "31109"
+      ]
+    },
+    {
+      "uid": "a3a92d28",
+      "name": "Mendenhall, Juneau, AK",
+      "site_name": "Mendenhall Wastewater Treatment Plant",
+      "place_name": "Juneau, Alaska",
+      "city": "Juneau",
+      "state": "Alaska",
+      "zipcode": "99801",
+      "country": "United States",
+      "sewershed_pop": 20000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -134.59613653130913,
+          58.36211699725208
+        ]
+      },
+      "counties_served": [
+        "02110"
+      ]
+    },
+    {
+      "uid": "a4e394d1",
+      "name": "Warren, MI",
+      "site_name": "City of Warren Wastewater Treatment Plant",
+      "place_name": "Warren, Michigan",
+      "city": "Warren",
+      "state": "Michigan",
+      "zipcode": "48093",
+      "country": "United States",
+      "sewershed_pop": 140000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -83.02743411600922,
+          42.493276796858474
+        ]
+      },
+      "counties_served": [
+        "26099"
+      ]
+    },
+    {
+      "uid": "bbca1a79",
+      "name": "Carmel, IN",
+      "site_name": "City of Carmel WWTP",
+      "place_name": "Carmel, Indiana",
+      "city": "Carmel",
+      "state": "Indiana",
+      "zipcode": "46280",
+      "country": "United States",
+      "sewershed_pop": 86000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -86.07880196931782,
+          39.929540257054796
+        ]
+      },
+      "counties_served": [
+        "18057"
+      ]
+    },
+    {
+      "uid": "d58b8955",
+      "name": "Bridgewater, NJ",
+      "site_name": "The Somerset Raritan Valley Sewerage Authority",
+      "place_name": "Bridgewater, New Jersey",
+      "city": "Bridgewater",
+      "state": "New Jersey",
+      "zipcode": "08807",
+      "country": "United States",
+      "sewershed_pop": 130000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -74.57096901003412,
+          40.55664353629292
+        ]
+      },
+      "counties_served": [
+        "34035"
+      ]
+    },
+    {
+      "uid": "9b848161",
+      "name": "Jupiter, FL",
+      "site_name": "Loxahatchee River Environmental Control District",
+      "place_name": "Jupiter, Florida",
+      "city": "Jupiter",
+      "state": "Florida",
+      "zipcode": "33458",
+      "country": "United States",
+      "sewershed_pop": 90000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -80.13956073493561,
+          26.92647695623734
+        ]
+      },
+      "counties_served": [
+        "12099"
+      ]
+    },
+    {
+      "uid": "1382f8a8",
+      "name": "Lewiston, ME",
+      "site_name": "Lewiston Auburn Clean Water Authority",
+      "place_name": "Lewiston, Maine",
+      "city": "Lewiston",
+      "state": "Maine",
+      "zipcode": "04240",
+      "country": "United States",
+      "sewershed_pop": 60000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -70.2048306822743,
+          44.074639590727074
+        ]
+      },
+      "counties_served": [
+        "23001"
+      ]
+    },
+    {
+      "uid": "5cfefd34",
+      "name": "Traverse City, MI",
+      "site_name": "Traverse City Regional Waste Water Treatment Plant",
+      "place_name": "Traverse City, Michigan",
+      "city": "Traverse City",
+      "state": "Michigan",
+      "zipcode": "49686",
+      "country": "United States",
+      "sewershed_pop": 30623,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -85.60959961437949,
+          44.7583050726053
+        ]
+      },
+      "counties_served": [
+        "26055"
+      ]
+    },
+    {
+      "uid": "fde6cc78",
+      "name": "Chester, PA",
+      "site_name": "DELCORA Western Regional Treatment Plant",
+      "place_name": "Chester, Pennsylvania",
+      "city": "Chester",
+      "state": "Pennsylvania",
+      "zipcode": "19013",
+      "country": "United States",
+      "sewershed_pop": 220000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -75.39296487454824,
+          39.82633046436117
+        ]
+      },
+      "counties_served": [
+        "42045"
+      ]
+    },
+    {
+      "uid": "e1e03cad",
+      "name": "Rochester, MN",
+      "site_name": "City Of Rochester MN Water Reclamation Plant",
+      "place_name": "Rochester, Minnesota",
+      "city": "Rochester",
+      "state": "Minnesota",
+      "zipcode": "55901",
+      "country": "United States",
+      "sewershed_pop": 120000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -92.4716896425487,
+          44.00477406592521
+        ]
+      },
+      "counties_served": [
+        "27109"
+      ]
+    },
+    {
+      "uid": "73e61cfb",
+      "name": "Oakhurst, NJ",
+      "site_name": "Township of Ocean Sewerage Authority",
+      "place_name": "Oakhurst, New Jersey",
+      "city": "Oakhurst",
+      "state": "New Jersey",
+      "zipcode": "07755",
+      "country": "United States",
+      "sewershed_pop": 50000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -74.00236076931901,
+          40.258929627859004
+        ]
+      },
+      "counties_served": [
+        "34025"
+      ]
+    },
+    {
+      "uid": "ee8ecb27",
+      "name": "Greenville, SC",
+      "site_name": "Mauldin Road WWTP",
+      "place_name": "Greenville, South Carolina",
+      "city": "Greenville",
+      "state": "South Carolina",
+      "zipcode": "29607",
+      "country": "United States",
+      "sewershed_pop": 142376,
+      "point": null,
+      "counties_served": [
+        "45045"
+      ]
+    },
+    {
+      "uid": "657ea5e3",
+      "name": "Marina, CA",
+      "site_name": "Monterey One Water - Regional Treatment Plant",
+      "place_name": "Marina, California",
+      "city": "Marina",
+      "state": "California",
+      "zipcode": "93933",
+      "country": "United States",
+      "sewershed_pop": 262000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -121.77095406011044,
+          36.705986278208165
+        ]
+      },
+      "counties_served": [
+        "06053"
+      ]
+    },
+    {
+      "uid": "6473c0b3",
+      "name": "Mill Valley, CA",
+      "site_name": "Sewerage Agency of Southern Marin Wastewater Treatment Plant",
+      "place_name": "Mill Valley, California",
+      "city": "Mill Valley",
+      "state": "California",
+      "zipcode": "94941",
+      "country": "United States",
+      "sewershed_pop": 30000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -122.53260833957584,
+          37.89813872675869
+        ]
+      },
+      "counties_served": [
+        "06041"
+      ]
+    },
+    {
+      "uid": "72a7b0ab",
+      "name": "Woodlands SJRA WWTF No. 1, TX",
+      "site_name": "SJRA WWTF No.1",
+      "place_name": "Woodlands, Texas",
+      "city": "Woodlands",
+      "state": "Texas",
+      "zipcode": "77380",
+      "country": "United States",
+      "sewershed_pop": 65000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -95.47515102837981,
+          30.136290975339072
+        ]
+      },
+      "counties_served": [
+        "48339"
+      ]
+    },
+    {
+      "uid": "7ca90557",
+      "name": "San Mateo, CA",
+      "site_name": "City of San Mateo & Estero M.I.D. Water Quality Control Plant",
+      "place_name": "San Mateo, California",
+      "city": "San Mateo",
+      "state": "California",
+      "zipcode": "94404",
+      "country": "United States",
+      "sewershed_pop": 150000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -122.31629298059985,
+          37.5506375549372
+        ]
+      },
+      "counties_served": [
+        "06081"
+      ]
+    },
+    {
+      "uid": "1d614968",
+      "name": "CODIGA, Stanford, CA",
+      "site_name": "CODIGA",
+      "place_name": "CODIGA, California",
+      "city": "CODIGA",
+      "state": "California",
+      "zipcode": null,
+      "country": "United States",
+      "sewershed_pop": 10000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -122.156039,
+          37.428832
+        ]
+      },
+      "counties_served": []
+    },
+    {
+      "uid": "90771388",
+      "name": "Mankato, MN",
+      "site_name": "City of Mankato Water Resource Recovery Facility (WRRF)",
+      "place_name": "Mankato, Minnesota",
+      "city": "Mankato",
+      "state": "Minnesota",
+      "zipcode": "56001",
+      "country": "United States",
+      "sewershed_pop": 70000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -93.98404846515848,
+          44.16795579642616
+        ]
+      },
+      "counties_served": [
+        "27103",
+        "27013"
+      ]
+    },
+    {
+      "uid": "15030856",
+      "name": "Theresa Street, Lincoln, NE",
+      "site_name": "Theresa Street Water Resource Recovery Facility",
+      "place_name": "Lincoln, Nebraska",
+      "city": "Lincoln",
+      "state": "Nebraska",
+      "zipcode": "68521",
+      "country": "United States",
+      "sewershed_pop": 240000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -96.68648572102488,
+          40.83786779301624
+        ]
+      },
+      "counties_served": [
+        "31109"
+      ]
+    },
+    {
+      "uid": "3249ef9d",
+      "name": "Santa Cruz County, CA",
+      "site_name": "City of Santa Cruz WTF - County Influent",
+      "place_name": "Santa Cruz, California",
+      "city": "Santa Cruz",
+      "state": "California",
+      "zipcode": "95060",
+      "country": "United States",
+      "sewershed_pop": 160000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -121.96752264533036,
+          36.98028264366845
+        ]
+      },
+      "counties_served": [
+        "06087"
+      ]
+    },
+    {
+      "uid": "bcc61557",
+      "name": "Penacook, Concord, NH",
+      "site_name": "Penacook Wastewater Treatment Facility",
+      "place_name": "Concord, New Hampshire",
+      "city": "Concord",
+      "state": "New Hampshire",
+      "zipcode": "03303",
+      "country": "United States",
+      "sewershed_pop": 4000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -71.5688332739817,
+          43.248959042334256
+        ]
+      },
+      "counties_served": [
+        "33013"
+      ]
+    },
+    {
+      "uid": "5aa6993d",
+      "name": "San Leandro, CA",
+      "site_name": "City of San Leandro Water Pollution Control Plant",
+      "place_name": "San Leandro, California",
+      "city": "San Leandro",
+      "state": "California",
+      "zipcode": "94577",
+      "country": "United States",
+      "sewershed_pop": 50000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -122.17060239905835,
+          37.715188554727135
+        ]
+      },
+      "counties_served": [
+        "06001"
+      ]
+    },
+    {
+      "uid": "59ec94e1",
+      "name": "Chattanooga, TN",
+      "site_name": "Moccasin Bend WWTP",
+      "place_name": "Chattanooga, Tennessee",
+      "city": "Chattanooga",
+      "state": "Tennessee",
+      "zipcode": "37405",
+      "country": "United States",
+      "sewershed_pop": 400000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -85.33883667788788,
+          35.053175281547276
+        ]
+      },
+      "counties_served": [
+        "47065",
+        "13047",
+        "13083",
+        "13295"
+      ]
+    },
+    {
+      "uid": "4a7b93ac",
+      "name": "Zacate Creek, Laredo, TX",
+      "site_name": "Zacate Creek WWTP",
+      "place_name": "Laredo, Texas",
+      "city": "Laredo",
+      "state": "Texas",
+      "zipcode": "78040",
+      "country": "United States",
+      "sewershed_pop": 140000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -99.48974021281504,
+          27.519952558834174
+        ]
+      },
+      "counties_served": [
+        "48479"
+      ]
+    },
+    {
+      "uid": "3a3fa1e0",
+      "name": "San Diego, CA",
+      "site_name": "E.W. Blom Point Loma Wastewater Treatment Plant",
+      "place_name": "San Diego, California",
+      "city": "San Diego",
+      "state": "California",
+      "zipcode": "92106",
+      "country": "United States",
+      "sewershed_pop": 2200000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -117.24602143884299,
+          32.67695526971137
+        ]
+      },
+      "counties_served": [
+        "06073"
+      ]
+    },
+    {
+      "uid": "94c0c667",
+      "name": "Coralville, IA",
+      "site_name": "Coralville Wastewater Treatment Facility",
+      "place_name": "Coralville, Iowa",
+      "city": "Coralville",
+      "state": "Iowa",
+      "zipcode": "52241",
+      "country": "United States",
+      "sewershed_pop": 23000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -91.59637168035286,
+          41.67902029444951
+        ]
+      },
+      "counties_served": [
+        "19103"
+      ]
+    },
+    {
+      "uid": "74b39a8f",
+      "name": "Pacifica, CA",
+      "site_name": "Calera Creek Water Recycling Plant",
+      "place_name": "Pacifica, California",
+      "city": "Pacifica",
+      "state": "California",
+      "zipcode": "94044",
+      "country": "United States",
+      "sewershed_pop": 40000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -122.48542072679335,
+          37.61226911029115
+        ]
+      },
+      "counties_served": [
+        "06081"
+      ]
+    },
+    {
+      "uid": "66bc44c3",
+      "name": "Southwest, Saint Petersburg, FL",
+      "site_name": "Southwest Water Reclamation Facility",
+      "place_name": "Saint Petersburg, Florida",
+      "city": "Saint Petersburg",
+      "state": "Florida",
+      "zipcode": "33711",
+      "country": "United States",
+      "sewershed_pop": 47790,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -82.68403642745729,
+          27.719500727828603
+        ]
+      },
+      "counties_served": [
+        "12103"
+      ]
+    },
+    {
+      "uid": "68ffc495",
+      "name": "Papillion, Omaha, NE",
+      "site_name": "Papillion Creek Wastewater Treatment Plant",
+      "place_name": "Omaha, Nebraska",
+      "city": "Omaha",
+      "state": "Nebraska",
+      "zipcode": "68131",
+      "country": "United States",
+      "sewershed_pop": 700000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -95.8788156051651,
+          41.082215338577754
+        ]
+      },
+      "counties_served": [
+        "31153",
+        "31055"
+      ]
+    },
+    {
+      "uid": "fa2d6345",
+      "name": "Vallejo, CA",
+      "site_name": "Vallejo Flood and Wastewater District Wastewater Treatment Plant",
+      "place_name": "Vallejo, California",
+      "city": "Vallejo",
+      "state": "California",
+      "zipcode": "94590",
+      "country": "United States",
+      "sewershed_pop": 121000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -122.23505978743297,
+          38.11583339964391
+        ]
+      },
+      "counties_served": [
+        "06095"
+      ]
+    },
+    {
+      "uid": "b95f9337",
+      "name": "Northwest, Orange County, FL",
+      "site_name": "Northwest Water Reclamation Facility",
+      "place_name": "Orlando, Florida",
+      "city": "Orlando",
+      "state": "Florida",
+      "zipcode": "32703",
+      "country": "United States",
+      "sewershed_pop": 66690,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -81.4851894180775,
+          28.621044338444044
+        ]
+      },
+      "counties_served": [
+        "12095"
+      ]
+    },
+    {
+      "uid": "983ff3a3",
+      "name": "Youngstown, OH",
+      "site_name": "City of Youngstown Wastewater Treatment Plant",
+      "place_name": "Youngstown, Ohio",
+      "city": "Youngstown",
+      "state": "Ohio",
+      "zipcode": "44502",
+      "country": "United States",
+      "sewershed_pop": 174000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -80.64853147327345,
+          41.095047414818914
+        ]
+      },
+      "counties_served": [
+        "39099"
+      ]
+    },
+    {
+      "uid": "2d6e1baa",
+      "name": "Anchorage, AK",
+      "site_name": "John M. Asplund Water Pollution Control Facility",
+      "place_name": "Anchorage, Alaska",
+      "city": "Anchorage",
+      "state": "Alaska",
+      "zipcode": "99502",
+      "country": "United States",
+      "sewershed_pop": 220000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -150.02059893238774,
+          61.19639216530482
+        ]
+      },
+      "counties_served": [
+        "02020"
+      ]
+    },
+    {
+      "uid": "06528236",
+      "name": "Jackson, MI",
+      "site_name": "Jackson Wastewater Treatment Plant",
+      "place_name": "Jackson, Michigan",
+      "city": "Jackson",
+      "state": "Michigan",
+      "zipcode": "49202",
+      "country": "United States",
+      "sewershed_pop": 90000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -84.42050545476039,
+          42.266551013654926
+        ]
+      },
+      "counties_served": [
+        "26075"
+      ]
+    },
+    {
+      "uid": "879946f9",
+      "name": "West Bank, New Orleans, LA",
+      "site_name": "SWBNO West Bank Wastewater Treatment Plant",
+      "place_name": "New Orleans, Louisiana",
+      "city": "New Orleans",
+      "state": "Louisiana",
+      "zipcode": "70131",
+      "country": "United States",
+      "sewershed_pop": 50591,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -90.09703552930377,
+          29.97817628635107
+        ]
+      },
+      "counties_served": [
+        "22071"
+      ]
+    },
+    {
+      "uid": "98a28d70",
+      "name": "Montpelier, VT",
+      "site_name": "Montpelier Water Resource Recovery Facility",
+      "place_name": "Montpelier, Vermont",
+      "city": "Montpelier",
+      "state": "Vermont",
+      "zipcode": "05602",
+      "country": "United States",
+      "sewershed_pop": 10100,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -72.60019641151241,
+          44.254651646133816
+        ]
+      },
+      "counties_served": [
+        "50023"
+      ]
+    },
+    {
+      "uid": "0325ddc9",
+      "name": "Sacramento, CA",
+      "site_name": "Sacramento Regional Wastewater Treatment Plant",
+      "place_name": "Sacramento, California",
+      "city": "Sacramento",
+      "state": "California",
+      "zipcode": "95758",
+      "country": "United States",
+      "sewershed_pop": 1480000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -121.37855292256711,
+          38.58098324432079
+        ]
+      },
+      "counties_served": [
+        "06067"
+      ]
+    },
+    {
+      "uid": "64831a7d",
+      "name": "Woodlands SJRA WWTF No. 3, TX",
+      "site_name": "SJRA WWTF No.3",
+      "place_name": "Woodlands, Texas",
+      "city": "Woodlands",
+      "state": "Texas",
+      "zipcode": "77385",
+      "country": "United States",
+      "sewershed_pop": 15000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -95.450343201669,
+          30.2172587887538
+        ]
+      },
+      "counties_served": [
+        "48339"
+      ]
+    },
+    {
+      "uid": "1056f05c",
+      "name": "Lander Street, Boise, ID",
+      "site_name": "Lander Street Water Renewal Facility",
+      "place_name": "Boise, Idaho",
+      "city": "Boise",
+      "state": "Idaho",
+      "zipcode": "83703",
+      "country": "United States",
+      "sewershed_pop": 97237,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -116.24156630894416,
+          43.6413365521462
+        ]
+      },
+      "counties_served": [
+        "16001"
+      ]
+    },
+    {
+      "uid": "7c593e22",
+      "name": "Hall Street, Concord, NH",
+      "site_name": "Hall Street Wastewater Treatment Plant",
+      "place_name": "Concord, New Hampshire",
+      "city": "Concord",
+      "state": "New Hampshire",
+      "zipcode": "03301",
+      "country": "United States",
+      "sewershed_pop": 45000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -71.54010860765452,
+          43.191806355586074
+        ]
+      },
+      "counties_served": [
+        "33013"
+      ]
+    },
+    {
+      "uid": "b925e79e",
+      "name": "Sausalito, CA",
+      "site_name": "Sausalito-Marin City Sanitary District",
+      "place_name": "Sausalito, California",
+      "city": "Sausalito",
+      "state": "California",
+      "zipcode": "94965",
+      "country": "United States",
+      "sewershed_pop": 18000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -122.50517145114802,
+          37.86370421298846
+        ]
+      },
+      "counties_served": [
+        "06041"
+      ]
+    },
+    {
+      "uid": "1a43a7f4",
+      "name": "Mammoth, CA",
+      "site_name": "Mammoth Community Water District",
+      "place_name": "Mammoth Lakes, California",
+      "city": "Mammoth Lakes",
+      "state": "California",
+      "zipcode": "93546",
+      "country": "United States",
+      "sewershed_pop": 35000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -118.9459987634921,
+          37.6417718924568
+        ]
+      },
+      "counties_served": [
+        "06051"
+      ]
+    },
+    {
+      "uid": "766e777b",
+      "name": "South Burlington, VT",
+      "site_name": "South Burlington-Airport Parkway WWTF",
+      "place_name": "South Burlington, Vermont",
+      "city": "South Burlington",
+      "state": "Vermont",
+      "zipcode": "05403",
+      "country": "United States",
+      "sewershed_pop": 16000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -73.17127097576206,
+          44.481825531586054
+        ]
+      },
+      "counties_served": [
+        "50007"
+      ]
+    },
+    {
+      "uid": "26eae1a6",
+      "name": "Cahaba River, Birmingham, AL",
+      "site_name": "Cahaba River Water Reclamation Facility",
+      "place_name": "Birmingham, Alabama",
+      "city": "Birmingham",
+      "state": "Alabama",
+      "zipcode": "35244",
+      "country": "United States",
+      "sewershed_pop": 95000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -86.78337676305817,
+          33.373263581309104
+        ]
+      },
+      "counties_served": [
+        "01073"
+      ]
+    },
+    {
+      "uid": "91f29283",
+      "name": "York, ME",
+      "site_name": "York Sewer District",
+      "place_name": "York Beach, Maine",
+      "city": "York Beach",
+      "state": "Maine",
+      "zipcode": "03910",
+      "country": "United States",
+      "sewershed_pop": 10000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -70.60686873569823,
+          43.18154092379963
+        ]
+      },
+      "counties_served": [
+        "23031"
+      ]
+    },
+    {
+      "uid": "e904ec7f",
+      "name": "Little River, Roswell, GA",
+      "site_name": "Little River Water Reclamation Facility",
+      "place_name": "Roswell, Georgia",
+      "city": "Roswell",
+      "state": "Georgia",
+      "zipcode": "30188",
+      "country": "United States",
+      "sewershed_pop": 12818,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -84.42921584673391,
+          34.10226088773845
+        ]
+      },
+      "counties_served": [
+        "13121"
+      ]
+    },
+    {
+      "uid": "af7cd532",
+      "name": "Wheaton, IL",
+      "site_name": "Wheaton Sanitary District",
+      "place_name": "Wheaton, Illinois",
+      "city": "Wheaton",
+      "state": "Illinois",
+      "zipcode": "60189",
+      "country": "United States",
+      "sewershed_pop": 63000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -88.14565308369635,
+          41.8452431579672
+        ]
+      },
+      "counties_served": [
+        "17043"
+      ]
+    },
+    {
+      "uid": "02ccdda4",
+      "name": "Salina, KS",
+      "site_name": "Salina Wastewater Treatment Plant",
+      "place_name": "Salina, Kansas",
+      "city": "Salina",
+      "state": "Kansas",
+      "zipcode": "67401",
+      "country": "United States",
+      "sewershed_pop": 47000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -97.56862524205076,
+          38.852819108787514
+        ]
+      },
+      "counties_served": [
+        "20169"
+      ]
+    },
+    {
+      "uid": "ebb0046f",
+      "name": "North, Parker, CO",
+      "site_name": "Parker Water and Sanitation District North Water Reclamation Facility",
+      "place_name": "Parker, Colorado",
+      "city": "Parker",
+      "state": "Colorado",
+      "zipcode": "80134",
+      "country": "United States",
+      "sewershed_pop": 35000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -104.77091874858883,
+          39.53212647638298
+        ]
+      },
+      "counties_served": [
+        "08035"
+      ]
+    },
+    {
+      "uid": "6f089bc5",
+      "name": "White Rock Central, Dallas, TX",
+      "site_name": "DCWT White Rock",
+      "place_name": "Dallas, Texas",
+      "city": "Dallas",
+      "state": "Texas",
+      "zipcode": "75203",
+      "country": "United States",
+      "sewershed_pop": 630000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -96.77214580427595,
+          32.73458890058663
+        ]
+      },
+      "counties_served": [
+        "48113"
+      ]
+    },
+    {
+      "uid": "d592f13f",
+      "name": "Yankton, SD",
+      "site_name": "City of Yankton Wastewater Treatment Facility",
+      "place_name": "Yankton, South Dakota",
+      "city": "Yankton",
+      "state": "South Dakota",
+      "zipcode": "57078",
+      "country": "United States",
+      "sewershed_pop": 20000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -97.3818892502794,
+          42.86776258664172
+        ]
+      },
+      "counties_served": [
+        "46135"
+      ]
+    },
+    {
+      "uid": "d9a8140a",
+      "name": "Glen Ellyn, IL",
+      "site_name": "Glenbard Wastewater Authority",
+      "place_name": "Glen Ellyn, Illinois",
+      "city": "Glen Ellyn",
+      "state": "Illinois",
+      "zipcode": "60137",
+      "country": "United States",
+      "sewershed_pop": 86000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -88.03854523464301,
+          41.86884167878168
+        ]
+      },
+      "counties_served": [
+        "17043"
+      ]
+    },
+    {
+      "uid": "b49aac4f",
+      "name": "Oswego, NY",
+      "site_name": "City of Oswego Wastewater Treatment Plant",
+      "place_name": "Oswego, New York",
+      "city": "Oswego",
+      "state": "New York",
+      "zipcode": "13126",
+      "country": "United States",
+      "sewershed_pop": 30000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -76.53458930132619,
+          43.45650677032929
+        ]
+      },
+      "counties_served": [
+        "36075"
+      ]
+    },
+    {
+      "uid": "6198317f",
+      "name": "River Road, Amarillo, TX",
+      "site_name": "River Road WWTP",
+      "place_name": "Amarillo, Texas",
+      "city": "Amarillo",
+      "state": "Texas",
+      "zipcode": "79107",
+      "country": "United States",
+      "sewershed_pop": 140000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -101.80031125388723,
+          35.33309290258865
+        ]
+      },
+      "counties_served": [
+        "48375",
+        "48381"
+      ]
+    },
+    {
+      "uid": "a0fbcdfb",
+      "name": "Paso Robles, CA",
+      "site_name": "City of Paso Robles Wastewater Treatment Plant",
+      "place_name": "Paso Robles, California",
+      "city": "Paso Robles",
+      "state": "California",
+      "zipcode": "93446",
+      "country": "United States",
+      "sewershed_pop": 31037,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -120.66121945734675,
+          35.6378931425386
+        ]
+      },
+      "counties_served": [
+        "06079"
+      ]
+    },
+    {
+      "uid": "6fa9c773",
+      "name": "Kaw Point, Kansas City, KS",
+      "site_name": "Municipal Wastewater Treatment Plant No. 1 (Kaw Point)",
+      "place_name": "Kansas City, Kansas",
+      "city": "Kansas City",
+      "state": "Kansas",
+      "zipcode": "66118",
+      "country": "United States",
+      "sewershed_pop": 90000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -94.61099311960537,
+          39.11181834306593
+        ]
+      },
+      "counties_served": [
+        "20209"
+      ]
+    },
+    {
+      "uid": "25481907",
+      "name": "Palo Alto, CA",
+      "site_name": "Palo Alto Regional Water Quality Control Plant",
+      "place_name": "Palo Alto, California",
+      "city": "Palo Alto",
+      "state": "California",
+      "zipcode": "94303",
+      "country": "United States",
+      "sewershed_pop": 236000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -122.12857030710329,
+          37.39510921140642
+        ]
+      },
+      "counties_served": [
+        "06085"
+      ]
+    },
+    {
+      "uid": "57573845",
+      "name": "Contra Costa County, CA",
+      "site_name": "Central Contra Costa Sanitary District",
+      "place_name": "Martinez, California",
+      "city": "Martinez",
+      "state": "California",
+      "zipcode": "94553",
+      "country": "United States",
+      "sewershed_pop": 484800,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -122.03532099369,
+          37.89354726790636
+        ]
+      },
+      "counties_served": [
+        "06013"
+      ]
+    },
+    {
+      "uid": "de11012f",
+      "name": "Sand Island, Honolulu, HI",
+      "site_name": "Sand Island Wastewater Treatment Plant",
+      "place_name": "Honolulu, Hawaii",
+      "city": "Honolulu",
+      "state": "Hawaii",
+      "zipcode": "96819",
+      "country": "United States",
+      "sewershed_pop": 390000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -157.88242377625178,
+          21.307998814013505
+        ]
+      },
+      "counties_served": [
+        "15003"
+      ]
+    },
+    {
+      "uid": "8a9b4b52",
+      "name": "Sunnyvale, CA",
+      "site_name": "City of Sunnyvale Water Pollution Control Plant",
+      "place_name": "Sunnyvale, California",
+      "city": "Sunnyvale",
+      "state": "California",
+      "zipcode": "94089",
+      "country": "United States",
+      "sewershed_pop": 153000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -122.03171513533675,
+          37.38061370251241
+        ]
+      },
+      "counties_served": [
+        "06085"
+      ]
+    },
+    {
+      "uid": "6a124a4d",
+      "name": "South Bend, IN",
+      "site_name": "City of South Bend Wastewater Treatment Plant",
+      "place_name": "South Bend, Indiana",
+      "city": "South Bend",
+      "state": "Indiana",
+      "zipcode": "46628",
+      "country": "United States",
+      "sewershed_pop": 130000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -86.26943323213959,
+          41.71885231097345
+        ]
+      },
+      "counties_served": [
+        "18141"
+      ]
+    },
+    {
+      "uid": "661e71cb",
+      "name": "Honouliuli, Honolulu, HI",
+      "site_name": "Honouliuli Wastewater Treatment Plant",
+      "place_name": "Honolulu, Hawaii",
+      "city": "Honolulu",
+      "state": "Hawaii",
+      "zipcode": "96706",
+      "country": "United States",
+      "sewershed_pop": 300000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -158.03811607787785,
+          21.330261901111953
+        ]
+      },
+      "counties_served": [
+        "15003"
+      ]
+    },
+    {
+      "uid": "1992fcb1",
+      "name": "Hollywood Road, Amarillo, TX",
+      "site_name": "Hollywood Road WWTP",
+      "place_name": "Amarillo, Texas",
+      "city": "Amarillo",
+      "state": "Texas",
+      "zipcode": "79118",
+      "country": "United States",
+      "sewershed_pop": 60000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -101.79216332118403,
+          35.10866783641596
+        ]
+      },
+      "counties_served": [
+        "48381",
+        "48375"
+      ]
+    },
+    {
+      "uid": "ae03f732",
+      "name": "Northwest, Saint Petersburg, FL",
+      "site_name": "Northwest Water Reclamation Facility",
+      "place_name": "Saint Petersburg, Florida",
+      "city": "Saint Petersburg",
+      "state": "Florida",
+      "zipcode": "33710",
+      "country": "United States",
+      "sewershed_pop": 94218,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -82.74085731320068,
+          27.79567636645873
+        ]
+      },
+      "counties_served": [
+        "12103"
+      ]
+    },
+    {
+      "uid": "278470a3",
+      "name": "Winters, CA",
+      "site_name": "Winters - East Street Pump Station",
+      "place_name": "Winters, California",
+      "city": "Winters",
+      "state": "California",
+      "zipcode": "95694",
+      "country": "United States",
+      "sewershed_pop": 7286,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -121.983314741842,
+          38.53245830860023
+        ]
+      },
+      "counties_served": [
+        "06113"
+      ]
+    },
+    {
+      "uid": "7594c6cf",
+      "name": "Aquia, Stafford, VA",
+      "site_name": "Aquia Wastewater Treatment Facility",
+      "place_name": "Stafford, Virginia",
+      "city": "Stafford",
+      "state": "Virginia",
+      "zipcode": "22554",
+      "country": "United States",
+      "sewershed_pop": 100000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -77.39669643041093,
+          38.4466821117917
+        ]
+      },
+      "counties_served": [
+        "51179"
+      ]
+    },
+    {
+      "uid": "449fe157",
+      "name": "Lawrence, KS",
+      "site_name": "Lawrence Kansas River Wastewater Treatment Facility",
+      "place_name": "Lawrence, Kansas",
+      "city": "Lawrence",
+      "state": "Kansas",
+      "zipcode": "66046",
+      "country": "United States",
+      "sewershed_pop": 80000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -95.22156172801054,
+          38.96911429432387
+        ]
+      },
+      "counties_served": [
+        "20045"
+      ]
+    },
+    {
+      "uid": "6a9c94cc",
+      "name": "Akron, OH",
+      "site_name": "Akron Water Reclamation Facility",
+      "place_name": "Akron, Ohio",
+      "city": "Akron",
+      "state": "Ohio",
+      "zipcode": "44313",
+      "country": "United States",
+      "sewershed_pop": 365000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -81.56696318106515,
+          41.15683496911816
+        ]
+      },
+      "counties_served": [
+        "39153",
+        "39133"
+      ]
+    },
+    {
+      "uid": "cdceadd7",
+      "name": "Davis, CA",
+      "site_name": "City of Davis Wastewater Treatment Plant",
+      "place_name": "Davis, California",
+      "city": "Davis",
+      "state": "California",
+      "zipcode": "95616",
+      "country": "United States",
+      "sewershed_pop": 68000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -121.74024456177757,
+          38.55564592091971
+        ]
+      },
+      "counties_served": [
+        "06113"
+      ]
+    },
+    {
+      "uid": "05e26ce7",
+      "name": "Louisville, KY",
+      "site_name": "Morris Forman Water Quality Treatment Center",
+      "place_name": "Louisville, Kentucky",
+      "city": "Louisville",
+      "state": "Kentucky",
+      "zipcode": "40211",
+      "country": "United States",
+      "sewershed_pop": 426007,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -85.65975032966944,
+          38.185406207976214
+        ]
+      },
+      "counties_served": [
+        "21111"
+      ]
+    },
+    {
+      "uid": "02d242e0",
+      "name": "Union City, CA",
+      "site_name": "[Union City Basin] - Raymond A. Boege Alvarado WWTP",
+      "place_name": "Union City, California",
+      "city": "Union City",
+      "state": "California",
+      "zipcode": "94587",
+      "country": "United States",
+      "sewershed_pop": 68150,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -122.08949894035773,
+          37.59329016417111
+        ]
+      },
+      "counties_served": [
+        "06001"
+      ]
+    },
+    {
+      "uid": "71a2f4b6",
+      "name": "Windsor, CA",
+      "site_name": "Windsor Wastewater Treatment, Reclamation, and Disposal Facility",
+      "place_name": "Windsor, California",
+      "city": "Windsor",
+      "state": "California",
+      "zipcode": "95492",
+      "country": "United States",
+      "sewershed_pop": 28000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -122.81242755192812,
+          38.54608577449125
+        ]
+      },
+      "counties_served": [
+        "06097"
+      ]
+    },
+    {
+      "uid": "bcbb8596",
+      "name": "Lancaster, CA",
+      "site_name": "Lancaster Water Reclamation Plant",
+      "place_name": "Lancaster, California",
+      "city": "Lancaster",
+      "state": "California",
+      "zipcode": "93534",
+      "country": "United States",
+      "sewershed_pop": 200000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -118.16230553451692,
+          34.67231074484339
+        ]
+      },
+      "counties_served": [
+        "06037"
+      ]
+    },
+    {
+      "uid": "2894c9a2",
+      "name": "Southside, Dallas, TX",
+      "site_name": "Southside Wastewater Treatment Plant (City of Dallas)",
+      "place_name": "Dallas, Texas",
+      "city": "Dallas",
+      "state": "Texas",
+      "zipcode": "75253",
+      "country": "United States",
+      "sewershed_pop": 421700,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -96.63438662913903,
+          32.64803630427288
+        ]
+      },
+      "counties_served": [
+        "48113"
+      ]
+    },
+    {
+      "uid": "bc79f92b",
+      "name": "Santa Rosa, CA",
+      "site_name": "City of Santa Rosa, Laguna Treatment Plant",
+      "place_name": "Santa Rosa, California",
+      "city": "Santa Rosa",
+      "state": "California",
+      "zipcode": "95407",
+      "country": "United States",
+      "sewershed_pop": 230000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -122.69995368102735,
+          38.44677408301273
+        ]
+      },
+      "counties_served": [
+        "06097"
+      ]
+    },
+    {
+      "uid": "67c38148",
+      "name": "College Park, GA",
+      "site_name": "Camp Creek Water Reclamation Facility",
+      "place_name": "College Park, Georgia",
+      "city": "College Park",
+      "state": "Georgia",
+      "zipcode": "30349",
+      "country": "United States",
+      "sewershed_pop": 190000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -84.63468358864723,
+          33.67823274879562
+        ]
+      },
+      "counties_served": [
+        "13121"
+      ]
+    },
+    {
+      "uid": "65f8bd2b",
+      "name": "Woodlands SJRA WWTF No. 2, TX",
+      "site_name": "SJRA WWTF No.2",
+      "place_name": "Woodlands, Texas",
+      "city": "Woodlands",
+      "state": "Texas",
+      "zipcode": "77381",
+      "country": "United States",
+      "sewershed_pop": 70000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -95.4802706346084,
+          30.187956600806032
+        ]
+      },
+      "counties_served": [
+        "48339"
+      ]
+    },
+    {
+      "uid": "e9e87e61",
+      "name": "Southeast San Francisco, CA",
+      "site_name": "Southeast San Francisco",
+      "place_name": "San Francisco, California",
+      "city": "San Francisco",
+      "state": "California",
+      "zipcode": "94124",
+      "country": "United States",
+      "sewershed_pop": 750000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -122.41605999005179,
+          37.73007610699163
+        ]
+      },
+      "counties_served": [
+        "06075",
+        "06081"
+      ]
+    },
+    {
+      "uid": "f847e663",
+      "name": "Sunnyvale, TX",
+      "site_name": "Duck Creek Wastewater Treatment Plant",
+      "place_name": "Sunnyvale, Texas",
+      "city": "Sunnyvale",
+      "state": "Texas",
+      "zipcode": "75182",
+      "country": "United States",
+      "sewershed_pop": 186000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -96.6222337901932,
+          32.867061656377366
+        ]
+      },
+      "counties_served": [
+        "48113"
+      ]
+    },
+    {
+      "uid": "4ff63b66",
+      "name": "Provo, UT",
+      "site_name": "Provo City Water Reclamation Facility",
+      "place_name": "Provo, Utah",
+      "city": "Provo",
+      "state": "Utah",
+      "zipcode": "84606",
+      "country": "United States",
+      "sewershed_pop": 115000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -111.67120276620788,
+          40.24056036635138
+        ]
+      },
+      "counties_served": [
+        "49049"
+      ]
+    },
+    {
+      "uid": "eec2c26a",
+      "name": "Ontario, CA",
+      "site_name": "Regional Water Recycling Plant No.1 (RP-1)",
+      "place_name": "Ontario, California",
+      "city": "Ontario",
+      "state": "California",
+      "zipcode": "91761",
+      "country": "United States",
+      "sewershed_pop": 890000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -117.59889874301946,
+          34.05812855733125
+        ]
+      },
+      "counties_served": [
+        "06071"
+      ]
+    },
+    {
+      "uid": "2e07e618",
+      "name": "JB Latham, Laguna Niguel, CA",
+      "site_name": "JB Latham Treatment Plant",
+      "place_name": "Laguna Niguel, California",
+      "city": "Laguna Niguel",
+      "state": "California",
+      "zipcode": "92629",
+      "country": "United States",
+      "sewershed_pop": 120000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -117.68451583919841,
+          33.46704772251542
+        ]
+      },
+      "counties_served": [
+        "06059"
+      ]
+    },
+    {
+      "uid": "ef0fecd2",
+      "name": "Wheeling, WV",
+      "site_name": "City of Wheeling, Water Pollution Control Division",
+      "place_name": "Wheeling, West Virginia",
+      "city": "Wheeling",
+      "state": "West Virginia",
+      "zipcode": "26003",
+      "country": "United States",
+      "sewershed_pop": 100000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -80.72752607631581,
+          40.05596283161303
+        ]
+      },
+      "counties_served": [
+        "54069"
+      ]
+    },
+    {
+      "uid": "53544ca3",
+      "name": "Pinson, AL",
+      "site_name": "Turkey Creek Water Reclamation Facility",
+      "place_name": "Pinson, Alabama",
+      "city": "Pinson",
+      "state": "Alabama",
+      "zipcode": "35126",
+      "country": "United States",
+      "sewershed_pop": 30000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -86.69804346414897,
+          33.71030063012412
+        ]
+      },
+      "counties_served": [
+        "01073"
+      ]
+    },
+    {
+      "uid": "579da349",
+      "name": "Gilroy, CA",
+      "site_name": "South County Regional Wastewater Authority",
+      "place_name": "Gilroy, California",
+      "city": "Gilroy",
+      "state": "California",
+      "zipcode": "95020",
+      "country": "United States",
+      "sewershed_pop": 110338,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -121.58603594536739,
+          37.0062524521628
+        ]
+      },
+      "counties_served": [
+        "06085"
+      ]
+    },
+    {
+      "uid": "7639418a",
+      "name": "Little Falls Run, Stafford, VA",
+      "site_name": "Little Falls Run Wastewater Treatment Facility",
+      "place_name": "Fredericksburg, Virginia",
+      "city": "Fredericksburg",
+      "state": "Virginia",
+      "zipcode": "22405",
+      "country": "United States",
+      "sewershed_pop": 50000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -77.41119909004604,
+          38.25961460988226
+        ]
+      },
+      "counties_served": [
+        "51179"
+      ]
+    },
+    {
+      "uid": "17688e77",
+      "name": "Harrison, AR",
+      "site_name": "City of Harrison Wastewater Treatment Plant",
+      "place_name": "Harrison, Arkansas",
+      "city": "Harrison",
+      "state": "Arkansas",
+      "zipcode": "72601",
+      "country": "United States",
+      "sewershed_pop": 15000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -93.08214927670763,
+          36.24193388969692
+        ]
+      },
+      "counties_served": [
+        "05009"
+      ]
+    },
+    {
+      "uid": "a1086fe8",
+      "name": "Woodland, CA",
+      "site_name": "Woodland Water Pollution Control Facility",
+      "place_name": "Woodland, California",
+      "city": "Woodland",
+      "state": "California",
+      "zipcode": "95776",
+      "country": "United States",
+      "sewershed_pop": 59000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -121.75653923749324,
+          38.67138471344563
+        ]
+      },
+      "counties_served": [
+        "06113"
+      ]
+    },
+    {
+      "uid": "11aad2ea",
+      "name": "Las Vegas, NV",
+      "site_name": "Clark County Water Reclamation District (CCWRD) Flamingo Water Resource Center (FWRC)",
+      "place_name": "Las Vegas, Nevada",
+      "city": "Las Vegas",
+      "state": "Nevada",
+      "zipcode": "89122",
+      "country": "United States",
+      "sewershed_pop": 1250000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -115.04602996720114,
+          36.114765922459384
+        ]
+      },
+      "counties_served": [
+        "32003"
+      ]
+    },
+    {
+      "uid": "49e9ffb5",
+      "name": "Gautier, MS",
+      "site_name": "2C-Gautier POTW",
+      "place_name": "Gautier, Mississippi",
+      "city": "Gautier",
+      "state": "Mississippi",
+      "zipcode": "39553",
+      "country": "United States",
+      "sewershed_pop": 19008,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -88.62837008650548,
+          30.415320677320985
+        ]
+      },
+      "counties_served": [
+        "28059"
+      ]
+    },
+    {
+      "uid": "a45520a5",
+      "name": "Bessemer, AL",
+      "site_name": "Valley Creek Water Reclamation Facility",
+      "place_name": "Bessemer, Alabama",
+      "city": "Bessemer",
+      "state": "Alabama",
+      "zipcode": "35023",
+      "country": "United States",
+      "sewershed_pop": 225000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -87.00310661933248,
+          33.39883937034506
+        ]
+      },
+      "counties_served": [
+        "01073"
+      ]
+    },
+    {
+      "uid": "14e2039b",
+      "name": "South, Orange County, FL",
+      "site_name": "South Water Reclamation Facility",
+      "place_name": "Orlando, Florida",
+      "city": "Orlando",
+      "state": "Florida",
+      "zipcode": "32819",
+      "country": "United States",
+      "sewershed_pop": 183009,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -81.4384027991119,
+          28.41968835881911
+        ]
+      },
+      "counties_served": [
+        "12095"
+      ]
+    },
+    {
+      "uid": "7aa13699",
+      "name": "Esparto, CA",
+      "site_name": "Esparto Wastewater Treatment Facility",
+      "place_name": "Esparto, California",
+      "city": "Esparto",
+      "state": "California",
+      "zipcode": "95627",
+      "country": "United States",
+      "sewershed_pop": 4006,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -122.01715490218767,
+          38.69328960771165
+        ]
+      },
+      "counties_served": [
+        "06113"
+      ]
+    },
+    {
+      "uid": "5c85ece3",
+      "name": "Wichita Falls, TX",
+      "site_name": "Wichita Falls Resource Recovery Facility",
+      "place_name": "Wichita Falls, TX, Texas",
+      "city": "Wichita Falls, TX",
+      "state": "Texas",
+      "zipcode": "76305",
+      "country": "United States",
+      "sewershed_pop": 90000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -98.4753597027242,
+          33.92237388887079
+        ]
+      },
+      "counties_served": [
+        "48485"
+      ]
+    },
+    {
+      "uid": "c2219740",
+      "name": "Madera, CA",
+      "site_name": "City of Madera, Wastewater Treatment Plant",
+      "place_name": "Madera, California",
+      "city": "Madera",
+      "state": "California",
+      "zipcode": "93637",
+      "country": "United States",
+      "sewershed_pop": 67944,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -120.15654018980725,
+          36.939839344120564
+        ]
+      },
+      "counties_served": [
+        "06039"
+      ]
+    },
+    {
+      "uid": "0015ba22",
+      "name": "Village Creek, Birmingham, AL",
+      "site_name": "Village Creek Water Reclamation Facility",
+      "place_name": "Birmingham, Alabama",
+      "city": "Birmingham",
+      "state": "Alabama",
+      "zipcode": "35224",
+      "country": "United States",
+      "sewershed_pop": 200000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -86.89823330483965,
+          33.52664401916214
+        ]
+      },
+      "counties_served": [
+        "01073"
+      ]
+    },
+    {
+      "uid": "b9c02d34",
+      "name": "Los Angeles, CA",
+      "site_name": "Hyperion Water Reclamation Plant (HWRP)",
+      "place_name": "Playa Del Rey, California",
+      "city": "Playa Del Rey",
+      "state": "California",
+      "zipcode": "90293",
+      "country": "United States",
+      "sewershed_pop": 4000000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -118.41604949105738,
+          34.14340421412558
+        ]
+      },
+      "counties_served": [
+        "06037"
+      ]
+    },
+    {
+      "uid": "547c5d11",
+      "name": "Bridgeton, NJ",
+      "site_name": "Cumberland County Utilities Authority",
+      "place_name": "Bridgeton, New Jersey",
+      "city": "Bridgeton",
+      "state": "New Jersey",
+      "zipcode": "08302",
+      "country": "United States",
+      "sewershed_pop": 50000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -75.23526984987137,
+          39.41890581155279
+        ]
+      },
+      "counties_served": [
+        "34011"
+      ]
+    },
+    {
+      "uid": "62922fcd",
+      "name": "Regional, Laguna Niguel, CA",
+      "site_name": "Regional Treatment Plant",
+      "place_name": "Laguna Niguel, California",
+      "city": "Laguna Niguel",
+      "state": "California",
+      "zipcode": "92677",
+      "country": "United States",
+      "sewershed_pop": 129000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -117.69570059531326,
+          33.538376396789424
+        ]
+      },
+      "counties_served": [
+        "06059"
+      ]
+    },
+    {
+      "uid": "897abfb5",
+      "name": "Dallas Central, Dallas, TX",
+      "site_name": "DCWT Dallas",
+      "place_name": "Dallas, Texas",
+      "city": "Dallas",
+      "state": "Texas",
+      "zipcode": "75203",
+      "country": "United States",
+      "sewershed_pop": 270000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -96.77700138465913,
+          32.73748967620304
+        ]
+      },
+      "counties_served": [
+        "48113"
+      ]
+    },
+    {
+      "uid": "7daae816",
+      "name": "Garland, TX",
+      "site_name": "City of Garland Rowlett Creek WWTP",
+      "place_name": "Garland, Texas",
+      "city": "Garland",
+      "state": "Texas",
+      "zipcode": "75040",
+      "country": "United States",
+      "sewershed_pop": 200000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -96.59072426202563,
+          32.936787657108475
+        ]
+      },
+      "counties_served": [
+        "48113"
+      ]
+    },
+    {
+      "uid": "8fc6e1b9",
+      "name": "Wahiawa, Honolulu, HI",
+      "site_name": "Wahiawa Wastewater Treatment Plant",
+      "place_name": "Honolulu, Hawaii",
+      "city": "Honolulu",
+      "state": "Hawaii",
+      "zipcode": "96786",
+      "country": "United States",
+      "sewershed_pop": 18000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -158.03927755780688,
+          21.49222708774835
+        ]
+      },
+      "counties_served": [
+        "15003"
+      ]
+    },
+    {
+      "uid": "37370286",
+      "name": "Los Angeles County, CA",
+      "site_name": "A.K. Warren Water Resource Facility",
+      "place_name": "Carson, California",
+      "city": "Carson",
+      "state": "California",
+      "zipcode": "90745",
+      "country": "United States",
+      "sewershed_pop": 3500000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -118.09393680149105,
+          33.98418758483532
+        ]
+      },
+      "counties_served": [
+        "06037"
+      ]
+    },
+    {
+      "uid": "90f2bbb3",
+      "name": "Waianae, Honolulu, HI",
+      "site_name": "Waianae Wastewater Treatment Plant",
+      "place_name": "Honolulu, Hawaii",
+      "city": "Honolulu",
+      "state": "Hawaii",
+      "zipcode": "96792",
+      "country": "United States",
+      "sewershed_pop": 44000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -158.18317144751902,
+          21.433704517182584
+        ]
+      },
+      "counties_served": [
+        "15003"
+      ]
+    },
+    {
+      "uid": "dde88f2b",
+      "name": "San Rafael, CA",
+      "site_name": "Central Marin Sanitation Agency",
+      "place_name": "San Rafael, California",
+      "city": "San Rafael",
+      "state": "California",
+      "zipcode": "94901",
+      "country": "United States",
+      "sewershed_pop": 104250,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -122.51364746791047,
+          37.922936073197334
+        ]
+      },
+      "counties_served": [
+        "06041"
+      ]
+    },
+    {
+      "uid": "319aa6e4",
+      "name": "Merced, CA",
+      "site_name": "Merced Wastewater Treatment Plant",
+      "place_name": "Merced, California",
+      "city": "Merced",
+      "state": "California",
+      "zipcode": "95341",
+      "country": "United States",
+      "sewershed_pop": 91000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -120.48082718732411,
+          37.30962694921173
+        ]
+      },
+      "counties_served": [
+        "06047"
+      ]
+    },
+    {
+      "uid": "d976f9e1",
+      "name": "Hagerstown, MD",
+      "site_name": "Hagerstown Wastewater Treatment Plant",
+      "place_name": "Hagerstown, Maryland",
+      "city": "Hagerstown",
+      "state": "Maryland",
+      "zipcode": "21740",
+      "country": "United States",
+      "sewershed_pop": 90000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -77.70759620124363,
+          39.61976600369618
+        ]
+      },
+      "counties_served": [
+        "24043"
+      ]
+    },
+    {
+      "uid": "6c9b6f97",
+      "name": "Red Wing, MN",
+      "site_name": "Red Wing Wastewater Treatment Facility",
+      "place_name": "Red Wing, Minnesota",
+      "city": "Red Wing",
+      "state": "Minnesota",
+      "zipcode": "55066",
+      "country": "United States",
+      "sewershed_pop": 16000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -92.52695618231263,
+          44.57163562438112
+        ]
+      },
+      "counties_served": [
+        "27049"
+      ]
+    },
+    {
+      "uid": "84d489b2",
+      "name": "Novato, CA",
+      "site_name": "Novato Sanitary District",
+      "place_name": "Novato, California",
+      "city": "Novato",
+      "state": "California",
+      "zipcode": "94945",
+      "country": "United States",
+      "sewershed_pop": 53000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -122.57073797995945,
+          38.0955121091648
+        ]
+      },
+      "counties_served": [
+        "06041"
+      ]
+    },
+    {
+      "uid": "eea39845",
+      "name": "Utoy Creek, Atlanta, GA",
+      "site_name": "Utoy Creek Water Reclamation Center",
+      "place_name": "Atlanta, Georgia",
+      "city": "Atlanta",
+      "state": "Georgia",
+      "zipcode": "30336",
+      "country": "United States",
+      "sewershed_pop": 70887,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -84.55261482,
+          33.74164426
+        ]
+      },
+      "counties_served": [
+        "13121"
+      ]
+    },
+    {
+      "uid": "bb9886ae",
+      "name": "Blue Plains, Washington, DC",
+      "site_name": "Blue Plains Advanced Wastewater Treatment Plant",
+      "place_name": "Washington, District of Columbia",
+      "city": "Washington",
+      "state": "District of Columbia",
+      "zipcode": "20032",
+      "country": "United States",
+      "sewershed_pop": 2000000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -77.0185306247519,
+          38.82070866305298
+        ]
+      },
+      "counties_served": [
+        "11001",
+        "11031",
+        "24033",
+        "51059",
+        "51107"
+      ]
+    },
+    {
+      "uid": "b50c6424",
+      "name": "Boston, MA",
+      "site_name": "Deer Island Treatment Plant",
+      "place_name": "Boston Metropolitan Area, Massachusetts",
+      "city": "Boston Metropolitan Area",
+      "state": "Massachusetts",
+      "zipcode": "02152",
+      "country": "United States",
+      "sewershed_pop": 2400000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -70.95715938546523,
+          42.35151427002792
+        ]
+      },
+      "counties_served": [
+        "25025",
+        "25021",
+        "25017",
+        "25027",
+        "25023"
+      ]
+    },
+    {
+      "uid": "0c809103",
+      "name": "Fairfield, CA",
+      "site_name": "Fairfield-Suisun Sewer District",
+      "place_name": "Fairfield, California",
+      "city": "Fairfield",
+      "state": "California",
+      "zipcode": "94534",
+      "country": "United States",
+      "sewershed_pop": 155000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -122.0611176137152,
+          38.24983318351025
+        ]
+      },
+      "counties_served": [
+        "06095"
+      ]
+    },
+    {
+      "uid": "ad86a9d1",
+      "name": "Turlock, CA",
+      "site_name": "Turlock Regional Water Quality Control Facility",
+      "place_name": "Turlock, California",
+      "city": "Turlock",
+      "state": "California",
+      "zipcode": "95380",
+      "country": "United States",
+      "sewershed_pop": 86000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -120.86334890865199,
+          37.50508590638058
+        ]
+      },
+      "counties_served": [
+        "06099"
+      ]
+    },
+    {
+      "uid": "cd088b1b",
+      "name": "West Boise, ID",
+      "site_name": "West Boise Water Renewal Facility",
+      "place_name": "Boise, Idaho",
+      "city": "Boise",
+      "state": "Idaho",
+      "zipcode": "83714",
+      "country": "United States",
+      "sewershed_pop": 206629,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -116.32797623598925,
+          43.6678879765255
+        ]
+      },
+      "counties_served": [
+        "16001"
+      ]
+    },
+    {
+      "uid": "480557e5",
+      "name": "RM Clayton, Atlanta, GA",
+      "site_name": "RM Clayton Water Reclamation Center",
+      "place_name": "Atlanta, Georgia",
+      "city": "Atlanta",
+      "state": "Georgia",
+      "zipcode": "30318",
+      "country": "United States",
+      "sewershed_pop": 600000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -84.45482158,
+          33.82253167
+        ]
+      },
+      "counties_served": [
+        "13121"
+      ]
+    },
+    {
+      "uid": "c8d357b9",
+      "name": "San Jose, CA",
+      "site_name": "San Jose-Santa Clara Regional Wastewater Facility",
+      "place_name": "San Jose, California",
+      "city": "San Jose",
+      "state": "California",
+      "zipcode": "95134",
+      "country": "United States",
+      "sewershed_pop": 1500000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -121.8943871198542,
+          37.3084269253591
+        ]
+      },
+      "counties_served": [
+        "06085"
+      ]
+    },
+    {
+      "uid": "260d1bc5",
+      "name": "Millbury, MA",
+      "site_name": "Upper Blackstone Clean Water",
+      "place_name": "Millbury, Massachusetts",
+      "city": "Millbury",
+      "state": "Massachusetts",
+      "zipcode": "01527",
+      "country": "United States",
+      "sewershed_pop": 250000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -71.78835610893613,
+          42.21238219746573
+        ]
+      },
+      "counties_served": [
+        "25027"
+      ]
+    },
+    {
+      "uid": "95182cf6",
+      "name": "South, Parker, CO",
+      "site_name": "Parker Water and Sanitation District South Water Reclamation Facility",
+      "place_name": "Parker, Colorado",
+      "city": "Parker",
+      "state": "Colorado",
+      "zipcode": "80134",
+      "country": "United States",
+      "sewershed_pop": 25000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -104.77802217778864,
+          39.49114161995909
+        ]
+      },
+      "counties_served": [
+        "08035"
+      ]
+    },
+    {
+      "uid": "31745446",
+      "name": "Lompoc, CA",
+      "site_name": "Lompoc Regional Wastewater Reclamation Plant",
+      "place_name": "Lompoc, California",
+      "city": "Lompoc",
+      "state": "California",
+      "zipcode": "93436",
+      "country": "United States",
+      "sewershed_pop": 69290,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -120.46464434526719,
+          34.65265020515991
+        ]
+      },
+      "counties_served": [
+        "06083"
+      ]
+    },
+    {
+      "uid": "c1f30027",
+      "name": "Kinston, NC",
+      "site_name": "Johnnie Mosley Regional Water Reclamation Facility",
+      "place_name": "Kinston, North Carolina",
+      "city": "Kinston",
+      "state": "North Carolina",
+      "zipcode": "28501",
+      "country": "United States",
+      "sewershed_pop": 25000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -77.61179356064429,
+          35.22844301562357
+        ]
+      },
+      "counties_served": [
+        "37107"
+      ]
+    },
+    {
+      "uid": "53f130da",
+      "name": "Downtown, Jeffersonville, IN",
+      "site_name": "Jeffersonville Downtown WWTP",
+      "place_name": "Jeffersonville, Indiana",
+      "city": "Jeffersonville",
+      "state": "Indiana",
+      "zipcode": "47130",
+      "country": "United States",
+      "sewershed_pop": 25000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -85.74312319963187,
+          38.287345054800745
+        ]
+      },
+      "counties_served": [
+        "18019"
+      ]
+    },
+    {
+      "uid": "9577942d",
+      "name": "North, Jeffersonville, IN",
+      "site_name": "North Water Reclamation Facility",
+      "place_name": "Jeffersonville, Indiana",
+      "city": "Jeffersonville",
+      "state": "Indiana",
+      "zipcode": "47130",
+      "country": "United States",
+      "sewershed_pop": 25000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -85.685554552633,
+          38.36290292436492
+        ]
+      },
+      "counties_served": [
+        "18019"
+      ]
+    },
+    {
+      "uid": "ed9a1f44",
+      "name": "Los Banos, CA",
+      "site_name": "Los Banos Wastewater Treatment Plant",
+      "place_name": "Los Banos, California",
+      "city": "Los Banos",
+      "state": "California",
+      "zipcode": "93635",
+      "country": "United States",
+      "sewershed_pop": 42000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -120.84567174991969,
+          37.06249471859223
+        ]
+      },
+      "counties_served": [
+        "06047"
+      ]
+    },
+    {
+      "uid": "a82ce939",
+      "name": "Santa Cruz, CA",
+      "site_name": "City of Santa Cruz WTF - City Influent",
+      "place_name": "Santa Cruz, California",
+      "city": "Santa Cruz",
+      "state": "California",
+      "zipcode": "95060",
+      "country": "United States",
+      "sewershed_pop": 160000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -121.99369479209052,
+          36.97898010996669
+        ]
+      },
+      "counties_served": [
+        "06087"
+      ]
+    },
+    {
+      "uid": "cb0e1c76",
+      "name": "Riverside, CA",
+      "site_name": "Riverside Water Quality Control Plant",
+      "place_name": "Riverside, California",
+      "city": "Riverside",
+      "state": "California",
+      "zipcode": "92504",
+      "country": "United States",
+      "sewershed_pop": 350000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -117.45185967084431,
+          33.96291507066805
+        ]
+      },
+      "counties_served": [
+        "06065"
+      ]
+    },
+    {
+      "uid": "e5958509",
+      "name": "Coeur d'Alene, ID",
+      "site_name": "City of Coeur d'Alene Water Resource Recovery Facility",
+      "place_name": "Coeur D Alene, Idaho",
+      "city": "Coeur D Alene",
+      "state": "Idaho",
+      "zipcode": "83814",
+      "country": "United States",
+      "sewershed_pop": 50540,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -116.79560380841508,
+          47.70618351470957
+        ]
+      },
+      "counties_served": [
+        "16055"
+      ]
+    },
+    {
+      "uid": "37430ac9",
+      "name": "Oceanside, San Francisco, CA",
+      "site_name": "Oceanside Water Pollution Control Plant",
+      "place_name": "San Francisco, CA, California",
+      "city": "San Francisco, CA",
+      "state": "California",
+      "zipcode": "94132",
+      "country": "United States",
+      "sewershed_pop": 250000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -122.47834149082438,
+          37.7521032173726
+        ]
+      },
+      "counties_served": [
+        "06075",
+        "06081"
+      ]
+    },
+    {
+      "uid": "4d9ad1b2",
+      "name": "Pascagoula Moss Point, MS",
+      "site_name": "7 C- Pascagoula Moss Point POTW",
+      "place_name": "Pascagoula, Mississippi",
+      "city": "Pascagoula",
+      "state": "Mississippi",
+      "zipcode": "39565",
+      "country": "United States",
+      "sewershed_pop": 34333,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -88.56201593310868,
+          30.364337460838804
+        ]
+      },
+      "counties_served": [
+        "28059"
+      ]
+    },
+    {
+      "uid": "064aac08",
+      "name": "Essex Junction, VT",
+      "site_name": "City of Essex Junction Wastewater Treatment Facility",
+      "place_name": "Essex Junction, Vermont",
+      "city": "Essex Junction",
+      "state": "Vermont",
+      "zipcode": "05452",
+      "country": "United States",
+      "sewershed_pop": 30000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -73.12080439633888,
+          44.481040154035405
+        ]
+      },
+      "counties_served": [
+        "50007"
+      ]
+    },
+    {
+      "uid": "37dcb0bd",
+      "name": "Ithaca, NY",
+      "site_name": "Ithaca Area Wastewater Treatment Facility",
+      "place_name": "Ithaca, New York",
+      "city": "Ithaca",
+      "state": "New York",
+      "zipcode": "14850",
+      "country": "United States",
+      "sewershed_pop": 90000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -76.50724436642787,
+          42.450103517923566
+        ]
+      },
+      "counties_served": [
+        "36109"
+      ]
+    },
+    {
+      "uid": "1a8b0d0b",
+      "name": "Fultondale, AL",
+      "site_name": "Five Mile Creek Water Reclamation Facility",
+      "place_name": "Fultondale, Alabama",
+      "city": "Fultondale",
+      "state": "Alabama",
+      "zipcode": "35068",
+      "country": "United States",
+      "sewershed_pop": 77000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -86.85571708845515,
+          33.60542417590698
+        ]
+      },
+      "counties_served": [
+        "01073"
+      ]
+    },
+    {
+      "uid": "2d45f25c",
+      "name": "Ottumwa, IA",
+      "site_name": "Ottumwa WPCF",
+      "place_name": "Ottumwa, Iowa",
+      "city": "Ottumwa",
+      "state": "Iowa",
+      "zipcode": "52501",
+      "country": "United States",
+      "sewershed_pop": 25529,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -92.38515182208907,
+          41.001968630516615
+        ]
+      },
+      "counties_served": [
+        "19179"
+      ]
+    },
+    {
+      "uid": "f405b6f5",
+      "name": "Eastern, Orange County, FL",
+      "site_name": "Eastern Water Reclamation Facility",
+      "place_name": "Orlando, Florida",
+      "city": "Orlando",
+      "state": "Florida",
+      "zipcode": "32828",
+      "country": "United States",
+      "sewershed_pop": 195299,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -81.08646367164684,
+          28.476934339139177
+        ]
+      },
+      "counties_served": [
+        "12095"
+      ]
+    },
+    {
+      "uid": "67c2eba8",
+      "name": "Newark, CA",
+      "site_name": "[Newark Basin] - Raymond A. Boege Alvarado WWTP",
+      "place_name": "Union City, California",
+      "city": "Union City",
+      "state": "California",
+      "zipcode": "94560",
+      "country": "United States",
+      "sewershed_pop": 47229,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -122.01195976197313,
+          37.54637717139218
+        ]
+      },
+      "counties_served": [
+        "06001"
+      ]
+    },
+    {
+      "uid": "dd36fbfb",
+      "name": "Fremont, CA",
+      "site_name": "[Fremont Basin] -  Raymond A. Boege Alvarado WWTP",
+      "place_name": "Union City, California",
+      "city": "Union City",
+      "state": "California",
+      "zipcode": "94538",
+      "country": "United States",
+      "sewershed_pop": 229476,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -121.9453536471773,
+          37.50796213580803
+        ]
+      },
+      "counties_served": [
+        "06001"
+      ]
+    },
+    {
+      "uid": "ce6c7a3a",
+      "name": "South Miami, FL",
+      "site_name": "MDWASD South District WWTF",
+      "place_name": "Miami, Florida",
+      "city": "Miami",
+      "state": "Florida",
+      "zipcode": "33190",
+      "country": "United States",
+      "sewershed_pop": 920528,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -80.33900498921538,
+          25.54884051060585
+        ]
+      },
+      "counties_served": [
+        "12086"
+      ]
+    },
+    {
+      "uid": "fed97f6d",
+      "name": "Modesto, CA",
+      "site_name": "Modesto's Sutter Primary Treatment Facility",
+      "place_name": "Modesto, California",
+      "city": "Modesto",
+      "state": "California",
+      "zipcode": "95351",
+      "country": "United States",
+      "sewershed_pop": 230000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -120.98749179434768,
+          37.654791777658865
+        ]
+      },
+      "counties_served": [
+        "06099"
+      ]
+    },
+    {
+      "uid": "ad69db67",
+      "name": "Belmar, NJ",
+      "site_name": "South Monmouth Regional Sewerage Authority",
+      "place_name": "Belmar, New Jersey",
+      "city": "Belmar",
+      "state": "New Jersey",
+      "zipcode": "07719",
+      "country": "United States",
+      "sewershed_pop": 52672,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -74.04425525754941,
+          40.167368774120106
+        ]
+      },
+      "counties_served": [
+        "34025"
+      ]
+    },
+    {
+      "uid": "02f859bd",
+      "name": "Tallahassee, FL",
+      "site_name": "TPSmith Water Reclamation Facility",
+      "place_name": "Tallahassee, Florida",
+      "city": "Tallahassee",
+      "state": "Florida",
+      "zipcode": "32305",
+      "country": "United States",
+      "sewershed_pop": 212065,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -84.32234653791602,
+          30.389996296622222
+        ]
+      },
+      "counties_served": [
+        "12073"
+      ]
+    },
+    {
+      "uid": "6ac8ec71",
+      "name": "Wausau, WI",
+      "site_name": "Wausau Waterworks Wastewater Treatment Facility",
+      "place_name": "Wausau, Wisconsin",
+      "city": "Wausau",
+      "state": "Wisconsin",
+      "zipcode": "54401",
+      "country": "United States",
+      "sewershed_pop": 44000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -89.62741123437117,
+          44.94751802823404
+        ]
+      },
+      "counties_served": [
+        "55073"
+      ]
+    },
+    {
+      "uid": "264b87bd",
+      "name": "Dover, NH",
+      "site_name": "City of Dover Wastewater Treatment Facility",
+      "place_name": "Dover, New Hampshire",
+      "city": "Dover",
+      "state": "New Hampshire",
+      "zipcode": "03820",
+      "country": "United States",
+      "sewershed_pop": 30000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -70.88682708800538,
+          43.189702588249915
+        ]
+      },
+      "counties_served": [
+        "33017"
+      ]
+    },
+    {
+      "uid": "c0c2a2cc",
+      "name": "Seaford, DE",
+      "site_name": "Seaford Wastewater Treatment Facility",
+      "place_name": "Seaford, Delaware",
+      "city": "Seaford",
+      "state": "Delaware",
+      "zipcode": "19973",
+      "country": "United States",
+      "sewershed_pop": 13172,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -75.61833323545565,
+          38.63380125996994
+        ]
+      },
+      "counties_served": [
+        "10005"
+      ]
+    },
+    {
+      "uid": "c59f2ef7",
+      "name": "Newark, NJ",
+      "site_name": "Passaic Valley Sewerage Commission",
+      "place_name": "Newark, New Jersey",
+      "city": "Newark",
+      "state": "New Jersey",
+      "zipcode": "07105",
+      "country": "United States",
+      "sewershed_pop": 1500000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -74.13392484965654,
+          40.7139782974918
+        ]
+      },
+      "counties_served": [
+        "34013",
+        "34003",
+        "34017",
+        "34039",
+        "34031"
+      ]
+    },
+    {
+      "uid": "8369367a",
+      "name": "Key Biscayne, FL",
+      "site_name": "MDWASD Central District WWTP",
+      "place_name": "Key Biscayne, Florida",
+      "city": "Key Biscayne",
+      "state": "Florida",
+      "zipcode": "33149",
+      "country": "United States",
+      "sewershed_pop": 829725,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -80.1531601551707,
+          25.745286389234742
+        ]
+      },
+      "counties_served": [
+        "12086"
+      ]
+    },
+    {
+      "uid": "6c403fa7",
+      "name": "Bangor, ME",
+      "site_name": "City of Bangor Wastewater Treatment Plant",
+      "place_name": "Bangor, Maine",
+      "city": "Bangor",
+      "state": "Maine",
+      "zipcode": "04401",
+      "country": "United States",
+      "sewershed_pop": 40000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -68.7833074456301,
+          44.77966761058507
+        ]
+      },
+      "counties_served": [
+        "23019"
+      ]
+    },
+    {
+      "uid": "24d7f294",
+      "name": "Southwest, Orange County, FL",
+      "site_name": "Hamlin Water Reclamation Facility",
+      "place_name": "Winter Garden, Florida",
+      "city": "Winter Garden",
+      "state": "Florida",
+      "zipcode": "34787",
+      "country": "United States",
+      "sewershed_pop": 50000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -81.6232060341961,
+          28.489526151486732
+        ]
+      },
+      "counties_served": [
+        "12095"
+      ]
+    },
+    {
+      "uid": "1891e04b",
+      "name": "Indio, CA",
+      "site_name": "Valley Sanitary District",
+      "place_name": "Indio, California",
+      "city": "Indio",
+      "state": "California",
+      "zipcode": "92201",
+      "country": "United States",
+      "sewershed_pop": 91765,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -116.22800535994301,
+          33.72271038965942
+        ]
+      },
+      "counties_served": [
+        "06065"
+      ]
+    },
+    {
+      "uid": "3d795312",
+      "name": "Central Salt Lake Valley, UT",
+      "site_name": "Central Valley Water Reclamation Facility",
+      "place_name": "Salt Lake City, Utah",
+      "city": "Salt Lake City",
+      "state": "Utah",
+      "zipcode": "84119",
+      "country": "United States",
+      "sewershed_pop": 600000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -111.91688789140008,
+          40.70327296990475
+        ]
+      },
+      "counties_served": [
+        "49035"
+      ]
+    },
+    {
+      "uid": "bf4f1576",
+      "name": "Brunswick, ME",
+      "site_name": "Brunswick Sewer District",
+      "place_name": "Brunswick, Maine",
+      "city": "Brunswick",
+      "state": "Maine",
+      "zipcode": "04011",
+      "country": "United States",
+      "sewershed_pop": 10000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -69.94794084226467,
+          43.916837526293
+        ]
+      },
+      "counties_served": [
+        "23005"
+      ]
+    },
+    {
+      "uid": "a390a3c6",
+      "name": "Kailua, Honolulu, HI",
+      "site_name": "Kailua Regional Wastewater Treatment Plant",
+      "place_name": "Honolulu, Hawaii",
+      "city": "Honolulu",
+      "state": "Hawaii",
+      "zipcode": "96734",
+      "country": "United States",
+      "sewershed_pop": 90000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -157.75220780671023,
+          21.42743928936375
+        ]
+      },
+      "counties_served": [
+        "15003"
+      ]
+    },
+    {
+      "uid": "733f26cd",
+      "name": "Marshalltown, IA",
+      "site_name": "City of Marshalltown Water Pollution Control Plant",
+      "place_name": "Marshalltown, Iowa",
+      "city": "Marshalltown",
+      "state": "Iowa",
+      "zipcode": "50158",
+      "country": "United States",
+      "sewershed_pop": 27400,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -92.89668405885769,
+          42.065644613391115
+        ]
+      },
+      "counties_served": [
+        "19127"
+      ]
+    },
+    {
+      "uid": "c089ed87",
+      "name": "St. Cloud, MN",
+      "site_name": "St. Cloud Nutrient, Energy and Water Recovery Facility",
+      "place_name": "St. Cloud, Minnesota",
+      "city": "St. Cloud",
+      "state": "Minnesota",
+      "zipcode": "56301",
+      "country": "United States",
+      "sewershed_pop": 120000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -94.12106038247646,
+          45.47408371353481
+        ]
+      },
+      "counties_served": [
+        "27009",
+        "27141",
+        "27145"
+      ]
+    },
+    {
+      "uid": "408c02fa",
+      "name": "Northeast, Saint Petersburg, FL",
+      "site_name": "Northeast Water Reclamation Facility",
+      "place_name": "Saint Petersburg, Florida",
+      "city": "Saint Petersburg",
+      "state": "Florida",
+      "zipcode": "33702",
+      "country": "United States",
+      "sewershed_pop": 89847,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -82.61950163068406,
+          27.82909221732554
+        ]
+      },
+      "counties_served": [
+        "12103"
+      ]
+    },
+    {
+      "uid": "edefb4c8",
+      "name": "South San Diego, CA",
+      "site_name": "South Bay International Wastewater Treatment Plant",
+      "place_name": "San Diego, California",
+      "city": "San Diego",
+      "state": "California",
+      "zipcode": "92154",
+      "country": "United States",
+      "sewershed_pop": 1600000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -117.06356060330178,
+          32.5445736990518
+        ]
+      },
+      "counties_served": [
+        "06073"
+      ]
+    },
+    {
+      "uid": "2fa90c87",
+      "name": "Clinton, IA",
+      "site_name": "City of Clinton",
+      "place_name": "Clinton, Iowa",
+      "city": "Clinton",
+      "state": "Iowa",
+      "zipcode": "52732",
+      "country": "United States",
+      "sewershed_pop": 29300,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -90.2317166903097,
+          41.81076439853255
+        ]
+      },
+      "counties_served": [
+        "19045"
+      ]
+    },
+    {
+      "uid": "293b2501",
+      "name": "Oakland, CA",
+      "site_name": "East Bay Municipal Utility District",
+      "place_name": "Oakland, California",
+      "city": "Oakland",
+      "state": "California",
+      "zipcode": "94607",
+      "country": "United States",
+      "sewershed_pop": 740000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -122.2952220326166,
+          37.82345726213822
+        ]
+      },
+      "counties_served": [
+        "06001"
+      ]
+    },
+    {
+      "uid": "25fde9fa",
+      "name": "Harrisburg, PA",
+      "site_name": "Capital Region Water AWTF",
+      "place_name": "Harrisburg, Pennsylvania",
+      "city": "Harrisburg",
+      "state": "Pennsylvania",
+      "zipcode": "17104",
+      "country": "United States",
+      "sewershed_pop": 125000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -76.85641453220167,
+          40.24011153695531
+        ]
+      },
+      "counties_served": [
+        "42043"
+      ]
+    },
+    {
+      "uid": "609fc82c",
+      "name": "Hollister, CA",
+      "site_name": "City of Hollister Domestic Water Recycling Facility",
+      "place_name": "Hollister, California",
+      "city": "Hollister",
+      "state": "California",
+      "zipcode": "95023",
+      "country": "United States",
+      "sewershed_pop": 42000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -121.4048313055158,
+          36.854874749415906
+        ]
+      },
+      "counties_served": [
+        "06069"
+      ]
+    },
+    {
+      "uid": "5a3fce0a",
+      "name": "Gainesville, TX",
+      "site_name": "City of Gainesville Wastewater Treatment Plant",
+      "place_name": "Gainesville, Texas",
+      "city": "Gainesville",
+      "state": "Texas",
+      "zipcode": "76240",
+      "country": "United States",
+      "sewershed_pop": 17300,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -97.14804407942624,
+          33.6057762928648
+        ]
+      },
+      "counties_served": [
+        "48097"
+      ]
+    },
+    {
+      "uid": "439f280a",
+      "name": "Wilson, NC",
+      "site_name": "City of Wilson - Hominy Creek Water Reclamation Facility",
+      "place_name": "Wilson, North Carolina",
+      "city": "Wilson",
+      "state": "North Carolina",
+      "zipcode": "27893",
+      "country": "United States",
+      "sewershed_pop": 50000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -77.89424708048718,
+          35.687458118632165
+        ]
+      },
+      "counties_served": [
+        "37195"
+      ]
+    },
+    {
+      "uid": "19cc9e1d",
+      "name": "South River, Atlanta, GA",
+      "site_name": "South River Water Reclamation Center",
+      "place_name": "Atlanta, Georgia",
+      "city": "Atlanta",
+      "state": "Georgia",
+      "zipcode": "30315",
+      "country": "United States",
+      "sewershed_pop": 105160,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -84.36260166,
+          33.68392578
+        ]
+      },
+      "counties_served": [
+        "13121"
+      ]
+    },
+    {
+      "uid": "c95e643d",
+      "name": "Half Moon Bay, CA",
+      "site_name": "Sewer Authority Mid-Coastside",
+      "place_name": "Half Moon Bay, California",
+      "city": "Half Moon Bay",
+      "state": "California",
+      "zipcode": "94019",
+      "country": "United States",
+      "sewershed_pop": 28000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -122.48176459883963,
+          37.51471096326996
+        ]
+      },
+      "counties_served": [
+        "06081"
+      ]
+    },
+    {
+      "uid": "f1ab340c",
+      "name": "Altamonte Springs, FL",
+      "site_name": "Altamonte Springs Regional Water Reclamation Facility",
+      "place_name": "Altamonte Springs, Florida",
+      "city": "Altamonte Springs",
+      "state": "Florida",
+      "zipcode": "32714",
+      "country": "United States",
+      "sewershed_pop": 95000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -81.39285394863857,
+          28.66150155432941
+        ]
+      },
+      "counties_served": [
+        "12117"
+      ]
+    },
+    {
+      "uid": "1cbd1538",
+      "name": "P20, Kansas City, KS",
+      "site_name": "Kansas City Treatment Plant #20",
+      "place_name": "Kansas City, Kansas",
+      "city": "Kansas City",
+      "state": "Kansas",
+      "zipcode": "66111",
+      "country": "United States",
+      "sewershed_pop": 35000,
+      "point": {
+        "type": "Point",
+        "coordinates": [
+          -94.80534873963616,
+          39.05485369017763
+        ]
+      },
+      "counties_served": [
+        "20209"
+      ]
+    }
+  ]
+}
