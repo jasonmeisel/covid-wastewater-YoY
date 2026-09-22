@@ -7,22 +7,34 @@ import { updateChart, updateCustomLegendUI } from './chart.js';
 import { applyTableFiltering } from './table.js';
 import { updatePlantMetadataUI, renderPlantSearchResults, updateYearlyStatsSummaryPanel, renderSummaryMetricsRow, showStatusBanner } from './ui.js';
 
+    function reportPlantCatalogError() {
+      const container = document.getElementById('plantSearchResults');
+      if (container) {
+        container.innerHTML = '<div class="p-4 text-xs text-amber-400 text-center">Plant catalog unavailable — search disabled</div>';
+        container.classList.remove('hidden');
+      }
+    }
+
     // Fetch plant database catalog
     export async function loadPlantsCatalog() {
       const catalogUrl = "https://storage.googleapis.com/wastewater-dev-data/json/plants.json";
       try {
         const response = await fetch(catalogUrl);
-        if (response.ok) {
-          const data = await response.json();
-          if (data && data.plants) {
-            state.plantsCatalog = data.plants;
-            updatePlantMetadataUI();
-            updateCountyCovidSummary();
-            await loadPlantActivityStatus();
-          }
+        if (!response.ok) throw new Error(`HTTP ${response.status} for ${catalogUrl}`);
+
+        const data = await response.json();
+        if (!data || !Array.isArray(data.plants) || data.plants.length === 0) {
+          throw new Error(`unexpected schema for ${catalogUrl} (no plants array)`);
         }
+
+        state.plantsCatalog = data.plants;
+        updatePlantMetadataUI();
+        updateCountyCovidSummary();
+        await loadPlantActivityStatus();
       } catch (err) {
-        console.warn("Could not fetch plants catalog directly due to CORS or network rules.", err);
+        const message = err && err.message ? err.message : String(err);
+        showStatusBanner(message, 'error');
+        reportPlantCatalogError();
       }
     }
 
@@ -111,7 +123,7 @@ import { updatePlantMetadataUI, renderPlantSearchResults, updateYearlyStatsSumma
           renderPlantSearchResults(searchInput.value || '');
         }
       } catch (err) {
-        console.warn("Could not determine inactive plants from Wastewater Scan status feed.", err);
+        showStatusBanner(err && err.message ? err.message : String(err), 'error');
       }
     }
 
@@ -197,48 +209,53 @@ import { updatePlantMetadataUI, renderPlantSearchResults, updateYearlyStatsSumma
     }
 
     // Primary Async Loader fetching from GCS Target URL
-    export async function loadRawData(forceShowSimBanner = false, overrideUrl = null) {
-      const targetUrls = overrideUrl
-        ? [overrideUrl]
-        : state.selectedPlantUids.map(uid => `https://storage.googleapis.com/wastewater-dev-data/json/${uid}.json`);
+    // Fetches the raw sample arrays for the given plant UIDs, in parallel.
+    // Throws with the exact reason when any request fails or yields nothing.
+    export async function loadPlantSamples(uids) {
+      const results = await Promise.all(uids.map(async uid => {
+        const url = `https://storage.googleapis.com/wastewater-dev-data/json/${uid}.json`;
+
+        let response;
+        try {
+          response = await fetch(url);
+        } catch (err) {
+          throw new Error(err && err.message ? err.message : `network error for ${url}`);
+        }
+        if (!response.ok) throw new Error(`HTTP ${response.status} for ${url}`);
+
+        const json = await response.json();
+        if (!json || !Array.isArray(json.samples)) {
+          throw new Error(`unexpected schema for ${url} (no samples array)`);
+        }
+        return json.samples;
+      }));
+
+      const samples = results.flat();
+      if (samples.length === 0) throw new Error('no samples loaded');
+      return samples;
+    }
+
+    // Loads the selected plants and drives the loader panel with the real reason on failure.
+    export async function loadAndRenderPlantSamples(uids = state.selectedPlantUids) {
       const loader = document.getElementById('chartLoader');
       const spinner = document.getElementById('loaderSpinner');
       const errorPanel = document.getElementById('loaderErrorPanel');
-      
+      const errorMessage = document.getElementById('loaderErrorMessage');
+
       if (loader) loader.classList.remove('hidden');
       if (spinner) spinner.classList.remove('hidden');
       if (errorPanel) errorPanel.classList.add('hidden');
 
       try {
-        const datasets = await Promise.all(targetUrls.map(async targetUrl => {
-          const response = await fetch(targetUrl);
-          if (!response.ok) {
-            throw new Error(`HTTP network response failed: ${response.status}`);
-          }
-          const data = await response.json();
-          if (!data || !Array.isArray(data.samples)) {
-            throw new Error("Invalid schema structure found within target JSON database.");
-          }
-          return data.samples;
-        }));
-
-        if (datasets.length > 0) {
-          state.rawSamples = datasets.flat();
-          processAndDisplayData();
-          const banner = document.getElementById('statusBanner');
-          if (banner) banner.classList.add('hidden');
-        } else {
-          throw new Error("Invalid schema structure found within target JSON database.");
-        }
+        state.rawSamples = await loadPlantSamples(uids);
+        const banner = document.getElementById('statusBanner');
+        if (banner) banner.classList.add('hidden');
+        processAndDisplayData();
       } catch (err) {
-        console.warn("Direct live GCS data fetch restricted by sandbox environment or network. Details:", err);
-        
-        // Show non-falsified error panel, asking the user to load original data manually
+        const message = err && err.message ? err.message : String(err);
         if (spinner) spinner.classList.add('hidden');
+        if (errorMessage) errorMessage.innerText = message;
         if (errorPanel) errorPanel.classList.remove('hidden');
-        
-        if (forceShowSimBanner) {
-          showStatusBanner("CORS fetch blocked. Please drag-and-drop the downloaded JSON.", "warning");
-        }
+        showStatusBanner(message, 'error');
       }
     }

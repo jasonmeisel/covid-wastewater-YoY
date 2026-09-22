@@ -1,6 +1,6 @@
 // Entry point: wires URL state, event delegation and the initial data loads.
 import { applyStateFromUrl, syncControlsFromState } from './state.js';
-import { loadPlantsCatalog, loadCountyCovidData, loadRawData } from './data.js';
+import { loadPlantsCatalog, loadCountyCovidData, loadAndRenderPlantSamples } from './data.js';
 import { bindActions } from './ui.js';
 
 export function init() {
@@ -12,7 +12,7 @@ export function init() {
   loadPlantsCatalog();
   loadCountyCovidData();
   // Fetch default plant dataset
-  loadRawData(true);
+  loadAndRenderPlantSamples();
 }
 
 if (document.readyState === 'loading') {

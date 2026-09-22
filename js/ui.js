@@ -4,7 +4,7 @@ import { formatShortDate, formatMonthDay, parseDateParts, escapeHtml } from './u
 import { state, syncStateToUrl, sortedSamples } from './state.js';
 import { resolveZipToCountyFips, updateCountyCovidSummary } from './county.js';
 import { YEAR_COLOR_PALETTE, getLatestSampleValue, summarize, inclusivePercentile } from './stats.js';
-import { fuzzyMatchPlant, isZipCodeQuery, getPlantCoordinates, getReferenceCoordsFromZip, haversineDistance, isPlantInactive, loadRawData, processAndDisplayData } from './data.js';
+import { fuzzyMatchPlant, isZipCodeQuery, getPlantCoordinates, getReferenceCoordsFromZip, haversineDistance, isPlantInactive, loadAndRenderPlantSamples } from './data.js';
 import { resetChartZoom, toggleAllYears, updateYScale, updateSmoothing, updateChart } from './chart.js';
 import { downloadCSV, sortTableByDate, changePage, handleSearch } from './table.js';
 
@@ -186,7 +186,7 @@ import { downloadCSV, sortTableByDate, changePage, handleSearch } from './table.
       syncStateToUrl();
       
       // Load all selected plant JSON files into a single analysis dataset.
-      loadRawData(true);
+      loadAndRenderPlantSamples();
     }
 
     export function updatePlantMetadataUI() {
@@ -196,13 +196,6 @@ import { downloadCSV, sortTableByDate, changePage, handleSearch } from './table.
 
       const titleDisplay = document.getElementById('plantTitleDisplay');
       const popBadge = document.getElementById('plantPopBadge');
-      const downloadLink = document.getElementById('directDownloadLink');
-      const gcsInput = document.getElementById('gcsUrlInput');
-
-      const plantUrl = `https://storage.googleapis.com/wastewater-dev-data/json/${state.currentPlantUid}.json`;
-
-      if (gcsInput) gcsInput.value = plantUrl;
-      if (downloadLink) downloadLink.href = plantUrl;
 
       const selectedPlants = state.plantsCatalog.filter(plant => state.selectedPlantUids.includes(plant.uid));
       if (selectedPlants.length > 1) {
@@ -370,51 +363,6 @@ import { downloadCSV, sortTableByDate, changePage, handleSearch } from './table.
       }
     }
 
-    // Open Config Modal view
-    export function toggleSetupModal() {
-      const modal = document.getElementById('setupModal');
-      if (modal) {
-        modal.classList.toggle('hidden');
-      }
-    }
-
-    // Handle Drag-and-drop file operations
-    export function handleFileDrop(e) {
-      e.preventDefault();
-      const files = e.dataTransfer.files;
-      if (files.length > 0) {
-        parseUploadedJsonFile(files[0]);
-      }
-    }
-
-    export function handleFileSelect(e) {
-      const files = e.target.files;
-      if (files.length > 0) {
-        parseUploadedJsonFile(files[0]);
-      }
-    }
-
-    // Parse manual JSON uploads containing original samples structure
-    export function parseUploadedJsonFile(file) {
-      const reader = new FileReader();
-      reader.onload = function(evt) {
-        try {
-          const uploadedObj = JSON.parse(evt.target.result);
-          if (uploadedObj && uploadedObj.samples) {
-            state.rawSamples = uploadedObj.samples;
-            processAndDisplayData(); 
-            toggleSetupModal();
-            showStatusBanner("Loaded authentic JSON file successfully.", "success");
-          } else {
-            alert("Uploaded JSON does not contain the required 'samples' list layout.");
-          }
-        } catch (err) {
-          alert("Error parsing file structure as standard JSON.");
-        }
-      };
-      reader.readAsText(file);
-    }
-
     // Helper banner alert manager
     export function showStatusBanner(text, type = "info") {
       const banner = document.getElementById('statusBanner');
@@ -436,13 +384,6 @@ import { downloadCSV, sortTableByDate, changePage, handleSearch } from './table.
       banner.classList.remove('hidden');
     }
 
-    // Apply specific URL targets & attempt fetch connection
-    export function applyUrlAndFetch() {
-      const inputVal = document.getElementById('gcsUrlInput').value.trim();
-      loadRawData(true, inputVal);
-      toggleSetupModal();
-    }
-
     // Toggle collapsible panel content visibility
     export function togglePanel(contentId, iconId) {
       const content = document.getElementById(contentId);
@@ -456,7 +397,7 @@ import { downloadCSV, sortTableByDate, changePage, handleSearch } from './table.
 
     // Delegated event bindings: markup carries data-action, this is the single wiring point.
     const CLICK_ACTIONS = {
-      'toggle-setup-modal': () => toggleSetupModal(),
+      'retry-load': () => loadAndRenderPlantSamples(),
       'plant-clear': () => clearPlantSearch(),
       'chart-reset': () => resetChartZoom(),
       'years-all': el => toggleAllYears(el.dataset.visible === 'true'),
@@ -465,7 +406,6 @@ import { downloadCSV, sortTableByDate, changePage, handleSearch } from './table.
       'download-chart': () => downloadChart(),
       'table-sort': () => sortTableByDate(),
       'table-page': el => changePage(Number(el.dataset.delta)),
-      'apply-url': () => applyUrlAndFetch(),
     };
 
     const INPUT_ACTIONS = {
@@ -476,7 +416,6 @@ import { downloadCSV, sortTableByDate, changePage, handleSearch } from './table.
     const CHANGE_ACTIONS = {
       'scale': el => updateYScale(el.value),
       'smoothing': el => updateSmoothing(el.value),
-      'file-select': el => handleFileSelect({ target: el }),
     };
 
     export function bindActions() {
@@ -503,13 +442,5 @@ import { downloadCSV, sortTableByDate, changePage, handleSearch } from './table.
 
       document.addEventListener('focusin', (e) => {
         if (e.target.closest('[data-action="plant-query"]')) showPlantDropdown();
-      });
-
-      document.addEventListener('dragover', (e) => {
-        if (e.target.closest('[data-action="drop-zone"]')) e.preventDefault();
-      });
-
-      document.addEventListener('drop', (e) => {
-        if (e.target.closest('[data-action="drop-zone"]')) handleFileDrop(e);
       });
     }
