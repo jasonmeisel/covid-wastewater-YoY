@@ -1,7 +1,7 @@
 // Source: index.html // [587-604] // [606-609] // [611-636] // [694-732] // [734-751] // [753-756] // [758-766] // [768-786] // [788-797] // [2188-2203] // [2216-2261]
 
 import { state, setSeries } from './state.js';
-import { updateCountyCovidSummary, resolveZipToCountyFips } from './county.js';
+import { updateCountyCovidSummary, resolveZipToCountyFips, showCountyDataError } from './county.js';
 import { buildSeries } from './stats.js';
 import { updateChart, updateCustomLegendUI } from './chart.js';
 import { applyTableFiltering } from './table.js';
@@ -31,22 +31,39 @@ import { updatePlantMetadataUI, renderPlantSearchResults, updateYearlyStatsSumma
       return state.inactivePlantUids.has(String(plant.uid));
     }
 
-    export async function loadCountyCovidData() {
-      const url = './pmc-current.json';
+    // Fetches the slimmed PMC19 county dataset. Throws with the exact reason on failure.
+    export async function loadCountyData() {
+      const url = './data/pmc-counties.json';
 
+      let response;
       try {
-        const response = await fetch(url);
-        if (!response.ok) {
-          console.warn('Could not load PMC19 county COVID data.');
-          return;
-        }
+        response = await fetch(url);
+      } catch (err) {
+        throw new Error(err && err.message ? err.message : `network error for ${url}`);
+      }
+      if (!response.ok) throw new Error(`HTTP ${response.status} for ${url}`);
 
-        const data = await response.json();
-        state.countyCovidMetadata = data;
-        state.countyCovidDataByFips = new Map(
-          (data.rows || []).map(county => [String(county.fips).padStart(5, '0'), county])
-        );
+      const json = await response.json();
+      if (!json || !Array.isArray(json.rows)) throw new Error('county dataset schema invalid');
+
+      return {
+        metadata: {
+          date_last_updated: json.date_last_updated,
+          week_end: json.week_end,
+          source: json.source,
+        },
+        byFips: new Map(json.rows.map(row => [String(row.fips).padStart(5, '0'), row])),
+      };
+    }
+
+    export async function loadCountyCovidData() {
+      try {
+        const { metadata, byFips } = await loadCountyData();
+        state.countyDataError = null;
+        state.countyCovidMetadata = metadata;
+        state.countyCovidDataByFips = byFips;
         updateCountyCovidSummary();
+
         const searchInput = document.getElementById('plantSearchInput');
         if (state.selectedPmcZip) {
           resolveZipToCountyFips(state.selectedPmcZip);
@@ -54,7 +71,7 @@ import { updatePlantMetadataUI, renderPlantSearchResults, updateYearlyStatsSumma
           resolveZipToCountyFips(searchInput.value);
         }
       } catch (err) {
-        console.warn('Could not load PMC19 county COVID data.', err);
+        showCountyDataError(err && err.message ? err.message : String(err));
       }
     }
 

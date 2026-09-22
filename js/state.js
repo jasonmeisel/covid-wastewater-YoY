@@ -22,6 +22,7 @@ export const state = {
   countyCovidMetadata: null,
   selectedZipCountyFips: null,
   selectedPmcZip: null,
+  countyDataError: null,
 
   // Sample dataset
   rawSamples: [],

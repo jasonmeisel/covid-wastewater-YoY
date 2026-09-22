@@ -5,6 +5,10 @@ import { state } from './state.js';
 
     export function updateCountyCovidSummary() {
       const summary = document.getElementById('countyCovidSummary');
+      if (state.countyDataError) {
+        showCountyDataError(state.countyDataError);
+        return;
+      }
       const countyFips = state.selectedZipCountyFips || state.currentPlantMetadata?.counties_served?.[0];
       if (!summary || !countyFips || state.countyCovidDataByFips.size === 0) {
         if (summary) summary.classList.add('hidden');
@@ -34,6 +38,15 @@ import { state } from './state.js';
       const contextText = `County: ${escapeHtml(countyLabel)} | Updated: ${updatedDate}${weekEnding ? ` | Week ending: ${weekEnding}` : ''}`;
       const zipLabel = state.selectedPmcZip ? `ZIP: ${escapeHtml(state.selectedPmcZip)}` : '';
       summary.innerHTML = `<div class="flex flex-nowrap items-center justify-between gap-3"><div class="min-w-0"><div class="flex items-center gap-2 whitespace-nowrap"><div class="text-[10px] font-bold uppercase tracking-wider text-slate-300">PMC19.com Data</div><a href="https://pmc19.com" target="_blank" rel="noopener noreferrer" class="inline-flex shrink-0 items-center gap-1 text-[10px] font-semibold text-teal-400 hover:text-teal-300 hover:underline">View source <span aria-hidden="true">↗</span></a><span class="text-[10px] font-mono text-slate-400">${zipLabel}</span></div><div class="text-[10px] text-slate-500">${contextText}</div></div></div><div class="text-center"><a href="https://pmc19.com" target="_blank" rel="noopener noreferrer" class="text-slate-200 hover:text-teal-300 underline decoration-teal-400/70 underline-offset-2">${escapeHtml(estimateText)}</a></div>`;
+      summary.classList.remove('hidden');
+    }
+
+    // Renders the county card in an explicit error state rather than silently hiding it.
+    export function showCountyDataError(message) {
+      state.countyDataError = message;
+      const summary = document.getElementById('countyCovidSummary');
+      if (!summary) return;
+      summary.innerHTML = `<div class="text-[10px] font-bold uppercase tracking-wider text-slate-300">PMC19.com Data</div><div class="text-[10px] text-rose-300">PMC19.com county data unavailable — ${escapeHtml(message)}</div>`;
       summary.classList.remove('hidden');
     }
 
