@@ -277,6 +277,8 @@ import { pickYearColor, movingAverage, sortedSeriesValues, inclusivePercentile, 
         if (!activePointers.has(event.pointerId) || !state.chartInstance?.scales?.x) return;
         activePointers.set(event.pointerId, event);
 
+        if (customPanState.active || pinchState.active) event.preventDefault();
+
         if (pinchState.active && activePointers.size >= 2) {
           const rect = canvasElement.getBoundingClientRect();
           const distance = getPointerDistance();
@@ -355,7 +357,9 @@ import { pickYearColor, movingAverage, sortedSeriesValues, inclusivePercentile, 
       canvasElement.onpointercancel = handleCustomPanEnd;
       canvasElement.onpointerleave = handleCustomPanEnd;
       canvasElement.style.cursor = 'grab';
-      canvasElement.style.touchAction = 'none';
+      // pan-y keeps vertical page scrolling working on touch devices; only horizontal
+      // drags are claimed for x-axis panning.
+      canvasElement.style.touchAction = 'pan-y';
 
       // Chart configuration options with dynamic responsive scales and NO background grid lines
       state.chartInstance = new Chart(ctx, {
@@ -508,6 +512,15 @@ import { pickYearColor, movingAverage, sortedSeriesValues, inclusivePercentile, 
       chart.options.scales.x.min = 1;
       chart.options.scales.x.max = 365;
 
+      const canvas = document.getElementById('yoyChart');
+      if (canvas) {
+        const visibleYears = state.years.filter(yr => state.visibleYears[yr]);
+        const latest = getLatestSamplePoint();
+        canvas.setAttribute('aria-label', latest
+          ? `Year-over-year normalized SARS-CoV-2 wastewater levels, ${visibleYears.join(', ')}; latest ${latest.y.toFixed(1)} on ${formatShortDate(latest.originalDate)}`
+          : 'Year-over-year normalized SARS-CoV-2 wastewater levels; no data loaded');
+      }
+
       chart.update();
     }
 
@@ -519,6 +532,14 @@ import { pickYearColor, movingAverage, sortedSeriesValues, inclusivePercentile, 
     export function updateCustomLegendUI() {
       const container = document.getElementById('legendContainer');
       if (!container) return;
+
+      // Rebuilding the chips drops focus; remember which year was active so keyboard
+      // users can toggle the same year repeatedly without re-tabbing.
+      const focused = document.activeElement;
+      const focusedYear = focused && focused.dataset && focused.dataset.action === 'toggle-year'
+        ? focused.dataset.year
+        : null;
+
       container.innerHTML = '';
 
       const latestYear = state.years.reduce((max, year) => Math.max(max, Number(year)), 0);
@@ -537,7 +558,12 @@ import { pickYearColor, movingAverage, sortedSeriesValues, inclusivePercentile, 
             ? 'bg-slate-800 text-slate-100 border-slate-600' 
             : 'bg-slate-900/30 text-slate-500 border-slate-800/80 hover:border-slate-700'
         }${isLatestYear && isChecked ? ' ring-1 ring-rose-400/40' : ''}`;
-        wrapper.onclick = () => toggleYearVisibility(yr);
+        wrapper.setAttribute('role', 'switch');
+        wrapper.setAttribute('tabindex', '0');
+        wrapper.setAttribute('aria-checked', String(Boolean(isChecked)));
+        wrapper.setAttribute('aria-label', `Toggle ${yr}`);
+        wrapper.dataset.action = 'toggle-year';
+        wrapper.dataset.year = String(yr);
 
         wrapper.innerHTML = `
           <span class="w-3 h-3 rounded-full ${colorConf.bg} shrink-0 block"></span>
@@ -546,11 +572,16 @@ import { pickYearColor, movingAverage, sortedSeriesValues, inclusivePercentile, 
             ${isLatestYear ? '<span class="text-[9px] font-semibold uppercase tracking-wide text-rose-300">Latest</span>' : ''}
             <span class="text-[10px] text-slate-400 font-mono">(Avg: ${averageVal})</span>
           </div>
-          <input type="checkbox" ${isChecked ? 'checked' : ''} class="w-3.5 h-3.5 accent-brand-500 ml-1 cursor-pointer pointer-events-none">
+          <input type="checkbox" ${isChecked ? 'checked' : ''} tabindex="-1" aria-hidden="true" class="w-3.5 h-3.5 accent-brand-500 ml-1 cursor-pointer pointer-events-none">
         `;
 
         container.appendChild(wrapper);
       });
+
+      if (focusedYear) {
+        const restored = container.querySelector(`[data-action="toggle-year"][data-year="${focusedYear}"]`);
+        if (restored) restored.focus();
+      }
     }
 
     // Toggle year chart visibility

@@ -5,7 +5,7 @@ import { state, syncStateToUrl, sortedSamples } from './state.js';
 import { resolveZipToCountyFips, updateCountyCovidSummary } from './county.js';
 import { pickYearColor, getLatestSampleValue, summarize, inclusivePercentile } from './stats.js';
 import { fuzzyMatchPlant, isZipCodeQuery, getPlantCoordinates, getReferenceCoordsFromZip, haversineDistance, isPlantInactive, loadAndRenderPlantSamples } from './data.js';
-import { resetChartZoom, toggleAllYears, updateYScale, updateSmoothing } from './chart.js';
+import { resetChartZoom, toggleAllYears, toggleYearVisibility, updateYScale, updateSmoothing } from './chart.js';
 import { downloadCSV, sortTableByDate, changePage, handleSearch } from './table.js';
 
     export function showPlantDropdown() {
@@ -400,6 +400,7 @@ import { downloadCSV, sortTableByDate, changePage, handleSearch } from './table.
       'download-chart': () => downloadChart(),
       'table-sort': () => sortTableByDate(),
       'table-page': el => changePage(Number(el.dataset.delta)),
+      'toggle-year': el => toggleYearVisibility(Number(el.dataset.year)),
     };
 
     const INPUT_ACTIONS = {
@@ -436,5 +437,18 @@ import { downloadCSV, sortTableByDate, changePage, handleSearch } from './table.
 
       document.addEventListener('focusin', (e) => {
         if (e.target.closest('[data-action="plant-query"]')) showPlantDropdown();
+      });
+
+      // Enter/Space activate custom controls (the legend switches). Native controls are
+      // skipped: the browser already turns those keys into a click event.
+      document.addEventListener('keydown', (e) => {
+        if (e.key !== 'Enter' && e.key !== ' ') return;
+        const el = e.target.closest('[data-action]');
+        if (!el) return;
+        if (['BUTTON', 'INPUT', 'SELECT', 'TEXTAREA', 'A'].includes(el.tagName)) return;
+        const action = CLICK_ACTIONS[el.dataset.action];
+        if (!action) return;
+        e.preventDefault();
+        action(el);
       });
     }

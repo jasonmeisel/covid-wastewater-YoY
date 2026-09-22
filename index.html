@@ -39,7 +39,7 @@
 <body class="h-full bg-slate-900 text-slate-100 transition-colors duration-300 dark flex flex-col overflow-x-hidden">
 
   <!-- Status bar for data-load failures -->
-  <div id="statusBanner" class="bg-amber-600 text-white text-xs md:text-sm font-medium py-2 px-4 text-center relative hidden transition-all-300">
+  <div id="statusBanner" role="status" aria-live="polite" class="bg-amber-600 text-white text-xs md:text-sm font-medium py-2 px-4 text-center relative hidden transition-all-300">
     <div class="flex items-center justify-center gap-2 flex-wrap">
       <span class="flex h-2 w-2 relative">
         <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-300 opacity-75"></span>
@@ -180,7 +180,7 @@
           <div class="grid grid-cols-2 gap-2 md:flex md:items-center" aria-label="Chart controls">
             <!-- Y Scale Mode Selector (New Feature) -->
             <div class="flex min-w-0 flex-col gap-0.5 md:flex-row md:items-center md:gap-1.5">
-              <select id="scaleTypeSelector" data-action="scale" class="w-full min-w-0 bg-slate-700/80 border border-slate-600 text-slate-200 text-xs rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-brand-500 cursor-pointer md:w-auto">
+              <select id="scaleTypeSelector" aria-label="Y-axis scale" data-action="scale" class="w-full min-w-0 bg-slate-700/80 border border-slate-600 text-slate-200 text-xs rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-brand-500 cursor-pointer md:w-auto">
                 <option value="linear" selected>Linear Scale</option>
                 <option value="logarithmic">Logarithmic</option>
                 <option value="percentile">Percentile Scale</option>
@@ -189,7 +189,7 @@
 
             <!-- Smoothing Option -->
             <div class="flex min-w-0 flex-col gap-0.5 md:flex-row md:items-center md:gap-1.5">
-              <select id="smoothingSelector" data-action="smoothing" class="w-full min-w-0 bg-slate-700/80 border border-slate-600 text-slate-200 text-xs rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-brand-500 cursor-pointer md:w-auto">
+              <select id="smoothingSelector" aria-label="Smoothing window" data-action="smoothing" class="w-full min-w-0 bg-slate-700/80 border border-slate-600 text-slate-200 text-xs rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-brand-500 cursor-pointer md:w-auto">
                 <option value="1">No Smoothing (Raw)</option>
                 <option value="3" selected>3-Point Moving Average</option>
                 <option value="7">7-Point Moving Average</option>
@@ -218,7 +218,7 @@
         </div>
 
         <!-- Dynamic Skeletal Loader / Chart Canvas Container -->
-        <div class="relative min-h-[300px] md:min-h-[400px] flex items-center justify-center">
+        <div id="chartContainer" class="relative min-h-[300px] md:min-h-[400px] flex items-center justify-center">
           <div id="chartLoader" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-900/90 backdrop-blur-sm z-10 p-6 text-center">
             <div id="loaderSpinner" class="flex flex-col items-center gap-3">
               <svg class="animate-spin h-10 w-10 text-teal-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -244,7 +244,7 @@
               </button>
             </div>
           </div>
-          <canvas id="yoyChart" class="w-full h-full"></canvas>
+          <canvas id="yoyChart" role="img" aria-label="Year-over-year normalized SARS-CoV-2 wastewater levels" class="w-full h-full"></canvas>
         </div>
 
         <!-- Custom HTML Interactive Legend -->

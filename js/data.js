@@ -263,7 +263,9 @@ import { updatePlantMetadataUI, renderPlantSearchResults, updateYearlyStatsSumma
       const spinner = document.getElementById('loaderSpinner');
       const errorPanel = document.getElementById('loaderErrorPanel');
       const errorMessage = document.getElementById('loaderErrorMessage');
+      const chartContainer = document.getElementById('chartContainer');
 
+      if (chartContainer) chartContainer.setAttribute('aria-busy', 'true');
       if (loader) loader.classList.remove('hidden');
       if (spinner) spinner.classList.remove('hidden');
       if (errorPanel) errorPanel.classList.add('hidden');
@@ -273,11 +275,13 @@ import { updatePlantMetadataUI, renderPlantSearchResults, updateYearlyStatsSumma
         const banner = document.getElementById('statusBanner');
         if (banner) banner.classList.add('hidden');
         processAndDisplayData();
+        if (chartContainer) chartContainer.setAttribute('aria-busy', 'false');
       } catch (err) {
         const message = err && err.message ? err.message : String(err);
         if (spinner) spinner.classList.add('hidden');
         if (errorMessage) errorMessage.innerText = message;
         if (errorPanel) errorPanel.classList.remove('hidden');
+        if (chartContainer) chartContainer.setAttribute('aria-busy', 'false');
         showStatusBanner(message, 'error');
       }
     }
