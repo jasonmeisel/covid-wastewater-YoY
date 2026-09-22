@@ -1,6 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { quantile, inclusivePercentile, movingAverage, summarize, buildSeries } from '../js/stats.js';
+import { quantile, inclusivePercentile, movingAverage, summarize, buildSeries, dailyAggregate } from '../js/stats.js';
+
+// Means of ratios land on values like 1.9999999999999998e-4, so compare with slack.
+const closeTo = (actual, expected, eps = 1e-12) =>
+  assert.ok(Math.abs(actual - expected) < eps, `expected ${actual} to be within ${eps} of ${expected}`);
 
 test('quantile interpolates linearly', () => {
   const values = [1, 2, 3, 4];
@@ -74,4 +78,65 @@ test('buildSeries falls back to the first target carrying a finite ratio', () =>
     { collection_date: '2024-06-01', targets: { Other: { gc_g_dry_weight_trimmed5_pmmov: 0.5 } } },
   ]);
   assert.equal(byYear[2024][0].rawRatio, 0.5);
+});
+
+test('dailyAggregate averages the plants that reported on the same day', () => {
+  const series = [
+    { x: 10, y: 100, rawRatio: 1e-4, originalDate: '2024-01-10', actualYear: 2024 },
+    { x: 10, y: 300, rawRatio: 3e-4, originalDate: '2024-01-10', actualYear: 2024 },
+    { x: 12, y: 50, rawRatio: 0.5e-4, originalDate: '2024-01-12', actualYear: 2024 },
+  ];
+
+  const daily = dailyAggregate(series);
+  assert.equal(daily.length, 2, 'three samples over two dates collapse to two points');
+  assert.deepEqual(daily.map(p => p.originalDate), ['2024-01-10', '2024-01-12']);
+
+  const first = daily[0];
+  closeTo(first.y, 200, 1e-9); // mean across plants
+  closeTo(first.rawRatio, 2e-4);
+  closeTo(first.y, first.rawRatio * 1e6, 1e-6); // the y = rawRatio * 1e6 invariant survives
+  assert.equal(first.x, 10);
+  assert.equal(first.actualYear, 2024);
+
+  // A date with a single reporter is passed through by reference.
+  assert.equal(daily[1], series[2]);
+});
+
+test('dailyAggregate leaves one-sample-per-day series untouched', () => {
+  const series = [
+    { x: 1, y: 10, rawRatio: 1e-5, originalDate: '2024-01-01', actualYear: 2024 },
+    { x: 2, y: 20, rawRatio: 2e-5, originalDate: '2024-01-02', actualYear: 2024 },
+  ];
+  assert.equal(dailyAggregate(series), series, 'single-plant output must be identical by reference');
+  assert.deepEqual(dailyAggregate([]), []);
+  assert.deepEqual(dailyAggregate([{ x: 1, y: 1, rawRatio: 1e-6, originalDate: '2024-01-01' }]).length, 1);
+});
+
+test('dailyAggregate keeps Feb 29 and Mar 1 apart despite sharing day index 60', () => {
+  const series = [
+    { x: 60, y: 10, rawRatio: 1e-5, originalDate: '2024-02-29', actualYear: 2024 },
+    { x: 60, y: 30, rawRatio: 3e-5, originalDate: '2024-03-01', actualYear: 2024 },
+  ];
+  const daily = dailyAggregate(series);
+  assert.equal(daily.length, 2, 'distinct dates must not merge just because x collides');
+  assert.deepEqual(daily.map(p => p.originalDate), ['2024-02-29', '2024-03-01']);
+  assert.deepEqual(daily.map(p => p.y), [10, 30]);
+});
+
+test('dailyAggregate then movingAverage gives one smoothed value per day', () => {
+  // Three plants reporting on two consecutive days.
+  const series = [
+    { x: 1, y: 10, rawRatio: 1e-5, originalDate: '2024-01-01', actualYear: 2024 },
+    { x: 1, y: 20, rawRatio: 2e-5, originalDate: '2024-01-01', actualYear: 2024 },
+    { x: 1, y: 30, rawRatio: 3e-5, originalDate: '2024-01-01', actualYear: 2024 },
+    { x: 2, y: 40, rawRatio: 4e-5, originalDate: '2024-01-02', actualYear: 2024 },
+  ];
+
+  const daily = dailyAggregate(series);
+  assert.deepEqual(daily.map(p => p.y), [20, 40]);
+
+  // window 3 => offset 1; both days see each other, so both smooth to (20+40)/2
+  const smoothed = movingAverage(daily, 3, false);
+  assert.deepEqual(smoothed.map(p => p.y), [30, 30], 'window spans days, not samples');
+  assert.equal(new Set(smoothed.map(p => p.originalDate)).size, smoothed.length, 'no duplicate dates');
 });

@@ -38,6 +38,11 @@ Sample dates are parsed and bucketed in UTC arithmetic, so the rendered
 calendar day does not depend on the viewer's timezone. Percentiles are
 computed over every loaded sample of the current plant selection.
 
+When more than one plant is selected the chart collapses each date's samples
+to a single daily mean before smoothing, so a plotted point is a day rather
+than one plant's reading and the smoothing window counts days. The Data Table
+Explorer and the CSV export still list every individual sample.
+
 ## Data Attribution and License
 
 This is an independent site using data from [WastewaterSCAN / SCAN](https://data.wastewaterscan.org/about/#18) and county-level COVID estimates from the [Pandemic Mitigation Collaborative](https://pmc19.com/).

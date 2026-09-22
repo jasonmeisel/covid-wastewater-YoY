@@ -298,7 +298,9 @@ import { downloadCSV, sortTableByDate, changePage, handleSearch } from './table.
       const plotted = sortedSamples().length;
       const skipped = state.skipped || {};
 
-      let text = `Plotted ${plotted} of ${total} samples`;
+      // "Used" not "plotted": with several plants a sample is folded into its day's
+      // point before the chart draws it, so sample count and point count differ.
+      let text = `Used ${plotted} of ${total} samples`;
       if (skipped.total > 0) {
         text += ` — ${skipped.missingValue} without an N-gene/PMMoV value, ${skipped.nonPositive} non-positive, ${skipped.unparseableDate} unparseable date`;
       }

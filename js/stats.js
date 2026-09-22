@@ -119,6 +119,36 @@ export function buildSeries(samples, { scaleFactor = 1e6 } = {}) {
   return { byYear, years, skipped };
 }
 
+// Collapses a year's samples onto one point per calendar date, averaging the plants
+// that reported that day. Without this a multi-plant selection leaves several points
+// sharing an x, and the index-based moving window then averages a mix of same-day
+// siblings and other days — so the same date renders as several different values.
+// One point per date keeps the plotted line daily, as the chart claims, and makes the
+// smoothing window count reporting days rather than samples.
+export function dailyAggregate(series) {
+  if (series.length < 2) return series;
+
+  const byDate = new Map();
+  for (const point of series) {
+    const entry = byDate.get(point.originalDate);
+    if (entry) {
+      entry.sum += point.y;
+      entry.ratioSum += point.rawRatio;
+      entry.count += 1;
+    } else {
+      byDate.set(point.originalDate, { sum: point.y, ratioSum: point.rawRatio, count: 1, point });
+    }
+  }
+
+  // Already one sample per day (a single plant): keep the original points untouched.
+  if (byDate.size === series.length) return series;
+
+  // Insertion order is preserved, and the input was sorted by date.
+  return [...byDate.values()].map(entry => (entry.count === 1
+    ? entry.point
+    : { ...entry.point, y: entry.sum / entry.count, rawRatio: entry.ratioSum / entry.count }));
+}
+
 // Dynamic moving average smoothing window logic
 export function movingAverage(dataSeries, windowSize, preserveLastPoint = false) {
   if (windowSize <= 1 || dataSeries.length <= 1) return dataSeries;

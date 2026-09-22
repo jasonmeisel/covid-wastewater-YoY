@@ -2,7 +2,7 @@
 
 import { formatShortDate, formatDate } from './util.js';
 import { state, syncStateToUrl } from './state.js';
-import { pickYearColor, movingAverage, sortedSeriesValues, inclusivePercentile, percentileStats, getLatestSamplePoint, getPercentileEmoji, summarize } from './stats.js';
+import { pickYearColor, dailyAggregate, movingAverage, sortedSeriesValues, inclusivePercentile, percentileStats, getLatestSamplePoint, getPercentileEmoji, summarize } from './stats.js';
 
     export function updatePercentileSummaryUI(stats) {
       const currentLabel = document.getElementById('currentValuePercentile');
@@ -113,7 +113,9 @@ import { pickYearColor, movingAverage, sortedSeriesValues, inclusivePercentile, 
 
       return state.years.map(yr => {
         const colorConf = pickYearColor(yr);
-        const originalSeries = state.series[yr] || [];
+        // One point per day before smoothing, so the window counts days and every
+        // date has a single value regardless of how many plants reported.
+        const originalSeries = dailyAggregate(state.series[yr] || []);
         const isLatestYear = Number(yr) === latestYear;
         const finalSeries = movingAverage(originalSeries, state.smoothingWindow, isLatestYear);
         const chartSeries = isPercentileScale
