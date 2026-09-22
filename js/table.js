@@ -1,5 +1,6 @@
 // Source: index.html // [1946-1951] // [1953-1986] // [1988-1992] // [1994-2044] // [2046-2050] // [2052-2075]
 
+import { formatDate, formatLongDate } from './util.js';
 import { state } from './state.js';
 
     // Sync Table Search string
@@ -23,7 +24,7 @@ import { state } from './state.js';
         state.filteredTableSamples = [...allList];
       } else {
         state.filteredTableSamples = allList.filter(pt => {
-          const dateStr = new Date(pt.originalDate).toLocaleDateString(undefined, {month: 'long', day: 'numeric', year: 'numeric'}).toLowerCase();
+          const dateStr = formatDate(pt.originalDate, { month: 'long', day: 'numeric', year: 'numeric' }).toLowerCase();
           const pmmovRawStr = pt.rawRatio.toString();
           const yoyValStr = pt.y.toFixed(2);
           
@@ -36,9 +37,8 @@ import { state } from './state.js';
 
       // Sort chronological default order (descending)
       state.filteredTableSamples.sort((a, b) => {
-        const t1 = new Date(a.originalDate).getTime();
-        const t2 = new Date(b.originalDate).getTime();
-        return state.tableSortAsc ? t1 - t2 : t2 - t1;
+        const cmp = String(a.originalDate).localeCompare(String(b.originalDate));
+        return state.tableSortAsc ? cmp : -cmp;
       });
 
       renderTableUI();
@@ -73,7 +73,7 @@ import { state } from './state.js';
       const visibleRows = state.filteredTableSamples.slice(startIndex, endIndex);
 
       visibleRows.forEach(row => {
-        const formattedDate = new Date(row.originalDate).toLocaleDateString(undefined, {weekday: 'short', month: 'short', day: 'numeric', year: 'numeric'});
+        const formattedDate = formatLongDate(row.originalDate);
         
         // Severity scale indicators
         let severityBadge = '';
@@ -118,7 +118,7 @@ import { state } from './state.js';
       Object.keys(state.processedData).forEach(yr => {
         state.processedData[yr].forEach(pt => allSorted.push(pt));
       });
-      allSorted.sort((a,b) => new Date(a.originalDate) - new Date(b.originalDate));
+      allSorted.sort((a, b) => String(a.originalDate).localeCompare(String(b.originalDate)));
 
       allSorted.forEach(pt => {
         csvContent += `${pt.originalDate},${pt.rawRatio},${pt.y.toFixed(6)}\n`;

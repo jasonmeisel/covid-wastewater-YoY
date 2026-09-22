@@ -1,5 +1,6 @@
 // Source: index.html // [1272-1303] // [1305-1324] // [1326-1740] // [1742-1757] // [1759-1795] // [1854-1860] // [1862-1870] // [1872-1877] // [1879-1884]
 
+import { formatShortDate, formatDate } from './util.js';
 import { state, syncStateToUrl } from './state.js';
 import { YEAR_COLOR_PALETTE, computeMovingAverage, getVisibleSampleValues, getInclusivePercentile, computePercentileStats, percentileStats, getLatestSamplePoint, getLatestSampleValue, getPercentileEmoji } from './stats.js';
 
@@ -52,7 +53,7 @@ import { YEAR_COLOR_PALETTE, computeMovingAverage, getVisibleSampleValues, getIn
       const meanText = yearMean && yearMean > 0
         ? `; ${ (latestPoint.y / yearMean).toFixed(1) }× the ${latestYear} average`
         : '';
-      const dateText = new Date(latestPoint.originalDate).toLocaleDateString(undefined, {month: 'short', day: 'numeric', year: 'numeric'});
+      const dateText = formatShortDate(latestPoint.originalDate);
 
       takeaway.innerText = `Latest normalized reading: ${latestPoint.y.toFixed(1)} (${dateText})${percentileText}${meanText}.`;
     }
@@ -454,9 +455,7 @@ import { YEAR_COLOR_PALETTE, computeMovingAverage, getVisibleSampleValues, getIn
               callbacks: {
                 title: function(context) {
                   if (context.length > 0 && context[0].raw) {
-                    const origin = context[0].raw.originalDate;
-                    const dateObj = new Date(origin);
-                    return dateObj.toLocaleDateString(undefined, { weekday: 'short', year: 'numeric', month: 'long', day: 'numeric' });
+                    return formatDate(context[0].raw.originalDate, { weekday: 'short', year: 'numeric', month: 'long', day: 'numeric' });
                   }
                   return '';
                 },

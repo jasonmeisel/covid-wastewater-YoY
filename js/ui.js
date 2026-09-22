@@ -1,5 +1,6 @@
 // Source: index.html // [799-805] // [807-825] // [827-833] // [835-936] // [938-978] // [980-1029] // [1031-1038] // [1797-1852] // [1886-1944] // [2077-2084] // [2086-2113] // [2115-2121] // [2123-2158] // [2160-2179] // [2181-2186] // [2205-2214]
 
+import { formatShortDate, formatMonthDay, parseDateParts, escapeHtml } from './util.js';
 import { state, syncStateToUrl } from './state.js';
 import { resolveZipToCountyFips, updateCountyCovidSummary } from './county.js';
 import { YEAR_COLOR_PALETTE, getLatestSampleValue } from './stats.js';
@@ -130,10 +131,10 @@ import { downloadCSV, sortTableByDate, changePage, handleSearch } from './table.
         item.innerHTML = `
           <div class="flex flex-col gap-0.5">
             <div class="font-bold text-slate-100 flex items-center gap-1.5">
-              <span>${plant.name || plant.site_name || 'Facility'}</span>
+              <span>${escapeHtml(plant.name || plant.site_name || 'Facility')}</span>
               ${statusBadge}
             </div>
-            <div class="text-[11px] text-slate-400">${plant.site_name || ''} ${locationStr ? '• ' + locationStr : ''}</div>
+            <div class="text-[11px] text-slate-400">${escapeHtml(plant.site_name || '')} ${locationStr ? '• ' + escapeHtml(locationStr) : ''}</div>
           </div>
           <div class="text-right shrink-0 ml-2 flex flex-col items-end gap-0.5">
             <span class="text-[10px] font-mono text-slate-400 bg-slate-800 px-1.5 py-0.5 rounded">Pop: ${popFormatted}</span>
@@ -211,7 +212,7 @@ import { downloadCSV, sortTableByDate, changePage, handleSearch } from './table.
         const population = selectedPlants.reduce((sum, plant) => sum + (Number(plant.sewershed_pop) || 0), 0);
 
         if (titleDisplay) {
-          titleDisplay.innerHTML = `<span class="shrink-0">Combined: ${names}</span>`;
+          titleDisplay.innerHTML = `<span class="shrink-0">Combined: ${escapeHtml(names)}</span>`;
         }
         if (popBadge) {
           popBadge.innerText = `Pop: ${population.toLocaleString()}`;
@@ -224,14 +225,14 @@ import { downloadCSV, sortTableByDate, changePage, handleSearch } from './table.
         const place = state.currentPlantMetadata.place_name || [state.currentPlantMetadata.city, state.currentPlantMetadata.state].filter(Boolean).join(', ');
         
         if (titleDisplay) {
-          titleDisplay.innerHTML = `<span class="shrink-0">${name}</span> <span class="min-w-0 truncate text-xs font-normal text-slate-400 font-mono">(${place})</span>`;
+          titleDisplay.innerHTML = `<span class="shrink-0">${escapeHtml(name)}</span> <span class="min-w-0 truncate text-xs font-normal text-slate-400 font-mono">(${escapeHtml(place)})</span>`;
         }
         if (popBadge) {
           popBadge.innerText = `Pop: ${state.currentPlantMetadata.sewershed_pop ? Number(state.currentPlantMetadata.sewershed_pop).toLocaleString() : 'N/A'}`;
         }
       } else {
         if (titleDisplay) {
-          titleDisplay.innerHTML = `<span>Plant UID: ${state.currentPlantUid}</span>`;
+          titleDisplay.innerHTML = `<span>Plant UID: ${escapeHtml(state.currentPlantUid)}</span>`;
         }
         if (popBadge) {
           popBadge.innerText = `Pop: --`;
@@ -281,7 +282,7 @@ import { downloadCSV, sortTableByDate, changePage, handleSearch } from './table.
             <span class="w-1 h-10 rounded ${colorConf.bg}"></span>
             <div>
               <h4 class="font-bold text-slate-200 text-sm">${yr} Baseline</h4>
-              <p class="text-[10px] text-slate-500">Peak recorded on: ${new Date(peakDate).toLocaleDateString(undefined, {month: 'short', day: 'numeric'})}</p>
+              <p class="text-[10px] text-slate-500">Peak recorded on: ${formatMonthDay(peakDate)}</p>
             </div>
           </div>
           <div class="text-right">
@@ -308,7 +309,7 @@ import { downloadCSV, sortTableByDate, changePage, handleSearch } from './table.
           allPointsSorted.push(pt);
         });
       });
-      allPointsSorted.sort((a, b) => new Date(a.originalDate) - new Date(b.originalDate));
+      allPointsSorted.sort((a, b) => String(a.originalDate).localeCompare(String(b.originalDate)));
 
       if (allPointsSorted.length === 0) return;
 
@@ -317,7 +318,7 @@ import { downloadCSV, sortTableByDate, changePage, handleSearch } from './table.
       const previousItem = allPointsSorted.length > 1 ? allPointsSorted[allPointsSorted.length - 2] : null;
       
       document.getElementById('metricLatestVal').innerText = latestItem.y.toFixed(2);
-      document.getElementById('metricLatestDate').innerText = new Date(latestItem.originalDate).toLocaleDateString(undefined, {month: 'short', day: 'numeric', year: 'numeric'});
+      document.getElementById('metricLatestDate').innerText = formatShortDate(latestItem.originalDate);
 
       const changeElem = document.getElementById('metricLatestChange');
       if (previousItem) {
@@ -339,8 +340,8 @@ import { downloadCSV, sortTableByDate, changePage, handleSearch } from './table.
         }
       });
       document.getElementById('metricPeakVal').innerText = globalPeakVal.toFixed(2);
-      document.getElementById('metricPeakDate').innerText = new Date(globalPeakDate).toLocaleDateString(undefined, {month: 'short', day: 'numeric', year: 'numeric'});
-      document.getElementById('metricPeakYear').innerText = new Date(globalPeakDate).getFullYear();
+      document.getElementById('metricPeakDate').innerText = formatShortDate(globalPeakDate);
+      document.getElementById('metricPeakYear').innerText = parseDateParts(globalPeakDate)?.year ?? 'N/A';
 
       // Overall Mean statistics
       const totalSum = allPointsSorted.reduce((sum, pt) => sum + pt.y, 0);
@@ -349,12 +350,12 @@ import { downloadCSV, sortTableByDate, changePage, handleSearch } from './table.
       document.getElementById('metricMeanDesc').innerText = `Across ${allPointsSorted.length} samples`;
 
       // Dataset Span statistics
-      const firstDate = new Date(allPointsSorted[0].originalDate);
-      const lastDate = new Date(allPointsSorted[allPointsSorted.length - 1].originalDate);
-      const totalYears = lastDate.getFullYear() - firstDate.getFullYear() + 1;
-      
+      const firstYear = parseDateParts(allPointsSorted[0].originalDate)?.year ?? null;
+      const lastYear = parseDateParts(allPointsSorted[allPointsSorted.length - 1].originalDate)?.year ?? null;
+      const totalYears = firstYear !== null && lastYear !== null ? lastYear - firstYear + 1 : 0;
+
       document.getElementById('metricSpanYears').innerText = `${totalYears} Years`;
-      document.getElementById('metricSamplesCount').innerText = `${allPointsSorted.length} samples from ${firstDate.getFullYear()} - ${lastDate.getFullYear()}`;
+      document.getElementById('metricSamplesCount').innerText = `${allPointsSorted.length} samples from ${firstYear} - ${lastYear}`;
     }
 
     // Export chart layout into clean PNG image
