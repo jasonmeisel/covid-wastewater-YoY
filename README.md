@@ -2,6 +2,35 @@
 
 Interactive year-over-year wastewater analytics for SARS-CoV-2 levels normalized by PMMoV.
 
+## Repository layout
+
+Served statically with no build step (GitHub Pages publishes the repo root).
+
+| Path | Purpose |
+|---|---|
+| `index.html` | Markup only; controls carry `data-action` attributes |
+| `css/app.css` | Styles moved out of the old inline `<style>` block |
+| `js/main.js` | Entry point: URL state, event delegation, initial loads |
+| `js/state.js` | Mutable state, `setSeries()`, `sortedSamples()`, URL sync |
+| `js/util.js` | DOM-free date/number/escaping helpers |
+| `js/stats.js` | DOM-free parsing, day-of-year bucketing, smoothing, percentiles |
+| `js/county.js` | PMC19 county card model (`buildCountyCard`) and renderer |
+| `js/{data,chart,table,ui}.js` | Fetching, Chart.js, the table, and DOM rendering |
+| `tools/build-zip-data.mjs` | Regenerates `data/zip-lookup.json` from GeoNames `US.txt` |
+| `fetch-pmc.sh` | Slims the PMC19 feed into `data/pmc-counties.json` |
+
+## Development
+
+```bash
+python3 -m http.server 8765      # module scripts and fetch() need HTTP, not file://
+node --test test/*.test.mjs      # unit tests (node:test only, no dependencies)
+./fetch-pmc.sh                   # refresh data/pmc-counties.json from pmc19.com
+```
+
+Sample dates are parsed and bucketed in UTC arithmetic, so the rendered
+calendar day does not depend on the viewer's timezone. Percentiles are
+computed over every loaded sample of the current plant selection.
+
 ## Data Attribution and License
 
 This is an independent site using data from [WastewaterSCAN / SCAN](https://data.wastewaterscan.org/about/#18) and county-level COVID estimates from the [Pandemic Mitigation Collaborative](https://pmc19.com/).
