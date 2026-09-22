@@ -44,10 +44,9 @@ import { downloadCSV, sortTableByDate, changePage, handleSearch } from './table.
       }
     }
 
-    export function renderPlantSearchResults(query) {
+    export async function renderPlantSearchResults(query) {
       const container = document.getElementById('plantSearchResults');
       if (!container) return;
-      container.innerHTML = '';
 
       const trimmedQuery = query.trim();
       const isZip = isZipCodeQuery(trimmedQuery);
@@ -55,7 +54,14 @@ import { downloadCSV, sortTableByDate, changePage, handleSearch } from './table.
       let distanceMap = new Map();
 
       if (isZip) {
-        const referenceCoords = getReferenceCoordsFromZip(trimmedQuery);
+        // Resolve coordinates before touching the DOM so overlapping renders cannot interleave.
+        let referenceCoords = null;
+        try {
+          referenceCoords = await getReferenceCoordsFromZip(trimmedQuery);
+        } catch (err) {
+          showStatusBanner(err && err.message ? err.message : String(err), 'error');
+        }
+        container.innerHTML = '';
         matches = [...state.plantsCatalog];
 
         if (referenceCoords) {
@@ -95,6 +101,7 @@ import { downloadCSV, sortTableByDate, changePage, handleSearch } from './table.
           container.appendChild(header);
         }
       } else {
+        container.innerHTML = '';
         matches = state.plantsCatalog
           .filter(p => fuzzyMatchPlant(p, query))
           .sort((a, b) => {

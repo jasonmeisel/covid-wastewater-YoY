@@ -1,6 +1,7 @@
 // PMC19 county card: a pure model (buildCountyCard) plus its renderer.
 import { formatShortDate, formatNumber, escapeHtml } from './util.js';
 import { state } from './state.js';
+import { loadZipLookup } from './data.js';
 
 export const PROVENANCE = {
   OBSERVED_LABEL: 'Observed',
@@ -129,23 +130,33 @@ export function updateCountyCovidSummary() {
   renderCountyCard(card, state.selectedPmcZip);
 }
 
-export function resolveZipToCountyFips(zip) {
+// GeoNames and PMC19 spell regions differently ("City and County of San Francisco"
+// vs "San Francisco County"), so both sides are reduced to a bare place name.
+const normalizeCounty = value => String(value)
+  .toLowerCase()
+  .replace(/^city and county of\s+/, '')
+  .replace(/\s+(county|parish|borough|census area|municipality)$/, '')
+  .trim();
+
+export async function resolveZipToCountyFips(zip) {
   const normalizedZip = zip.trim().slice(0, 5);
   state.selectedPmcZip = normalizedZip;
-  const zipcodes = window.zipcodes;
-  const zipInfo = zipcodes?.find?.(normalizedZip);
 
-  if (!zipInfo?.isValid || !zipInfo.county || !zipInfo.stateCode) {
+  let entry = null;
+  try {
+    entry = (await loadZipLookup()).get(normalizedZip);
+  } catch (err) {
     state.selectedZipCountyFips = null;
     updateCountyCovidSummary();
     return;
   }
 
-  const normalizeCounty = value => String(value).toLowerCase().replace(/\s+county$/i, '').trim();
-  const targetCounty = normalizeCounty(zipInfo.county);
-  const countyData = [...state.countyCovidDataByFips.values()].find(county =>
-    county.state === zipInfo.stateCode && normalizeCounty(county.county_name) === targetCounty
-  );
+  const stateCode = entry && entry[2];
+  const targetCounty = entry ? normalizeCounty(entry[3]) : null;
+  const countyData = targetCounty
+    ? [...state.countyCovidDataByFips.values()].find(county =>
+        county.state === stateCode && normalizeCounty(county.county_name) === targetCounty)
+    : null;
 
   state.selectedZipCountyFips = countyData?.fips || null;
   updateCountyCovidSummary();

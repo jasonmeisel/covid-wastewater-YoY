@@ -15,15 +15,17 @@
   <meta name="twitter:description" content="Explore year-over-year wastewater SARS-CoV-2 trends normalized by PMMoV.">
   <meta name="twitter:image" content="https://whatisjason.com/covid-wastewater-YoY/thumbnail.jpg">
   <meta name="twitter:image:alt" content="Wastewater PMMoV year-over-year analytics graph">
+  <!-- GitHub Pages cannot set response headers, so the policy lives here.
+       frame-ancestors and report-uri are header-only and deliberately omitted.
+       style-src needs 'unsafe-inline' for Tailwind's runtime <style> injection. -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.tailwindcss.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://storage.googleapis.com https://data.wastewaterscan.org; object-src 'none'; base-uri 'none'; form-action 'none'">
   
-  <!-- Tailwind CSS -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  
-  <!-- Chart.js -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Tailwind CSS: version-pinned. This host sends no CORS headers, so SRI is impossible. -->
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="./js/tailwind-config.js"></script>
 
-  <!-- US ZIP code coordinates -->
-  <script src="https://cdn.jsdelivr.net/npm/zipcodes-us@1.1.3/dist/index.umd.min.js"></script>
+  <!-- Chart.js: version-pinned with a Subresource Integrity hash -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js" integrity="sha384-jb8JQMbMoBUzgWatfe6COACi2ljcDdZQ2OxczGA3bGNeWe+6DChMTBJemed7ZnvJ" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
   <!-- Google Fonts: Inter -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -32,26 +34,6 @@
   
   <link rel="stylesheet" href="./css/app.css">
 
-  <script>
-    // Configure Tailwind theme extensions
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          colors: {
-            brand: {
-              50: '#f0fdfa',
-              100: '#ccfbf1',
-              500: '#14b8a6',
-              600: '#0d9488',
-              700: '#0f766e',
-              950: '#042f2e',
-            }
-          }
-        }
-      }
-    }
-  </script>
 </head>
 
 <body class="h-full bg-slate-900 text-slate-100 transition-colors duration-300 dark flex flex-col overflow-x-hidden">
@@ -396,7 +378,6 @@
       </p>
     </div>
   </footer>
-
 
   <script type="module" src="./js/main.js"></script>
 </body>

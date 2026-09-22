@@ -43,6 +43,33 @@ import { updatePlantMetadataUI, renderPlantSearchResults, updateYearlyStatsSumma
       return state.inactivePlantUids.has(String(plant.uid));
     }
 
+    let zipLookupPromise = null;
+
+    // Fetches (once) and memoises the bundled ZIP -> [lat, lng, state, county] table.
+    export function loadZipLookup() {
+      if (!zipLookupPromise) {
+        zipLookupPromise = (async () => {
+          const url = './data/zip-lookup.json';
+          let response;
+          try {
+            response = await fetch(url);
+          } catch (err) {
+            throw new Error(err && err.message ? err.message : `network error for ${url}`);
+          }
+          if (!response.ok) throw new Error(`HTTP ${response.status} for ${url}`);
+
+          const json = await response.json();
+          if (!json || typeof json.zips !== 'object' || json.zips === null) {
+            throw new Error('zip lookup schema invalid');
+          }
+          return new Map(Object.entries(json.zips));
+        })();
+        // Allow a later call to retry after a transient failure.
+        zipLookupPromise.catch(() => { zipLookupPromise = null; });
+      }
+      return zipLookupPromise;
+    }
+
     // Fetches the slimmed PMC19 county dataset. Throws with the exact reason on failure.
     export async function loadCountyData() {
       const url = './data/pmc-counties.json';
@@ -161,7 +188,7 @@ import { updatePlantMetadataUI, renderPlantSearchResults, updateYearlyStatsSumma
       return null;
     }
 
-    export function getReferenceCoordsFromZip(zip) {
+    export async function getReferenceCoordsFromZip(zip) {
       const normalizedZip = zip.trim().slice(0, 5);
 
       // Try the plant catalog first for exact facility coordinates
@@ -170,15 +197,9 @@ import { updatePlantMetadataUI, renderPlantSearchResults, updateYearlyStatsSumma
         return getPlantCoordinates(referencePlant);
       }
 
-      // Fall back to the zipcodes-us library for any US ZIP
-      if (typeof window !== 'undefined' && window.zipcodes && typeof window.zipcodes.find === 'function') {
-        const z = window.zipcodes.find(normalizedZip);
-        if (z && z.isValid && z.latitude !== undefined && z.longitude !== undefined) {
-          return { lat: Number(z.latitude), lng: Number(z.longitude) };
-        }
-      }
-
-      return null;
+      // Fall back to the bundled ZIP dataset for any US ZIP
+      const entry = (await loadZipLookup()).get(normalizedZip);
+      return entry ? { lat: entry[0], lng: entry[1] } : null;
     }
 
     export function haversineDistance(lat1, lon1, lat2, lon2) {
