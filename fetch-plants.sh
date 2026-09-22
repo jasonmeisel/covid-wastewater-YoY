@@ -30,6 +30,14 @@ jq --arg src "$URL" '{
     sewershed_pop, point,
     counties_served: ((.counties_served // []) | map(tostring | gsub("^\\s+|\\s+$"; "")))
   } ] }' "$RAW" > "$SLIM"
-mv "$SLIM" "$OUTPUT"
 
+# generated_at is the only field the script invents, so it must not be the only
+# reason the file changes: a run that found the same catalog has to leave the
+# file - and therefore the repo - untouched. Everything else is compared.
+if [[ -f "$OUTPUT" ]] && [[ "$(jq -S 'del(.generated_at)' "$OUTPUT")" == "$(jq -S 'del(.generated_at)' "$SLIM")" ]]; then
+  printf '%s is current; upstream catalog unchanged\n' "$OUTPUT"
+  exit 0
+fi
+
+mv "$SLIM" "$OUTPUT"
 printf 'Wrote %s (%s bytes, %s plants)\n' "$OUTPUT" "$(wc -c < "$OUTPUT")" "$(jq -r '.plants | length' "$OUTPUT")"

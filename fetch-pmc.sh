@@ -27,6 +27,14 @@ jq --arg src "$URL" '{
     prevalence_percent, prevalence_one_in, prevalence_percent_capped,
     nearest_observed_miles: ( [ (.data_line // "") | try (capture("≈(?<mi>[0-9]+) miles").mi | tonumber) catch null ] | .[0] )
   } ] }' "$RAW" > "$SLIM"
-mv "$SLIM" "$OUTPUT"
 
+# A run that found the same rows must leave the file - and therefore the repo -
+# untouched, even if upstream re-generated its payload with a fresh
+# generated_at. Everything else is compared.
+if [[ -f "$OUTPUT" ]] && [[ "$(jq -S 'del(.generated_at)' "$OUTPUT")" == "$(jq -S 'del(.generated_at)' "$SLIM")" ]]; then
+  printf '%s is current; upstream data unchanged\n' "$OUTPUT"
+  exit 0
+fi
+
+mv "$SLIM" "$OUTPUT"
 printf 'Wrote %s (%s bytes, week_end %s)\n' "$OUTPUT" "$(wc -c < "$OUTPUT")" "$(jq -r .week_end "$OUTPUT")"
