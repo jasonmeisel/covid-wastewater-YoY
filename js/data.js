@@ -2,7 +2,7 @@
 
 import { state } from './state.js';
 import { updateCountyCovidSummary, resolveZipToCountyFips } from './county.js';
-import { processRawWastewaterSamples } from './stats.js';
+import { buildSeries } from './stats.js';
 import { initYoYChart, updateCustomLegendUI } from './chart.js';
 import { applyTableFiltering } from './table.js';
 import { updatePlantMetadataUI, renderPlantSearchResults, updateYearlyStatsSummaryPanel, renderSummaryMetricsRow, showStatusBanner } from './ui.js';
@@ -169,7 +169,13 @@ import { updatePlantMetadataUI, renderPlantSearchResults, updateYearlyStatsSumma
       if (loader) loader.classList.remove('hidden');
       
       setTimeout(() => {
-        processRawWastewaterSamples(state.rawSamples);
+        const { byYear, years, skipped } = buildSeries(state.rawSamples);
+        state.processedData = byYear;
+        state.yearsList = years;
+        state.skipped = skipped;
+        years.forEach(yr => {
+          if (state.visibleYears[yr] === undefined) state.visibleYears[yr] = true;
+        });
         initYoYChart();
         updateCustomLegendUI();
         updateYearlyStatsSummaryPanel();

@@ -23,7 +23,8 @@ export const state = {
 
   // Sample dataset
   rawSamples: [],
-  processedData: {}, // Grouped by year: { '2023': [ { x: 120, y: 15.5, originalDate: '2023-04-30', actualYear: 2023 } ], ... }
+  processedData: {},
+  skipped: { total: 0, missingDate: 0, missingValue: 0, nonPositive: 0, unparseableDate: 0 }, // Grouped by year: { '2023': [ { x: 120, y: 15.5, originalDate: '2023-04-30', actualYear: 2023 } ], ... }
   yearsList: [],
   visibleYears: {}, // { '2023': true, '2024': true, ... }
   smoothingWindow: 3, // Standard 3-point moving average

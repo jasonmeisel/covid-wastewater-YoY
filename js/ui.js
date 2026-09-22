@@ -3,7 +3,7 @@
 import { formatShortDate, formatMonthDay, parseDateParts, escapeHtml } from './util.js';
 import { state, syncStateToUrl } from './state.js';
 import { resolveZipToCountyFips, updateCountyCovidSummary } from './county.js';
-import { YEAR_COLOR_PALETTE, getLatestSampleValue } from './stats.js';
+import { YEAR_COLOR_PALETTE, getLatestSampleValue, summarize, inclusivePercentile } from './stats.js';
 import { fuzzyMatchPlant, isZipCodeQuery, getPlantCoordinates, getReferenceCoordsFromZip, haversineDistance, isPlantInactive, loadRawData, processAndDisplayData } from './data.js';
 import { resetChartZoom, toggleAllYears, updateYScale, updateSmoothing } from './chart.js';
 import { downloadCSV, sortTableByDate, changePage, handleSearch } from './table.js';
@@ -258,20 +258,11 @@ import { downloadCSV, sortTableByDate, changePage, handleSearch } from './table.
         const series = state.processedData[yr] || [];
         if (series.length === 0) return;
 
-        const mean = series.reduce((sum, item) => sum + item.y, 0) / series.length;
+        const { mean, peak } = summarize(series);
+        const yearValues = series.map(item => item.y).sort((a, b) => a - b);
         const currentPercentile = currentValue === null
           ? null
-          : (series.filter(item => item.y <= currentValue).length / series.length) * 100;
-        
-        // Find maximum peak
-        let peakVal = 0;
-        let peakDate = 'N/A';
-        series.forEach(item => {
-          if (item.y > peakVal) {
-            peakVal = item.y;
-            peakDate = item.originalDate;
-          }
-        });
+          : inclusivePercentile(currentValue, yearValues);
 
         const colorConf = YEAR_COLOR_PALETTE[yr] || YEAR_COLOR_PALETTE.default;
 
@@ -282,12 +273,12 @@ import { downloadCSV, sortTableByDate, changePage, handleSearch } from './table.
             <span class="w-1 h-10 rounded ${colorConf.bg}"></span>
             <div>
               <h4 class="font-bold text-slate-200 text-sm">${yr} Baseline</h4>
-              <p class="text-[10px] text-slate-500">Peak recorded on: ${formatMonthDay(peakDate)}</p>
+              <p class="text-[10px] text-slate-500">Peak recorded on: ${formatMonthDay(peak.date)}</p>
             </div>
           </div>
           <div class="text-right">
             <div class="text-xs font-bold text-slate-300">Mean: <span class="text-teal-400 font-mono">${mean.toFixed(1)}</span></div>
-            <div class="text-[10px] text-slate-500">Peak: <span class="text-indigo-400 font-mono font-bold">${peakVal.toFixed(1)}</span></div>
+            <div class="text-[10px] text-slate-500">Peak: <span class="text-indigo-400 font-mono font-bold">${peak.value.toFixed(1)}</span></div>
           </div>
           <div class="text-right">
             <div class="text-[10px] text-slate-500">Percentile of latest sample</div>
@@ -330,24 +321,13 @@ import { downloadCSV, sortTableByDate, changePage, handleSearch } from './table.
         changeElem.innerText = '';
       }
 
-      // Peak Sample statistics
-      let globalPeakVal = 0;
-      let globalPeakDate = '';
-      allPointsSorted.forEach(pt => {
-        if (pt.y > globalPeakVal) {
-          globalPeakVal = pt.y;
-          globalPeakDate = pt.originalDate;
-        }
-      });
-      document.getElementById('metricPeakVal').innerText = globalPeakVal.toFixed(2);
-      document.getElementById('metricPeakDate').innerText = formatShortDate(globalPeakDate);
-      document.getElementById('metricPeakYear').innerText = parseDateParts(globalPeakDate)?.year ?? 'N/A';
-
-      // Overall Mean statistics
-      const totalSum = allPointsSorted.reduce((sum, pt) => sum + pt.y, 0);
-      const overallMean = totalSum / allPointsSorted.length;
-      document.getElementById('metricMeanVal').innerText = overallMean.toFixed(2);
-      document.getElementById('metricMeanDesc').innerText = `Across ${allPointsSorted.length} samples`;
+      // Peak and overall-mean statistics
+      const overall = summarize(allPointsSorted);
+      document.getElementById('metricPeakVal').innerText = overall.peak.value.toFixed(2);
+      document.getElementById('metricPeakDate').innerText = formatShortDate(overall.peak.date);
+      document.getElementById('metricPeakYear').innerText = parseDateParts(overall.peak.date)?.year ?? 'N/A';
+      document.getElementById('metricMeanVal').innerText = overall.mean.toFixed(2);
+      document.getElementById('metricMeanDesc').innerText = `Across ${overall.count} samples`;
 
       // Dataset Span statistics
       const firstYear = parseDateParts(allPointsSorted[0].originalDate)?.year ?? null;

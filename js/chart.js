@@ -2,9 +2,9 @@
 
 import { formatShortDate, formatDate } from './util.js';
 import { state, syncStateToUrl } from './state.js';
-import { YEAR_COLOR_PALETTE, computeMovingAverage, getVisibleSampleValues, getInclusivePercentile, computePercentileStats, percentileStats, getLatestSamplePoint, getLatestSampleValue, getPercentileEmoji } from './stats.js';
+import { YEAR_COLOR_PALETTE, movingAverage, sortedSeriesValues, inclusivePercentile, percentileStats, getLatestSamplePoint, getPercentileEmoji, summarize } from './stats.js';
 
-    export function updatePercentileSummaryUI() {
+    export function updatePercentileSummaryUI(stats) {
       const currentLabel = document.getElementById('currentValuePercentile');
       const currentEmoji = document.getElementById('currentValueEmoji');
       const medianLabel = document.getElementById('medianValueBadge');
@@ -16,40 +16,38 @@ import { YEAR_COLOR_PALETTE, computeMovingAverage, getVisibleSampleValues, getIn
       const formatPercentile = value => value === null ? 'N/A' : `${value.toFixed(1)}%`;
 
       if (currentLabel) {
-        currentLabel.innerText = `Current value percentile: ${formatPercentile(percentileStats.currentPercentile)}`;
+        currentLabel.innerText = `Current value percentile: ${formatPercentile(stats.currentPercentile)}`;
       }
       if (currentEmoji) {
-        currentEmoji.innerText = getPercentileEmoji(percentileStats.currentPercentile);
+        currentEmoji.innerText = getPercentileEmoji(stats.currentPercentile);
       }
       if (medianLabel) {
-        medianLabel.innerText = `Median: ${formatStat(percentileStats.median)}`;
+        medianLabel.innerText = `Median: ${formatStat(stats.median)}`;
       }
       if (quartileLabel) {
-        quartileLabel.innerText = `Q1: ${formatStat(percentileStats.q1)}, Q3: ${formatStat(percentileStats.q3)}`;
+        quartileLabel.innerText = `Q1: ${formatStat(stats.q1)}, Q3: ${formatStat(stats.q3)}`;
       }
       if (p5Label) {
-        p5Label.innerText = `5th: ${formatStat(percentileStats.p5)}`;
+        p5Label.innerText = `5th: ${formatStat(stats.p5)}`;
       }
       if (p1Label) {
-        p1Label.innerText = `1st: ${formatStat(percentileStats.p1)}`;
+        p1Label.innerText = `1st: ${formatStat(stats.p1)}`;
       }
 
-      updateChartTakeaway();
+      updateChartTakeaway(stats);
     }
 
-    export function updateChartTakeaway() {
+    export function updateChartTakeaway(stats) {
       const takeaway = document.getElementById('chartTakeaway');
       const latestPoint = getLatestSamplePoint();
       if (!takeaway || !latestPoint) return;
 
       const latestYear = state.yearsList.reduce((max, year) => Math.max(max, Number(year)), 0);
       const latestYearSeries = state.processedData[latestYear] || [];
-      const yearMean = latestYearSeries.length
-        ? latestYearSeries.reduce((sum, point) => sum + point.y, 0) / latestYearSeries.length
-        : null;
-      const percentileText = percentileStats.currentPercentile === null
+      const yearMean = latestYearSeries.length ? summarize(latestYearSeries).mean : null;
+      const percentileText = stats.currentPercentile === null
         ? ''
-        : ` — ${percentileStats.currentPercentile.toFixed(1)}th percentile of selected history`;
+        : ` — ${stats.currentPercentile.toFixed(1)}th percentile of all ${stats.count} samples`;
       const meanText = yearMean && yearMean > 0
         ? `; ${ (latestPoint.y / yearMean).toFixed(1) }× the ${latestYear} average`
         : '';
@@ -97,16 +95,16 @@ import { YEAR_COLOR_PALETTE, computeMovingAverage, getVisibleSampleValues, getIn
       }
 
       const isPercentileScale = state.yScaleType === 'percentile';
-      const percentileValues = getVisibleSampleValues();
-      const visibleStats = computePercentileStats(percentileValues);
-      updatePercentileSummaryUI();
-      const percentileLookup = value => getInclusivePercentile(value, percentileValues);
+      const percentileValues = sortedSeriesValues();
+      const stats = percentileStats(percentileValues);
+      updatePercentileSummaryUI(stats);
+      const percentileLookup = value => inclusivePercentile(value, percentileValues);
       const percentileLines = [
-        { label: '25th', value: visibleStats.q1, color: 'rgba(16, 185, 129, 0.7)', dash: [4, 4] },
-        { label: 'Median', value: visibleStats.median, color: 'rgba(14, 165, 233, 0.7)', dash: [4, 4] },
-        { label: '75th', value: visibleStats.q3, color: 'rgba(168, 85, 247, 0.7)', dash: [4, 4] },
-        { label: '5th', value: visibleStats.p5, color: 'rgba(245, 158, 11, 0.7)', dash: [4, 4] },
-        { label: '1st', value: visibleStats.p1, color: 'rgba(239, 68, 68, 0.7)', dash: [4, 4] }
+        { label: '25th', value: stats.q1, color: 'rgba(16, 185, 129, 0.7)', dash: [4, 4] },
+        { label: 'Median', value: stats.median, color: 'rgba(14, 165, 233, 0.7)', dash: [4, 4] },
+        { label: '75th', value: stats.q3, color: 'rgba(168, 85, 247, 0.7)', dash: [4, 4] },
+        { label: '5th', value: stats.p5, color: 'rgba(245, 158, 11, 0.7)', dash: [4, 4] },
+        { label: '1st', value: stats.p1, color: 'rgba(239, 68, 68, 0.7)', dash: [4, 4] }
       ].filter(line => line.value !== null);
 
       const percentileLinesPlugin = {
@@ -143,7 +141,7 @@ import { YEAR_COLOR_PALETTE, computeMovingAverage, getVisibleSampleValues, getIn
         const colorConf = YEAR_COLOR_PALETTE[yr] || YEAR_COLOR_PALETTE.default;
         const originalSeries = state.processedData[yr] || [];
         const isLatestYear = Number(yr) === latestYear;
-        const finalSeries = computeMovingAverage(originalSeries, state.smoothingWindow, isLatestYear);
+        const finalSeries = movingAverage(originalSeries, state.smoothingWindow, isLatestYear);
         const chartSeries = isPercentileScale
           ? finalSeries.map(point => ({
               ...point,
@@ -503,7 +501,7 @@ import { YEAR_COLOR_PALETTE, computeMovingAverage, getVisibleSampleValues, getIn
         const series = state.processedData[yr] || [];
         
         // Calculate dynamic basic statistics for each year series
-        const averageVal = series.length > 0 ? (series.reduce((sum, item) => sum + item.y, 0) / series.length).toFixed(1) : 'N/A';
+        const averageVal = series.length > 0 ? summarize(series).mean.toFixed(1) : 'N/A';
 
         const wrapper = document.createElement('div');
         wrapper.className = `flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs cursor-pointer select-none transition-all-300 ${
