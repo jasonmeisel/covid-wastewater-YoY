@@ -1,9 +1,9 @@
 // Source: index.html // [587-604] // [606-609] // [611-636] // [694-732] // [734-751] // [753-756] // [758-766] // [768-786] // [788-797] // [2188-2203] // [2216-2261]
 
-import { state } from './state.js';
+import { state, setSeries } from './state.js';
 import { updateCountyCovidSummary, resolveZipToCountyFips } from './county.js';
 import { buildSeries } from './stats.js';
-import { initYoYChart, updateCustomLegendUI } from './chart.js';
+import { updateChart, updateCustomLegendUI } from './chart.js';
 import { applyTableFiltering } from './table.js';
 import { updatePlantMetadataUI, renderPlantSearchResults, updateYearlyStatsSummaryPanel, renderSummaryMetricsRow, showStatusBanner } from './ui.js';
 
@@ -168,22 +168,15 @@ import { updatePlantMetadataUI, renderPlantSearchResults, updateYearlyStatsSumma
       const loader = document.getElementById('chartLoader');
       if (loader) loader.classList.remove('hidden');
       
-      setTimeout(() => {
-        const { byYear, years, skipped } = buildSeries(state.rawSamples);
-        state.processedData = byYear;
-        state.yearsList = years;
-        state.skipped = skipped;
-        years.forEach(yr => {
-          if (state.visibleYears[yr] === undefined) state.visibleYears[yr] = true;
-        });
-        initYoYChart();
-        updateCustomLegendUI();
-        updateYearlyStatsSummaryPanel();
-        renderSummaryMetricsRow();
-        applyTableFiltering();
-        
-        if (loader) loader.classList.add('hidden');
-      }, 300);
+      const { byYear, years, skipped } = buildSeries(state.rawSamples);
+      setSeries(byYear, years, skipped);
+      updateChart();
+      updateCustomLegendUI();
+      updateYearlyStatsSummaryPanel();
+      renderSummaryMetricsRow();
+      applyTableFiltering();
+
+      if (loader) loader.classList.add('hidden');
     }
 
     // Primary Async Loader fetching from GCS Target URL

@@ -162,7 +162,7 @@ export function quantile(sortedList, ratio) {
 // percentiles describe the whole selection, not what happens to be toggled on.
 export function sortedSeriesValues() {
   const values = [];
-  Object.values(state.processedData).forEach(series => series.forEach(pt => values.push(pt.y)));
+  Object.values(state.series).forEach(series => series.forEach(pt => values.push(pt.y)));
   return values.sort((a, b) => a - b);
 }
 
@@ -185,7 +185,7 @@ export function inclusivePercentile(value, sortedValues) {
 
 export function getLatestSamplePoint() {
   let latestPoint = null;
-  Object.values(state.processedData).forEach(series => {
+  Object.values(state.series).forEach(series => {
     series.forEach(point => {
       if (!latestPoint || String(point.originalDate) > String(latestPoint.originalDate)) {
         latestPoint = point;

@@ -42,8 +42,8 @@ import { YEAR_COLOR_PALETTE, movingAverage, sortedSeriesValues, inclusivePercent
       const latestPoint = getLatestSamplePoint();
       if (!takeaway || !latestPoint) return;
 
-      const latestYear = state.yearsList.reduce((max, year) => Math.max(max, Number(year)), 0);
-      const latestYearSeries = state.processedData[latestYear] || [];
+      const latestYear = state.years.reduce((max, year) => Math.max(max, Number(year)), 0);
+      const latestYearSeries = state.series[latestYear] || [];
       const yearMean = latestYearSeries.length ? summarize(latestYearSeries).mean : null;
       const percentileText = stats.currentPercentile === null
         ? ''
@@ -56,90 +56,64 @@ import { YEAR_COLOR_PALETTE, movingAverage, sortedSeriesValues, inclusivePercent
       takeaway.innerText = `Latest normalized reading: ${latestPoint.y.toFixed(1)} (${dateText})${percentileText}${meanText}.`;
     }
 
-    // Build Chart JS configuration and inject into container
-    export function initYoYChart() {
-      const canvasElement = document.getElementById('yoyChart');
-      if (!canvasElement) return;
-      
-      const ctx = canvasElement.getContext('2d');
-      const isDark = document.documentElement.classList.contains('dark');
-      
-      // Month labels matching the standardized indices on 365-day grid
-      const monthStarts = [1, 32, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335];
-      const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    // Build Chart JS configuration and inject into container.
+    // createChart() runs once per page; updateChart() re-derives datasets and options from state.
 
-      const monthLabelPlugin = {
-        id: 'monthLabels',
-        afterDraw: (chart) => {
-          const { ctx, chartArea: { bottom }, scales: { x } } = chart;
-          ctx.save();
-          ctx.font = '10px Inter';
-          ctx.fillStyle = isDark ? '#94a3b8' : '#475569';
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'top';
-
-          const labelY = Math.min(bottom + 12, chart.height - 10);
-
-          monthStarts.forEach((value, index) => {
-            const xPixel = x.getPixelForValue(value);
-            if (xPixel < x.left || xPixel > x.right) return;
-            ctx.fillText(monthNames[index], xPixel, labelY);
-          });
-
-          ctx.restore();
-        }
-      };
-
-      if (state.chartInstance) {
-        state.chartInstance.destroy();
+    const clampXAxisRange = (min, max) => {
+      const fullMin = 1;
+      const fullMax = 365;
+      if (min <= fullMin && max >= fullMax) {
+        return { min: fullMin, max: fullMax };
       }
 
-      const isPercentileScale = state.yScaleType === 'percentile';
-      const percentileValues = sortedSeriesValues();
-      const stats = percentileStats(percentileValues);
-      updatePercentileSummaryUI(stats);
-      const percentileLookup = value => inclusivePercentile(value, percentileValues);
-      const percentileLines = [
+      const nextMin = Math.max(fullMin, Math.min(fullMax - 1, min));
+      const nextMax = Math.max(nextMin + 1, Math.min(fullMax, max));
+
+      if (nextMax - nextMin >= fullMax - fullMin) {
+        return { min: fullMin, max: fullMax };
+      }
+
+      return { min: nextMin, max: nextMax };
+    };
+
+    // Applies a clamped x-axis window to the live scale and its options, then repaints.
+    function applyXAxisRange(min, max) {
+      const chart = state.chartInstance;
+      const xScale = chart?.scales?.x;
+      if (!xScale) return;
+
+      const clamped = clampXAxisRange(min, max);
+      xScale.min = clamped.min;
+      xScale.max = clamped.max;
+
+      if (chart.options?.scales?.x) {
+        chart.options.scales.x.min = clamped.min;
+        chart.options.scales.x.max = clamped.max;
+      }
+
+      chart.update('none');
+    }
+
+    function percentileLinesFor(stats) {
+      return [
         { label: '25th', value: stats.q1, color: 'rgba(16, 185, 129, 0.7)', dash: [4, 4] },
         { label: 'Median', value: stats.median, color: 'rgba(14, 165, 233, 0.7)', dash: [4, 4] },
         { label: '75th', value: stats.q3, color: 'rgba(168, 85, 247, 0.7)', dash: [4, 4] },
         { label: '5th', value: stats.p5, color: 'rgba(245, 158, 11, 0.7)', dash: [4, 4] },
         { label: '1st', value: stats.p1, color: 'rgba(239, 68, 68, 0.7)', dash: [4, 4] }
       ].filter(line => line.value !== null);
+    }
 
-      const percentileLinesPlugin = {
-        id: 'percentileLines',
-        beforeDraw: (chart) => {
-          const lines = chart.options.plugins?.percentileLines?.lines || [];
-          if (!lines.length) return;
-          const { ctx, chartArea: { top, bottom, left, right }, scales: { y } } = chart;
-          ctx.save();
-          lines.forEach(line => {
-            const yValue = y.getPixelForValue(line.value);
-            if (yValue < top || yValue > bottom) return;
-            ctx.strokeStyle = line.color;
-            ctx.lineWidth = 1;
-            ctx.setLineDash(line.dash || []);
-            ctx.beginPath();
-            ctx.moveTo(left, yValue);
-            ctx.lineTo(right, yValue);
-            ctx.stroke();
-            ctx.setLineDash([]);
-            ctx.fillStyle = line.color;
-            ctx.font = '11px Inter';
-            ctx.textAlign = 'right';
-            ctx.textBaseline = 'bottom';
-            ctx.fillText(`${line.label}: ${line.value.toFixed(1)}`, right - 6, yValue - 4);
-          });
-          ctx.restore();
-        }
-      };
+    // Derives the Chart.js dataset array from the current state.
+    function buildChartDatasets() {
+      const isPercentileScale = state.yScaleType === 'percentile';
+      const percentileValues = sortedSeriesValues();
+      const percentileLookup = value => inclusivePercentile(value, percentileValues);
+      const latestYear = state.years.reduce((max, yr) => Math.max(max, Number(yr)), 0);
 
-      // Generate clean dataset arrays ready for ChartJS insertion
-      const latestYear = state.yearsList.reduce((max, yr) => Math.max(max, Number(yr)), 0);
-      const chartDatasets = state.yearsList.map(yr => {
+      return state.years.map(yr => {
         const colorConf = YEAR_COLOR_PALETTE[yr] || YEAR_COLOR_PALETTE.default;
-        const originalSeries = state.processedData[yr] || [];
+        const originalSeries = state.series[yr] || [];
         const isLatestYear = Number(yr) === latestYear;
         const finalSeries = movingAverage(originalSeries, state.smoothingWindow, isLatestYear);
         const chartSeries = isPercentileScale
@@ -175,38 +149,68 @@ import { YEAR_COLOR_PALETTE, movingAverage, sortedSeriesValues, inclusivePercent
           hidden: !state.visibleYears[yr]
         };
       });
+    }
 
-      const clampXAxisRange = (min, max) => {
-        const fullMin = 1;
-        const fullMax = 365;
-        if (min <= fullMin && max >= fullMax) {
-          return { min: fullMin, max: fullMax };
+    // One-time setup: canvas context, drawing plugins, pan/pinch handlers and the Chart instance.
+    export function createChart(canvasElement = document.getElementById('yoyChart')) {
+      if (!canvasElement) return null;
+
+      const ctx = canvasElement.getContext('2d');
+      const isDark = document.documentElement.classList.contains('dark');
+
+      // Month labels matching the standardized indices on the 365-day grid
+      const monthStarts = [1, 32, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335];
+      const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+      const monthLabelPlugin = {
+        id: 'monthLabels',
+        afterDraw: (chart) => {
+          const dark = document.documentElement.classList.contains('dark');
+          const { ctx, chartArea: { bottom }, scales: { x } } = chart;
+          ctx.save();
+          ctx.font = '10px Inter';
+          ctx.fillStyle = dark ? '#94a3b8' : '#475569';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'top';
+
+          const labelY = Math.min(bottom + 12, chart.height - 10);
+
+          monthStarts.forEach((value, index) => {
+            const xPixel = x.getPixelForValue(value);
+            if (xPixel < x.left || xPixel > x.right) return;
+            ctx.fillText(monthNames[index], xPixel, labelY);
+          });
+
+          ctx.restore();
         }
-
-        let nextMin = Math.max(fullMin, Math.min(fullMax - 1, min));
-        let nextMax = Math.max(nextMin + 1, Math.min(fullMax, max));
-
-        if (nextMax - nextMin >= fullMax - fullMin) {
-          return { min: fullMin, max: fullMax };
-        }
-
-        return { min: nextMin, max: nextMax };
       };
 
-      const applyXAxisRange = (min, max) => {
-        const xScale = state.chartInstance?.scales?.x;
-        if (!xScale) return;
-
-        const clamped = clampXAxisRange(min, max);
-        xScale.min = clamped.min;
-        xScale.max = clamped.max;
-
-        if (state.chartInstance.options?.scales?.x) {
-          state.chartInstance.options.scales.x.min = clamped.min;
-          state.chartInstance.options.scales.x.max = clamped.max;
+      const percentileLinesPlugin = {
+        id: 'percentileLines',
+        beforeDraw: (chart) => {
+          const lines = chart.options.plugins?.percentileLines?.lines || [];
+          if (!lines.length) return;
+          const { ctx, chartArea: { top, bottom, left, right }, scales: { y } } = chart;
+          ctx.save();
+          lines.forEach(line => {
+            const yValue = y.getPixelForValue(line.value);
+            if (yValue < top || yValue > bottom) return;
+            ctx.strokeStyle = line.color;
+            ctx.lineWidth = 1;
+            ctx.setLineDash(line.dash || []);
+            ctx.beginPath();
+            ctx.moveTo(left, yValue);
+            ctx.lineTo(right, yValue);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.fillStyle = line.color;
+            ctx.font = '11px Inter';
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'bottom';
+            ctx.fillText(`${line.label}: ${line.value.toFixed(1)}`, right - 6, yValue - 4);
+          });
+          ctx.restore();
         }
-
-        state.chartInstance.update('none');
       };
 
       const customPanState = {
@@ -262,7 +266,6 @@ import { YEAR_COLOR_PALETTE, movingAverage, sortedSeriesValues, inclusivePercent
         if (!xScale) return;
         if (xScale.min <= 1 && xScale.max >= 365) return;
 
-        event.preventDefault();
         customPanState.active = true;
         customPanState.startX = event.clientX;
         customPanState.startMin = xScale.min;
@@ -358,9 +361,9 @@ import { YEAR_COLOR_PALETTE, movingAverage, sortedSeriesValues, inclusivePercent
       state.chartInstance = new Chart(ctx, {
         type: 'line',
         data: {
-          datasets: chartDatasets
+          datasets: []
         },
-        plugins: [monthLabelPlugin, ...(isPercentileScale ? [] : [percentileLinesPlugin])],
+        plugins: [monthLabelPlugin, percentileLinesPlugin],
         options: {
           responsive: true,
           maintainAspectRatio: false,
@@ -392,11 +395,8 @@ import { YEAR_COLOR_PALETTE, movingAverage, sortedSeriesValues, inclusivePercent
               }
             },
             y: {
-              type: isPercentileScale ? 'linear' : state.yScaleType,
-              min: isPercentileScale ? 0 : state.yScaleType === 'linear' ? 0 : 0.1,
-              max: isPercentileScale ? 100 : undefined,
-              suggestedMin: isPercentileScale ? 0 : state.yScaleType === 'linear' ? 0 : 0.1,
-              suggestedMax: isPercentileScale ? 100 : undefined,
+              type: 'linear',
+              min: 0,
               grid: {
                 display: false, // REMOVED Y-AXIS GRID LINES
                 drawOnChartArea: false,
@@ -409,7 +409,7 @@ import { YEAR_COLOR_PALETTE, movingAverage, sortedSeriesValues, inclusivePercent
                 color: isDark ? '#94a3b8' : '#475569',
                 font: { family: 'Inter', size: 10 },
                 callback: (value) => {
-                  if (isPercentileScale) {
+                  if (state.yScaleType === 'percentile') {
                     return `${value}%`;
                   }
                   if (state.yScaleType === 'logarithmic') {
@@ -425,9 +425,7 @@ import { YEAR_COLOR_PALETTE, movingAverage, sortedSeriesValues, inclusivePercent
               },
               title: {
                 display: true,
-                text: isPercentileScale
-                  ? 'Percentile'
-                  : state.yScaleType === 'logarithmic' ? 'N Gene / PMMoV (× 1,000,000) [Log Scale]' : 'N Gene / PMMoV (× 1,000,000)',
+                text: 'N Gene / PMMoV (× 1,000,000)',
                 color: isDark ? '#94a3b8' : '#475569',
                 font: { family: 'Inter', size: 11, weight: 'semibold' }
               }
@@ -438,7 +436,7 @@ import { YEAR_COLOR_PALETTE, movingAverage, sortedSeriesValues, inclusivePercent
               display: false // Using our premium custom interactive HTML legend instead
             },
             percentileLines: {
-              lines: isPercentileScale ? [] : percentileLines
+              lines: []
             },
             tooltip: {
               enabled: false,
@@ -460,7 +458,7 @@ import { YEAR_COLOR_PALETTE, movingAverage, sortedSeriesValues, inclusivePercent
                 label: function(context) {
                   const originalY = context.raw.value ?? context.raw.y;
                   const labelYear = context.dataset.label;
-                  const percentileLabel = isPercentileScale ? ` (${context.raw.y.toFixed(1)}th percentile)` : '';
+                  const percentileLabel = state.yScaleType === 'percentile' ? ` (${context.raw.y.toFixed(1)}th percentile)` : '';
                   return ` ${labelYear}: ${originalY.toFixed(2)}${percentileLabel}`;
                 }
               }
@@ -468,23 +466,53 @@ import { YEAR_COLOR_PALETTE, movingAverage, sortedSeriesValues, inclusivePercent
           }
         }
       });
+
+      return state.chartInstance;
+    }
+
+    // Recomputes the percentile summary, datasets and axis options from state, then repaints.
+    export function updateChart() {
+      const chart = state.chartInstance || createChart();
+      if (!chart) return;
+
+      const isDark = document.documentElement.classList.contains('dark');
+      const isPercentileScale = state.yScaleType === 'percentile';
+      const percentileValues = sortedSeriesValues();
+      const stats = percentileStats(percentileValues);
+      updatePercentileSummaryUI(stats);
+
+      chart.data.datasets = buildChartDatasets();
+      chart.options.plugins.percentileLines.lines = isPercentileScale ? [] : percentileLinesFor(stats);
+
+      const yOptions = chart.options.scales.y;
+      yOptions.type = isPercentileScale ? 'linear' : state.yScaleType;
+      yOptions.min = isPercentileScale ? 0 : state.yScaleType === 'linear' ? 0 : 0.1;
+      yOptions.max = isPercentileScale ? 100 : undefined;
+      yOptions.suggestedMin = isPercentileScale ? 0 : state.yScaleType === 'linear' ? 0 : 0.1;
+      yOptions.suggestedMax = isPercentileScale ? 100 : undefined;
+      yOptions.title.text = isPercentileScale
+        ? 'Percentile'
+        : state.yScaleType === 'logarithmic' ? 'N Gene / PMMoV (× 1,000,000) [Log Scale]' : 'N Gene / PMMoV (× 1,000,000)';
+      yOptions.title.color = isDark ? '#94a3b8' : '#475569';
+      yOptions.ticks.color = isDark ? '#94a3b8' : '#475569';
+      yOptions.border.color = isDark ? '#334155' : '#cbd5e1';
+      chart.options.scales.x.border.color = isDark ? '#334155' : '#cbd5e1';
+
+      const tooltip = chart.options.plugins.tooltip;
+      tooltip.backgroundColor = isDark ? '#0f172a' : '#ffffff';
+      tooltip.titleColor = isDark ? '#f8fafc' : '#0f172a';
+      tooltip.bodyColor = isDark ? '#cbd5e1' : '#334155';
+      tooltip.borderColor = isDark ? '#334155' : '#e2e8f0';
+
+      // A fresh render starts unzoomed; the chart used to be destroyed and rebuilt on every toggle.
+      chart.options.scales.x.min = 1;
+      chart.options.scales.x.max = 365;
+
+      chart.update();
     }
 
     export function resetChartZoom() {
-      if (!state.chartInstance) return;
-      if (typeof state.chartInstance.resetZoom === 'function') {
-        state.chartInstance.resetZoom();
-        return;
-      }
-
-      const xScale = state.chartInstance.scales?.x;
-      if (xScale) {
-        xScale.options.min = 1;
-        xScale.options.max = 365;
-        xScale.min = 1;
-        xScale.max = 365;
-        state.chartInstance.update();
-      }
+      applyXAxisRange(1, 365);
     }
 
     // Render interactive HTML legend items with live analytics values
@@ -493,12 +521,12 @@ import { YEAR_COLOR_PALETTE, movingAverage, sortedSeriesValues, inclusivePercent
       if (!container) return;
       container.innerHTML = '';
 
-      const latestYear = state.yearsList.reduce((max, year) => Math.max(max, Number(year)), 0);
-      state.yearsList.forEach(yr => {
+      const latestYear = state.years.reduce((max, year) => Math.max(max, Number(year)), 0);
+      state.years.forEach(yr => {
         const colorConf = YEAR_COLOR_PALETTE[yr] || YEAR_COLOR_PALETTE.default;
         const isChecked = state.visibleYears[yr];
         const isLatestYear = Number(yr) === latestYear;
-        const series = state.processedData[yr] || [];
+        const series = state.series[yr] || [];
         
         // Calculate dynamic basic statistics for each year series
         const averageVal = series.length > 0 ? summarize(series).mean.toFixed(1) : 'N/A';
@@ -530,29 +558,29 @@ import { YEAR_COLOR_PALETTE, movingAverage, sortedSeriesValues, inclusivePercent
       state.visibleYears[year] = !state.visibleYears[year];
       syncStateToUrl();
       updateCustomLegendUI();
-      initYoYChart();
+      updateChart();
     }
 
     // Select/deselect all helper buttons
     export function toggleAllYears(visible) {
-      state.yearsList.forEach(yr => {
+      state.years.forEach(yr => {
         state.visibleYears[yr] = visible;
       });
       syncStateToUrl();
       updateCustomLegendUI();
-      initYoYChart();
+      updateChart();
     }
 
     // Update scale mode (Linear/Logarithmic) dynamically
     export function updateYScale(value) {
       state.yScaleType = value;
       syncStateToUrl();
-      initYoYChart();
+      updateChart();
     }
 
     // Update charts based on smoothing level changed
     export function updateSmoothing(value) {
       state.smoothingWindow = parseInt(value, 10);
       syncStateToUrl();
-      initYoYChart();
+      updateChart();
     }

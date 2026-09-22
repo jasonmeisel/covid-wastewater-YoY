@@ -1,7 +1,7 @@
 // Source: index.html // [1946-1951] // [1953-1986] // [1988-1992] // [1994-2044] // [2046-2050] // [2052-2075]
 
 import { formatDate, formatLongDate } from './util.js';
-import { state } from './state.js';
+import { state, sortedSamples } from './state.js';
 
     // Sync Table Search string
     export function handleSearch(query) {
@@ -12,12 +12,7 @@ import { state } from './state.js';
 
     // Filter tabular data based on current query string
     export function applyTableFiltering() {
-      const allList = [];
-      Object.keys(state.processedData).forEach(yr => {
-        state.processedData[yr].forEach(pt => {
-          allList.push(pt);
-        });
-      });
+      const allList = sortedSamples();
 
       // Search matching logic
       if (!state.tableSearchQuery) {
@@ -114,11 +109,7 @@ import { state } from './state.js';
       
       let csvContent = "data:text/csv;charset=utf-8,Date,Raw Ratio,Scaled Target Ratio (x1M)\n";
       
-      const allSorted = [];
-      Object.keys(state.processedData).forEach(yr => {
-        state.processedData[yr].forEach(pt => allSorted.push(pt));
-      });
-      allSorted.sort((a, b) => String(a.originalDate).localeCompare(String(b.originalDate)));
+      const allSorted = sortedSamples();
 
       allSorted.forEach(pt => {
         csvContent += `${pt.originalDate},${pt.rawRatio},${pt.y.toFixed(6)}\n`;

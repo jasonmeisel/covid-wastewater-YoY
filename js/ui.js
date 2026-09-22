@@ -1,11 +1,11 @@
 // Source: index.html // [799-805] // [807-825] // [827-833] // [835-936] // [938-978] // [980-1029] // [1031-1038] // [1797-1852] // [1886-1944] // [2077-2084] // [2086-2113] // [2115-2121] // [2123-2158] // [2160-2179] // [2181-2186] // [2205-2214]
 
 import { formatShortDate, formatMonthDay, parseDateParts, escapeHtml } from './util.js';
-import { state, syncStateToUrl } from './state.js';
+import { state, syncStateToUrl, sortedSamples } from './state.js';
 import { resolveZipToCountyFips, updateCountyCovidSummary } from './county.js';
 import { YEAR_COLOR_PALETTE, getLatestSampleValue, summarize, inclusivePercentile } from './stats.js';
 import { fuzzyMatchPlant, isZipCodeQuery, getPlantCoordinates, getReferenceCoordsFromZip, haversineDistance, isPlantInactive, loadRawData, processAndDisplayData } from './data.js';
-import { resetChartZoom, toggleAllYears, updateYScale, updateSmoothing } from './chart.js';
+import { resetChartZoom, toggleAllYears, updateYScale, updateSmoothing, updateChart } from './chart.js';
 import { downloadCSV, sortTableByDate, changePage, handleSearch } from './table.js';
 
     export function showPlantDropdown() {
@@ -247,15 +247,15 @@ import { downloadCSV, sortTableByDate, changePage, handleSearch } from './table.
       if (!container) return;
       container.innerHTML = '';
 
-      if (state.yearsList.length === 0) {
+      if (state.years.length === 0) {
         container.innerHTML = `<div class="text-xs text-slate-500 py-4 text-center">No statistical profile available. Please load database JSON.</div>`;
         return;
       }
 
       const currentValue = getLatestSampleValue();
 
-      state.yearsList.forEach(yr => {
-        const series = state.processedData[yr] || [];
+      state.years.forEach(yr => {
+        const series = state.series[yr] || [];
         if (series.length === 0) return;
 
         const { mean, peak } = summarize(series);
@@ -293,14 +293,8 @@ import { downloadCSV, sortTableByDate, changePage, handleSearch } from './table.
     export function renderSummaryMetricsRow() {
       if (state.rawSamples.length === 0) return;
 
-      // Extract raw points chronologically
-      const allPointsSorted = [];
-      Object.keys(state.processedData).forEach(yr => {
-        state.processedData[yr].forEach(pt => {
-          allPointsSorted.push(pt);
-        });
-      });
-      allPointsSorted.sort((a, b) => String(a.originalDate).localeCompare(String(b.originalDate)));
+      // Extract raw points chronologically (shared, memoised view)
+      const allPointsSorted = sortedSamples();
 
       if (allPointsSorted.length === 0) return;
 
@@ -370,9 +364,9 @@ import { downloadCSV, sortTableByDate, changePage, handleSearch } from './table.
         moonIcon.classList.remove('hidden');
       }
 
-      // Re-initialize graph to adapt colors and borders to new theme
+      // Re-render the chart so its colors follow the new theme
       if (state.chartInstance) {
-        initYoYChart();
+        updateChart();
       }
     }
 

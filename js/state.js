@@ -8,6 +8,8 @@ export const DEFAULTS = {
   scale: 'linear',
 };
 
+let sortedSamplesCache = null;
+
 export const state = {
   // Plant selection
   currentPlantUid: "b9c02d34", // Default plant UID
@@ -23,9 +25,9 @@ export const state = {
 
   // Sample dataset
   rawSamples: [],
-  processedData: {},
-  skipped: { total: 0, missingDate: 0, missingValue: 0, nonPositive: 0, unparseableDate: 0 }, // Grouped by year: { '2023': [ { x: 120, y: 15.5, originalDate: '2023-04-30', actualYear: 2023 } ], ... }
-  yearsList: [],
+  series: {}, // Grouped by year: { '2023': [ { x: 120, y: 15.5, originalDate: '2023-04-30', actualYear: 2023 } ], ... }
+  skipped: { total: 0, missingDate: 0, missingValue: 0, nonPositive: 0, unparseableDate: 0 },
+  years: [],
   visibleYears: {}, // { '2023': true, '2024': true, ... }
   smoothingWindow: 3, // Standard 3-point moving average
   yScaleType: 'linear', // 'linear' or 'logarithmic'
@@ -42,6 +44,29 @@ export const state = {
   chartInstance: null,
 };
 
+// Replaces the derived dataset and invalidates the shared chronological view.
+export function setSeries(byYear, years, skipped) {
+  state.series = byYear;
+  state.years = years;
+  state.skipped = skipped;
+  sortedSamplesCache = null;
+
+  // Default to having all years checked/visible
+  years.forEach(yr => {
+    if (state.visibleYears[yr] === undefined) state.visibleYears[yr] = true;
+  });
+}
+
+// Every plotted point, ascending by sample date. Memoised until setSeries runs.
+export function sortedSamples() {
+  if (!sortedSamplesCache) {
+    sortedSamplesCache = Object.values(state.series)
+      .flat()
+      .sort((a, b) => String(a.originalDate).localeCompare(String(b.originalDate)));
+  }
+  return sortedSamplesCache;
+}
+
 // --- URL state synchronization ---
 // Syncs current option values into the URL query params.
 // Only non-default values are appended; defaults are removed from the URL.
@@ -55,7 +80,7 @@ export function syncStateToUrl() {
   if (state.yScaleType !== DEFAULTS.scale) params.set('scale', state.yScaleType);
 
   // Years: only include hidden years (default = all visible)
-  const hiddenYears = state.yearsList.filter(yr => !state.visibleYears[yr]).map(String);
+  const hiddenYears = state.years.filter(yr => !state.visibleYears[yr]).map(String);
   if (hiddenYears.length > 0) params.set('hide', hiddenYears.join(','));
 
   const query = params.toString();
