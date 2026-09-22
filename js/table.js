@@ -73,11 +73,11 @@ import { state, sortedSamples } from './state.js';
         // Severity scale indicators
         let severityBadge = '';
         if (row.y < 10) {
-          severityBadge = '<span class="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 font-semibold text-[10px]">Low Baseline</span>';
+          severityBadge = '<span class="px-2 py-0.5 rounded-sm bg-emerald-500/10 text-emerald-400 font-semibold text-[10px]">Low Baseline</span>';
         } else if (row.y >= 10 && row.y < 35) {
-          severityBadge = '<span class="px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 font-semibold text-[10px]">Moderate</span>';
+          severityBadge = '<span class="px-2 py-0.5 rounded-sm bg-amber-500/10 text-amber-400 font-semibold text-[10px]">Moderate</span>';
         } else {
-          severityBadge = '<span class="px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-400 font-semibold text-[10px]">High Surge</span>';
+          severityBadge = '<span class="px-2 py-0.5 rounded-sm bg-rose-500/10 text-rose-400 font-semibold text-[10px]">High Surge</span>';
         }
 
         const tr = document.createElement('tr');

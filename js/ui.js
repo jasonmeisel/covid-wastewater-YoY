@@ -3,7 +3,7 @@
 import { formatShortDate, formatMonthDay, parseDateParts, escapeHtml } from './util.js';
 import { state, syncStateToUrl, sortedSamples } from './state.js';
 import { resolveZipToCountyFips, updateCountyCovidSummary } from './county.js';
-import { pickYearColor, getLatestSampleValue, summarize, inclusivePercentile } from './stats.js';
+import { pickYearColor, getLatestSampleValue, summarize, inclusivePercentile, sortedSeriesValues, getPercentileEmoji } from './stats.js';
 import { fuzzyMatchPlant, isZipCodeQuery, getPlantCoordinates, getReferenceCoordsFromZip, haversineDistance, isPlantInactive, loadAndRenderPlantSamples } from './data.js';
 import { resetChartZoom, toggleAllYears, toggleYearVisibility, updateYScale, updateSmoothing } from './chart.js';
 import { downloadCSV, sortTableByDate, changePage, handleSearch } from './table.js';
@@ -125,15 +125,15 @@ import { downloadCSV, sortTableByDate, changePage, handleSearch } from './table.
           ? `${distance < 10 ? distance.toFixed(1) : Math.round(distance)} mi`
           : '';
 
-        item.className = `p-3 text-xs cursor-pointer hover:bg-slate-800 transition flex items-center justify-between ${
-          isSelected ? 'bg-teal-500/10 border-l-4 border-teal-400' : ''
-        } ${isInactive ? 'bg-amber-500/5 border-l-4 border-amber-500/60' : ''}`;
+        item.className = `px-3 py-2.5 text-xs cursor-pointer hover:bg-slate-800 transition flex items-center justify-between ${
+          isSelected ? 'bg-teal-500/10 border-l-2 border-teal-400' : ''
+        } ${isInactive ? 'bg-amber-500/5 border-l-2 border-amber-500/60' : ''}`;
 
         const popFormatted = plant.sewershed_pop ? Number(plant.sewershed_pop).toLocaleString() : 'N/A';
         const locationStr = [plant.city, plant.state].filter(Boolean).join(', ');
         const statusBadge = isInactive
-          ? '<span class="text-[10px] bg-amber-500/20 text-amber-300 px-1.5 py-0.2 rounded">Inactive</span>'
-          : (isSelected ? '<span class="text-[10px] bg-teal-500/20 text-teal-300 px-1.5 py-0.2 rounded">Active</span>' : '');
+          ? '<span class="text-[10px] bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded-sm">Inactive</span>'
+          : (isSelected ? '<span class="text-[10px] bg-teal-500/20 text-teal-300 px-1.5 py-0.5 rounded-sm">Active</span>' : '');
 
         item.innerHTML = `
           <div class="flex flex-col gap-0.5">
@@ -144,8 +144,8 @@ import { downloadCSV, sortTableByDate, changePage, handleSearch } from './table.
             <div class="text-[11px] text-slate-400">${escapeHtml(plant.site_name || '')} ${locationStr ? '• ' + escapeHtml(locationStr) : ''}</div>
           </div>
           <div class="text-right shrink-0 ml-2 flex flex-col items-end gap-0.5">
-            <span class="text-[10px] font-mono text-slate-400 bg-slate-800 px-1.5 py-0.5 rounded">Pop: ${popFormatted}</span>
-            ${distanceStr ? `<span class="text-[10px] font-mono text-teal-400 bg-teal-500/10 px-1.5 py-0.5 rounded">${distanceStr}</span>` : ''}
+            <span class="text-[10px] font-mono text-slate-400 bg-slate-800 px-1.5 py-0.5 rounded-sm">Pop: ${popFormatted}</span>
+            ${distanceStr ? `<span class="text-[10px] font-mono text-teal-400 bg-teal-500/10 px-1.5 py-0.5 rounded-sm">${distanceStr}</span>` : ''}
           </div>
         `;
 
@@ -267,21 +267,21 @@ import { downloadCSV, sortTableByDate, changePage, handleSearch } from './table.
         const colorConf = pickYearColor(yr);
 
         const card = document.createElement('div');
-        card.className = "p-3 rounded-lg bg-slate-900/40 border border-slate-800 hover:border-slate-700 transition flex items-center justify-between";
+        card.className = "px-3 py-2.5 flex items-center justify-between gap-3 border-l-2 border-slate-800 bg-slate-900/40";
         card.innerHTML = `
-          <div class="flex items-center gap-3">
-            <span class="w-1 h-10 rounded ${colorConf.bg}"></span>
-            <div>
+          <div class="flex items-center gap-3 min-w-0">
+            <span class="w-1 h-9 rounded-full ${colorConf.bg} shrink-0"></span>
+            <div class="min-w-0">
               <h4 class="font-bold text-slate-200 text-sm">${yr} Baseline</h4>
-              <p class="text-[10px] text-slate-500">Peak recorded on: ${formatMonthDay(peak.date)}</p>
+              <p class="text-[11px] text-slate-500">Peak recorded on: ${formatMonthDay(peak.date)}</p>
             </div>
           </div>
-          <div class="text-right">
+          <div class="text-right shrink-0">
             <div class="text-xs font-bold text-slate-300">Mean: <span class="text-teal-400 font-mono">${mean.toFixed(1)}</span></div>
-            <div class="text-[10px] text-slate-500">Peak: <span class="text-indigo-400 font-mono font-bold">${peak.value.toFixed(1)}</span></div>
+            <div class="text-[11px] text-slate-500">Peak: <span class="text-indigo-400 font-mono font-bold">${peak.value.toFixed(1)}</span></div>
           </div>
-          <div class="text-right">
-            <div class="text-[10px] text-slate-500">Percentile of latest sample</div>
+          <div class="text-right shrink-0">
+            <div class="text-[11px] text-slate-500">Percentile of latest</div>
             <div class="text-xs font-bold text-slate-300"><span class="text-pink-400 font-mono">${currentPercentile === null ? 'N/A' : `${currentPercentile.toFixed(1)}%`}</span></div>
           </div>
         `;
@@ -328,18 +328,27 @@ import { downloadCSV, sortTableByDate, changePage, handleSearch } from './table.
         const deltaPct = ((latestItem.y - previousItem.y) / previousItem.y) * 100;
         const sign = deltaPct >= 0 ? '+' : '';
         changeElem.innerText = `${sign}${deltaPct.toFixed(1)}% vs ${formatShortDate(previousItem.originalDate)}`;
-        changeElem.className = `text-[8px] font-semibold ${deltaPct >= 0 ? 'text-rose-400' : 'text-emerald-400'}`;
+        changeElem.className = `metric-delta ${deltaPct >= 0 ? 'text-rose-400' : 'text-emerald-400'}`;
       } else {
         changeElem.innerText = '';
       }
 
-      // Peak and overall-mean statistics
+      // Peak statistics
       const overall = summarize(allPointsSorted);
       document.getElementById('metricPeakVal').innerText = overall.peak.value.toFixed(2);
       document.getElementById('metricPeakDate').innerText = formatShortDate(overall.peak.date);
       document.getElementById('metricPeakYear').innerText = parseDateParts(overall.peak.date)?.year ?? 'N/A';
-      document.getElementById('metricMeanVal').innerText = overall.mean.toFixed(2);
-      document.getElementById('metricMeanDesc').innerText = `Across ${overall.count} samples`;
+
+      // Current percentile: where the latest reading sits among the loaded samples.
+      // Same source as the chart's percentile row, so the two can never disagree.
+      const currentValue = latestItem.y;
+      const currentPercentile = inclusivePercentile(currentValue, sortedSeriesValues());
+      document.getElementById('metricPercentileVal').innerText = currentPercentile === null
+        ? 'N/A'
+        : `${currentPercentile.toFixed(1)}%`;
+      document.getElementById('metricPercentileDesc').innerText =
+        `of ${allPointsSorted.length} samples in this selection`;
+      document.getElementById('metricPercentileEmoji').innerText = getPercentileEmoji(currentPercentile);
 
       // Dataset Span statistics
       const firstYear = parseDateParts(allPointsSorted[0].originalDate)?.year ?? null;
@@ -388,7 +397,8 @@ import { downloadCSV, sortTableByDate, changePage, handleSearch } from './table.
 
       const isCollapsed = content.classList.contains('hidden');
       content.classList.toggle('hidden');
-      icon.innerText = isCollapsed ? '−' : '+';
+      // The glyph stays put; the chevron rotates so the control reads as a disclosure.
+      icon.classList.toggle('rotate-180', isCollapsed);
     }
 
     // Delegated event bindings: markup carries data-action, this is the single wiring point.

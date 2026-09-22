@@ -34,25 +34,38 @@ export function buildCountyCard({ row, metadata, zip, countiesServed = [], count
     countyLabel += ` (county ${countyIndex + 1} of ${countyCount} served)`;
   }
 
+  // Both the prose and its parts: the prose is the accessible sentence, the parts
+  // drive the display numerals so neither has to be re-parsed from the other.
   let prevalenceSentence = null;
+  let prevalencePercent = null;
+  let prevalenceOneIn = null;
+  let prevalenceCapped = false;
   const percent = Number(row.prevalence_percent);
   const oneIn = Number(row.prevalence_one_in);
   if (Number.isFinite(percent) && Number.isFinite(oneIn)) {
-    prevalenceSentence = row.prevalence_percent_capped
-      ? `An estimated >${formatNumber(percent, 1)}% of residents (at least 1 in ${oneIn} people) are actively infectious with COVID-19.`
-      : `An estimated ≈${formatNumber(percent, 1)}% of residents (≈1 in ${oneIn} people) are actively infectious with COVID-19.`;
+    prevalencePercent = formatNumber(percent, 1);
+    prevalenceOneIn = oneIn;
+    prevalenceCapped = Boolean(row.prevalence_percent_capped);
+    prevalenceSentence = prevalenceCapped
+      ? `An estimated >${prevalencePercent}% of residents (at least 1 in ${oneIn} people) are actively infectious with COVID-19.`
+      : `An estimated ≈${prevalencePercent}% of residents (≈1 in ${oneIn} people) are actively infectious with COVID-19.`;
   }
 
   const updatedDate = formatShortDate(metadata && metadata.date_last_updated);
   const weekEnding = metadata && metadata.week_end ? formatShortDate(metadata.week_end) : null;
-  const contextText = `County: ${countyLabel} | Updated: ${updatedDate}${weekEnding ? ` | Week ending: ${weekEnding}` : ''}`;
 
   return {
     countyLabel,
     statusLabel,
     statusNote,
     prevalenceSentence,
-    contextText,
+    prevalencePercent,
+    prevalenceOneIn,
+    prevalenceCapped,
+    // Shipped separately so the renderer lays them out as a meta row, rather than
+    // unravelling one pipe-joined string back into its parts.
+    updatedDate,
+    weekEnding,
     sourceUrl: (metadata && metadata.source) || 'https://pmc19.com',
     isEstimated,
   };
@@ -63,7 +76,10 @@ export function showCountyDataError(message) {
   state.countyDataError = message;
   const summary = document.getElementById('countyCovidSummary');
   if (!summary) return;
-  summary.innerHTML = `<div class="text-[10px] font-bold uppercase tracking-wider text-slate-300">PMC19.com Data</div><div class="text-[10px] text-rose-300">PMC19.com county data unavailable — ${escapeHtml(message)}</div>`;
+  summary.innerHTML = `
+    <h2 class="uppercase-label text-slate-400">PMC19 county estimate</h2>
+    <p class="mt-1.5 text-sm leading-relaxed text-rose-300">PMC19 county data unavailable — ${escapeHtml(message)}</p>
+  `;
   summary.classList.remove('hidden');
 }
 
@@ -71,15 +87,48 @@ function renderCountyCard(card, zip) {
   const summary = document.getElementById('countyCovidSummary');
   if (!summary) return;
 
-  const zipLabel = zip ? `ZIP: ${escapeHtml(zip)}` : '';
   const chipClass = card.isEstimated
     ? 'bg-amber-500/20 text-amber-300'
     : 'bg-emerald-500/20 text-emerald-300';
-  const estimate = card.prevalenceSentence
-    ? `<a href="${escapeHtml(card.sourceUrl)}" target="_blank" rel="noopener noreferrer" class="text-slate-200 hover:text-teal-300 underline decoration-teal-400/70 underline-offset-2">${escapeHtml(card.prevalenceSentence)}</a>`
-    : 'No PMC19 estimate for the counties served by this plant.';
 
-  summary.innerHTML = `<div class="flex flex-nowrap items-center justify-between gap-3"><div class="min-w-0"><div class="flex items-center gap-2 whitespace-nowrap"><div class="text-[10px] font-bold uppercase tracking-wider text-slate-300">PMC19.com Data</div><a href="${escapeHtml(card.sourceUrl)}" target="_blank" rel="noopener noreferrer" class="inline-flex shrink-0 items-center gap-1 text-[10px] font-semibold text-teal-400 hover:text-teal-300 hover:underline">View source <span aria-hidden="true">↗</span></a><span class="text-[10px] font-mono text-slate-400">${zipLabel}</span></div><div class="text-[10px] text-slate-500">${escapeHtml(card.contextText)}</div><div class="flex items-center gap-2 mt-1"><span class="text-[10px] px-1.5 py-0.5 rounded-full ${chipClass}">${escapeHtml(card.statusLabel)}</span><span class="text-[10px] text-slate-400">${escapeHtml(card.statusNote)}</span></div></div></div><div class="text-center">${estimate}</div>`;
+  // PMC19 ships exactly one quantitative figure, so it gets the display numeral.
+  // Explicit "≈"/">" so the glyph matches the prose rather than implying precision.
+  const stats = card.prevalencePercent === null
+    ? ''
+    : `
+      <dl class="mt-4 flex flex-wrap items-stretch gap-x-8 gap-y-4">
+        <div class="min-w-0">
+          <dt class="uppercase-label text-slate-500">Infectious now</dt>
+          <dd class="mt-1.5 metric-value text-rose-300 tabular-nums">${card.prevalenceCapped ? '&gt;' : '≈'}${card.prevalencePercent}<span class="text-lg font-bold">%</span></dd>
+        </div>
+        <div class="min-w-0">
+          <dt class="uppercase-label text-slate-500">Residents</dt>
+          <dd class="mt-1.5 metric-value text-slate-100 tabular-nums">1<span class="text-lg font-bold text-slate-500"> in </span>${card.prevalenceOneIn}</dd>
+        </div>
+      </dl>
+      <p class="mt-3 text-[11px] leading-relaxed text-slate-500 max-w-2xl">${escapeHtml(card.prevalenceSentence)}</p>
+    `;
+
+  const metaParts = [];
+  if (zip) metaParts.push(`ZIP ${escapeHtml(zip)}`);
+  metaParts.push(`Updated ${escapeHtml(card.updatedDate)}`);
+  if (card.weekEnding) metaParts.push(`Week ending ${escapeHtml(card.weekEnding)}`);
+
+  summary.innerHTML = `
+    <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+      <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+        <h2 class="uppercase-label text-slate-400">PMC19 county estimate</h2>
+        <span class="px-1.5 py-0.5 rounded-sm uppercase-label ${chipClass}">${escapeHtml(card.statusLabel)}</span>
+      </div>
+      <a href="${escapeHtml(card.sourceUrl)}" target="_blank" rel="noopener noreferrer" class="text-[11px] font-semibold text-teal-400 hover:text-teal-300 hover:underline">PMC19.com <span aria-hidden="true">↗</span></a>
+    </div>
+    <p class="mt-1.5 text-sm font-semibold text-slate-100">${escapeHtml(card.countyLabel)}</p>
+    ${stats}
+    <div class="mt-4 pt-3 border-t border-slate-800/90 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[11px] text-slate-500">
+      ${metaParts.map(part => `<span>${part}</span>`).join('<span aria-hidden="true" class="text-slate-700">·</span>')}
+      <span class="text-slate-400 basis-full md:basis-auto md:before:content-['·'] md:before:mr-2.5 md:before:text-slate-700">${escapeHtml(card.statusNote)}</span>
+    </div>
+  `;
   summary.classList.remove('hidden');
 }
 
@@ -122,7 +171,10 @@ export function updateCountyCovidSummary() {
   });
 
   if (!card) {
-    summary.innerHTML = `<div class="text-[10px] font-bold uppercase tracking-wider text-slate-300">PMC19.com Data</div><div class="text-[10px] text-slate-400">No PMC19 estimate for the counties served by this plant.</div>`;
+    summary.innerHTML = `
+      <h2 class="uppercase-label text-slate-400">PMC19 county estimate</h2>
+      <p class="mt-1.5 text-sm leading-relaxed text-slate-400">No PMC19 estimate for the counties served by this plant.</p>
+    `;
     summary.classList.remove('hidden');
     return;
   }

@@ -54,6 +54,35 @@ test('rows without a usable estimate render no sentence rather than a scraped on
   assert.equal(card.prevalenceSentence, null);
 });
 
+test('prevalence numerals match the sentence they accompany', () => {
+  const capped = buildCountyCard({
+    row: { data_status: 'Estimated', place_label: 'X', prevalence_percent: 5, prevalence_one_in: 20, prevalence_percent_capped: true, data_line: 'Estimated (x)', nearest_observed_miles: 12 },
+    metadata,
+  });
+  assert.equal(capped.prevalencePercent, '5.0');
+  assert.equal(capped.prevalenceOneIn, 20);
+  assert.equal(capped.prevalenceCapped, true);
+
+  const uncapped = buildCountyCard({
+    row: { data_status: 'Observed', place_label: 'Y', prevalence_percent: 3.04, prevalence_one_in: 33, prevalence_percent_capped: false, data_line: 'Observed (x)' },
+    metadata,
+  });
+  assert.equal(uncapped.prevalencePercent, '3.0');
+  assert.equal(uncapped.prevalenceOneIn, 33);
+  assert.equal(uncapped.prevalenceCapped, false);
+  // The rendered numeral must be the same figure the prose states, not a re-parse.
+  assert.ok(uncapped.prevalenceSentence.includes(uncapped.prevalencePercent));
+  assert.ok(uncapped.prevalenceSentence.includes(String(uncapped.prevalenceOneIn)));
+});
+
+test('rows without a usable estimate expose no numerals at all', () => {
+  const card = buildCountyCard({ row: { data_status: 'Observed', place_label: 'Z', data_line: 'Observed (x)' }, metadata });
+  assert.equal(card.prevalenceSentence, null);
+  assert.equal(card.prevalencePercent, null);
+  assert.equal(card.prevalenceOneIn, null);
+  assert.equal(card.prevalenceCapped, false);
+});
+
 test('buildCountyCard returns null without a row', () => {
   assert.equal(buildCountyCard({ row: null }), null);
   assert.equal(buildCountyCard(), null);
@@ -68,7 +97,6 @@ test('multi-county plants annotate which county is shown', () => {
     countyIndex: 1,
   });
   assert.ok(card.countyLabel.endsWith('(county 2 of 3 served)'), card.countyLabel);
-  assert.ok(card.contextText.includes('(county 2 of 3 served)'));
-  assert.ok(card.contextText.includes('Updated: Sep 18, 2026'));
-  assert.ok(card.contextText.includes('Week ending: Sep 12, 2026'));
+  assert.equal(card.updatedDate, 'Sep 18, 2026');
+  assert.equal(card.weekEnding, 'Sep 12, 2026');
 });

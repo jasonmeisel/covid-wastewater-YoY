@@ -1,23 +1,98 @@
-    body {
-      font-family: 'Inter', sans-serif;
-    }
-    /* Smooth transitions for interactive elements */
-    .transition-all-300 {
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    /* Customized scrollbar for raw table and logs */
-    ::-webkit-scrollbar {
-      width: 6px;
-      height: 6px;
-    }
-    ::-webkit-scrollbar-track {
-      background: transparent;
-    }
-    .dark ::-webkit-scrollbar-thumb {
-      background: #475569;
-      border-radius: 4px;
-    }
-    .light ::-webkit-scrollbar-thumb {
-      background: #cbd5e1;
-      border-radius: 4px;
-    }
+:root {
+  /* Two micro sizes, used everywhere. Uppercase labels take `micro`; values and
+     captions take `meta`. Anything smaller than 10px stops being legible. */
+  --text-micro: 0.625rem; /* 10px */
+  --text-meta: 0.6875rem; /* 11px */
+
+  /* Metric values scale with the viewport so a 4-across strip survives 390px
+     without wrapping a 6-character number onto three lines. */
+  --text-metric: clamp(1rem, 4.5vw, 1.5rem);
+
+  /* One gap scale. Sections separate by space and a rule, not by nesting boxes. */
+  --gap-tight: 0.75rem;
+  --gap-loose: 1.5rem;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  /* A faint single-light-source wash. Flat slate is what made the page read as
+     stacked UI panels; this gives the same palette an actual ambient direction. */
+  background-image: linear-gradient(180deg, #131c2e 0%, #0f172a 32rem);
+  background-repeat: no-repeat;
+}
+
+/* Smooth transitions for interactive elements */
+.transition-all-300 {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Structural section: grouping comes from whitespace and a hairline rule, not a
+   floating container. Nine identical rounded boxes was the "wrap everything" tell. */
+.section {
+  padding-block: 1.25rem;
+  border-top: 1px solid rgb(30 41 59 / 0.9);
+}
+
+/* Inset panel: used only where content genuinely needs separating — the chart, the
+   search popover, the sample-accounting strip. Near-square, low-contrast border so
+   it reads as a seam in the page rather than a card sitting on top of it. */
+.panel {
+  background-color: rgb(15 23 42 / 0.55);
+  border: 1px solid rgb(30 41 59);
+  border-radius: 3px;
+}
+
+/* Floating surface: only for things that genuinely overlay content. */
+.surface {
+  background-color: rgb(2 6 23 / 0.97);
+  border: 1px solid rgb(51 65 85);
+  border-radius: 6px;
+}
+
+.section-rule {
+  border-top: 1px solid rgb(30 41 59 / 0.9);
+}
+
+.uppercase-label {
+  font-size: var(--text-micro);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  line-height: 1;
+}
+
+.metric-value {
+  font-size: var(--text-metric);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.metric-sub {
+  font-size: var(--text-meta);
+  line-height: 1.2;
+}
+
+/* The latest-sample delta is written by JS as an inline class string. */
+.metric-delta {
+  font-size: var(--text-meta);
+  font-weight: 600;
+  line-height: 1;
+}
+
+/* Customized scrollbar for raw table and logs */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+.dark ::-webkit-scrollbar-thumb {
+  background: #475569;
+  border-radius: 4px;
+}
+.light ::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}

@@ -555,10 +555,10 @@ import { pickYearColor, dailyAggregate, movingAverage, sortedSeriesValues, inclu
         const averageVal = series.length > 0 ? summarize(series).mean.toFixed(1) : 'N/A';
 
         const wrapper = document.createElement('div');
-        wrapper.className = `flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs cursor-pointer select-none transition-all-300 ${
+        wrapper.className = `flex items-center gap-2 px-2.5 py-1 rounded-sm border text-xs cursor-pointer select-none transition-all-300 ${
           isChecked 
-            ? 'bg-slate-800 text-slate-100 border-slate-600' 
-            : 'bg-slate-900/30 text-slate-500 border-slate-800/80 hover:border-slate-700'
+            ? 'bg-slate-800 text-slate-100 border-slate-700' 
+            : 'bg-slate-900/30 text-slate-500 border-slate-800/60 hover:border-slate-700'
         }${isLatestYear && isChecked ? ' ring-1 ring-rose-400/40' : ''}`;
         wrapper.setAttribute('role', 'switch');
         wrapper.setAttribute('tabindex', '0');
@@ -571,7 +571,7 @@ import { pickYearColor, dailyAggregate, movingAverage, sortedSeriesValues, inclu
           <span class="w-3 h-3 rounded-full ${colorConf.bg} shrink-0 block"></span>
           <div class="flex items-center gap-1.5">
             <span class="font-bold">${yr}</span>
-            ${isLatestYear ? '<span class="text-[9px] font-semibold uppercase tracking-wide text-rose-300">Latest</span>' : ''}
+            ${isLatestYear ? '<span class="text-[10px] font-semibold uppercase tracking-wide text-rose-300">Latest</span>' : ''}
             <span class="text-[10px] text-slate-400 font-mono">(Avg: ${averageVal})</span>
           </div>
           <input type="checkbox" ${isChecked ? 'checked' : ''} tabindex="-1" aria-hidden="true" class="w-3.5 h-3.5 accent-brand-500 ml-1 cursor-pointer pointer-events-none">
