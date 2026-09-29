@@ -1,7 +1,7 @@
 {
   "source": "https://pmc19.com/maps/data/current.json",
-  "generated_at": "2026-09-28T04:03:56.432Z",
-  "date_last_updated": "2026-09-27",
+  "generated_at": "2026-09-28T16:05:44.634Z",
+  "date_last_updated": "2026-09-28",
   "week_end": "2026-09-19",
   "rows": [
     {
@@ -40849,6 +40849,19 @@
       "prevalence_one_in": 143,
       "prevalence_percent_capped": false,
       "nearest_observed_miles": 76
+    },
+    {
+      "fips": "GU_INSET",
+      "county_name": "Guam",
+      "state": "GU",
+      "place_label": "Guam",
+      "data_status": "Observed",
+      "data_line": "Observed (Guam value is pulled from CDC public wastewater data from week ending 2026-09-05 carried forward because the territory is offline this week.)",
+      "value": 9.52,
+      "prevalence_percent": 4.29352,
+      "prevalence_one_in": 23,
+      "prevalence_percent_capped": false,
+      "nearest_observed_miles": null
     },
     {
       "fips": "VI_INSET",
