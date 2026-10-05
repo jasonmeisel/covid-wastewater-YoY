@@ -368,6 +368,32 @@ export function identifyWaves(points) {
   });
 }
 
+// Percentile range of the quiet interval between the previous wave's end and the
+// current wave's start. It is unavailable without an active wave and a completed
+// previous wave to anchor the interval.
+export function preWaveBaselineRange(points, waves = []) {
+  if (waves.length < 2) return null;
+  const currentWave = waves[waves.length - 1];
+  const previousWave = waves[waves.length - 2];
+  if (!currentWave.ongoing || currentWave.endDate || !previousWave.endDate) return null;
+
+  const values = points
+    .filter(point => {
+      const date = String(point.originalDate || '').slice(0, 10);
+      return date >= previousWave.endDate && date < currentWave.startDate;
+    })
+    .map(point => Number(point.y))
+    .filter(Number.isFinite)
+    .sort((a, b) => a - b);
+  if (!values.length) return null;
+  return {
+    p10: quantile(values, 0.1),
+    median: quantile(values, 0.5),
+    p90: quantile(values, 0.9),
+    count: values.length,
+  };
+}
+
 // Single reduction over a series: count, arithmetic mean, peak and latest point.
 export function summarize(points) {
   if (!points || points.length === 0) {

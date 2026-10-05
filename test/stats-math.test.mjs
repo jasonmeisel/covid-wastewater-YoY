@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { quantile, inclusivePercentile, movingAverage, summarize, buildSeries, dailyAggregate, averageFacilitiesByDay, identifyWaves } from '../js/stats.js';
+import { quantile, inclusivePercentile, movingAverage, summarize, buildSeries, dailyAggregate, averageFacilitiesByDay, identifyWaves, preWaveBaselineRange } from '../js/stats.js';
 
 // Means of ratios land on values like 1.9999999999999998e-4, so compare with slack.
 const closeTo = (actual, expected, eps = 1e-12) =>
@@ -56,6 +56,25 @@ test('identifyWaves reports threshold dates, baseline, peak, and an ongoing wave
     originalDate: new Date(start + week * 7 * 86400000).toISOString().slice(0, 10),
   }));
   assert.deepEqual(identifyWaves(belowHeuristic), [], 'peaks at or below 50 do not count as waves');
+});
+
+test('pre-wave baseline percentile range uses only the gap before the current wave', () => {
+  const points = [
+    { originalDate: '2024-01-01', y: 10 },
+    { originalDate: '2024-01-10', y: 100 },
+    { originalDate: '2024-01-16', y: 20 },
+    { originalDate: '2024-01-20', y: 30 },
+    { originalDate: '2024-01-31', y: 40 },
+    { originalDate: '2024-02-01', y: 200 },
+  ];
+  const waves = [
+    { startDate: '2024-01-08', endDate: '2024-01-15', ongoing: false },
+    { startDate: '2024-02-01', endDate: null, ongoing: true },
+  ];
+  assert.deepEqual(preWaveBaselineRange(points, waves), { p10: 22, median: 30, p90: 38, count: 3 });
+  assert.equal(preWaveBaselineRange(points, waves.slice(0, 1)), null, 'no baseline without a current wave');
+  assert.equal(preWaveBaselineRange(points, [waves[0], { ...waves[1], ongoing: false, endDate: '2024-02-10' }]), null,
+    'no baseline after the wave has ended');
 });
 
 test('summarize reduces a series to count, mean, peak and latest', () => {

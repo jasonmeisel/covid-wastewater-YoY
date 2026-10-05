@@ -1,8 +1,8 @@
 // Source: index.html // [1272-1303] // [1305-1324] // [1326-1740] // [1742-1757] // [1759-1795] // [1854-1860] // [1862-1870] // [1872-1877] // [1879-1884]
 
 import { formatShortDate, formatDate, parseDateParts } from './util.js';
-import { state, syncStateToUrl } from './state.js';
-import { pickYearColor, dailyAggregate, movingAverage, sortedSeriesValues, inclusivePercentile, percentileStats, getLatestSamplePoint, getPercentileEmoji, summarize, dayOfYearIndex } from './stats.js';
+import { state, syncStateToUrl, sortedSamples } from './state.js';
+import { pickYearColor, dailyAggregate, movingAverage, sortedSeriesValues, inclusivePercentile, percentileStats, getLatestSamplePoint, getPercentileEmoji, summarize, dayOfYearIndex, preWaveBaselineRange } from './stats.js';
 
     export function updatePercentileSummaryUI(stats) {
       const currentLabel = document.getElementById('currentValuePercentile');
@@ -94,14 +94,13 @@ import { pickYearColor, dailyAggregate, movingAverage, sortedSeriesValues, inclu
       chart.update('none');
     }
 
-    function percentileLinesFor(stats) {
-      return [
-        { label: '25th', value: stats.q1, color: 'rgba(16, 185, 129, 0.7)', dash: [4, 4] },
-        { label: 'Median', value: stats.median, color: 'rgba(14, 165, 233, 0.7)', dash: [4, 4] },
-        { label: '75th', value: stats.q3, color: 'rgba(168, 85, 247, 0.7)', dash: [4, 4] },
-        { label: '5th', value: stats.p5, color: 'rgba(245, 158, 11, 0.7)', dash: [4, 4] },
-        { label: '1st', value: stats.p1, color: 'rgba(239, 68, 68, 0.7)', dash: [4, 4] }
-      ].filter(line => line.value !== null);
+    function percentileLinesFor(stats, isPercentileScale) {
+      return [{
+        label: 'Median',
+        value: isPercentileScale ? 50 : stats.median,
+        color: 'rgba(14, 165, 233, 0.8)',
+        dash: [4, 4],
+      }].filter(line => line.value !== null);
     }
 
     function isHighlightedWaveSegment(context, year) {
@@ -278,9 +277,35 @@ import { pickYearColor, dailyAggregate, movingAverage, sortedSeriesValues, inclu
         id: 'percentileLines',
         beforeDraw: (chart) => {
           const lines = chart.options.plugins?.percentileLines?.lines || [];
-          if (!lines.length) return;
+          const band = chart.options.plugins?.percentileLines?.band;
+          if (!lines.length && !band) return;
           const { ctx, chartArea: { top, bottom, left, right }, scales: { y } } = chart;
           ctx.save();
+          if (band && Number.isFinite(band.low) && Number.isFinite(band.high)) {
+            const lowPixel = y.getPixelForValue(band.low);
+            const highPixel = y.getPixelForValue(band.high);
+            const bandTop = Math.max(top, Math.min(lowPixel, highPixel));
+            const bandBottom = Math.min(bottom, Math.max(lowPixel, highPixel));
+            if (bandBottom > bandTop) {
+              ctx.fillStyle = 'rgba(250, 204, 21, 0.10)';
+              ctx.fillRect(left, bandTop, right - left, bandBottom - bandTop);
+              ctx.strokeStyle = 'rgba(250, 204, 21, 0.65)';
+              ctx.lineWidth = 1;
+              ctx.setLineDash([5, 4]);
+              [bandTop, bandBottom].forEach(yPixel => {
+                ctx.beginPath();
+                ctx.moveTo(left, yPixel);
+                ctx.lineTo(right, yPixel);
+                ctx.stroke();
+              });
+              ctx.setLineDash([]);
+              ctx.fillStyle = 'rgba(250, 204, 21, 0.95)';
+              ctx.font = '11px Inter';
+              ctx.textAlign = 'right';
+              ctx.textBaseline = 'top';
+              ctx.fillText(band.label, right - 6, bandTop + 3);
+            }
+          }
           lines.forEach(line => {
             const yValue = y.getPixelForValue(line.value);
             if (yValue < top || yValue > bottom) return;
@@ -529,7 +554,8 @@ import { pickYearColor, dailyAggregate, movingAverage, sortedSeriesValues, inclu
               display: false // Using our premium custom interactive HTML legend instead
             },
             percentileLines: {
-              lines: []
+              lines: [],
+              band: null,
             },
             tooltip: {
               enabled: false,
@@ -575,7 +601,13 @@ import { pickYearColor, dailyAggregate, movingAverage, sortedSeriesValues, inclu
       updatePercentileSummaryUI(stats);
 
       chart.data.datasets = buildChartDatasets();
-      chart.options.plugins.percentileLines.lines = isPercentileScale ? [] : percentileLinesFor(stats);
+      const preWaveRange = preWaveBaselineRange(sortedSamples(), state.detectedWaves);
+      chart.options.plugins.percentileLines.lines = percentileLinesFor(stats, isPercentileScale);
+      chart.options.plugins.percentileLines.band = preWaveRange ? {
+        low: isPercentileScale ? inclusivePercentile(preWaveRange.p10, percentileValues) : preWaveRange.p10,
+        high: isPercentileScale ? inclusivePercentile(preWaveRange.p90, percentileValues) : preWaveRange.p90,
+        label: 'Pre-Wave Baseline (10–90%)',
+      } : null;
 
       const yOptions = chart.options.scales.y;
       yOptions.type = isPercentileScale ? 'linear' : state.yScaleType;
