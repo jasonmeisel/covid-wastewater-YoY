@@ -393,14 +393,17 @@ import { downloadCSV, sortTableByDate, changePage, handleSearch } from './table.
       const card = document.getElementById('wastewaterWavesCard');
       const content = document.getElementById('wastewaterWavesContent');
       const facility = document.getElementById('wastewaterWavesFacility');
+      const forecastMessage = document.getElementById('wastewaterWaveForecast');
       if (!card || !content) return;
       card.classList.remove('hidden');
+      if (forecastMessage) forecastMessage.classList.add('hidden');
 
       const waveSelector = document.getElementById('waveHighlightSelector');
       if (state.selectedPlantUids.length !== 1) {
         state.detectedWaves = [];
         state.highlightedWave = null;
         state.highlightedWaveStartDate = null;
+        if (forecastMessage) forecastMessage.textContent = '';
         if (waveSelector) waveSelector.innerHTML = '<option value="">Select one facility to highlight a wave</option>';
         content.innerHTML = '<p class="text-xs text-slate-400">Wave summaries are shown for one facility at a time. Select a single facility to view its history.</p>';
         if (facility) facility.textContent = 'Multiple facilities selected';
@@ -412,6 +415,15 @@ import { downloadCSV, sortTableByDate, changePage, handleSearch } from './table.
         highlightEndDate: wave.endDate || points[points.length - 1]?.originalDate,
       }));
       state.detectedWaves = waves;
+      const currentWave = waves[waves.length - 1];
+      const currentWaveForecast = currentWave?.forecast;
+      if (forecastMessage && currentWaveForecast) {
+        forecastMessage.textContent = `If the current decline continues, this wave is estimated to return below its end threshold between ${formatShortDate(currentWaveForecast.earliestDate)} and ${formatShortDate(currentWaveForecast.latestDate)}. This exploratory range combines the recent decline trend with prior completed-wave durations and updates with new samples.`;
+        forecastMessage.classList.remove('hidden');
+      } else if (forecastMessage && currentWave?.ongoing) {
+        forecastMessage.textContent = 'A wave is still active, but there is not yet enough sustained post-peak decline to estimate an end-date range.';
+        forecastMessage.classList.remove('hidden');
+      }
       state.highlightedWave = waves.find(wave => wave.startDate === state.highlightedWaveStartDate) || null;
       state.highlightedWaveStartDate = state.highlightedWave?.startDate || null;
       if (waveSelector) {

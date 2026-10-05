@@ -58,6 +58,25 @@ test('identifyWaves reports threshold dates, baseline, peak, and an ongoing wave
   assert.deepEqual(identifyWaves(belowHeuristic), [], 'peaks at or below 50 do not count as waves');
 });
 
+test('identifyWaves dynamically projects an active wave return window', () => {
+  const start = Date.UTC(2024, 0, 1);
+  const values = Array(40).fill(10);
+  [20, 45, 80, 60, 45, 30, 20].forEach((value, offset) => { values[9 + offset] = value; });
+  [20, 40, 60, 80, 100, 90, 80, 70, 60, 55, 50, 45, 42].forEach((value, offset) => { values[26 + offset] = value; });
+  values[39] = 50;
+  const series = values.map((y, week) => ({
+    originalDate: new Date(start + week * 7 * 86400000).toISOString().slice(0, 10),
+    y,
+  }));
+  const waves = identifyWaves(series);
+  const current = waves.at(-1);
+  assert.equal(waves.length, 2);
+  assert.equal(current.ongoing, true);
+  assert.ok(current.forecast);
+  assert.ok(current.forecast.earliestDate <= current.forecast.latestDate);
+  assert.match(current.forecast.method, /trend/);
+});
+
 test('pre-wave baseline percentile range uses only the gap before the current wave', () => {
   const points = [
     { originalDate: '2024-01-01', y: 10 },

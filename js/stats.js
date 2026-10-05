@@ -265,10 +265,7 @@ export function movingAverage(dataSeries, windowSize, preserveLastPoint = false)
   return smoothed;
 }
 
-// Detect distinct rises in a facility's wastewater series. Weekly aggregation and
-// three-week smoothing damp sampling noise; a reported wave needs a 1.7x rise over
-// its preceding 12-week low and a 1.3x decline (or a currently declining endpoint).
-export function identifyWaves(points) {
+function smoothedWeeklySeries(points) {
   const byDay = new Map();
   for (const point of points || []) {
     const date = String(point.originalDate || '').slice(0, 10);
@@ -282,7 +279,6 @@ export function identifyWaves(points) {
 
   const daily = [...byDay.entries()].map(([date, values]) => ({
     day: Math.floor(Date.parse(`${date}T00:00:00Z`) / 86400000),
-    date,
     y: values.reduce((sum, value) => sum + value, 0) / values.length,
   })).sort((a, b) => a.day - b.day);
   const weekMap = new Map();
@@ -296,10 +292,7 @@ export function identifyWaves(points) {
   const weekly = [];
   for (let week = weeks[0][0]; week <= weeks[weeks.length - 1][0]; week += 7) {
     const values = weekMap.get(week);
-    weekly.push({
-      day: week,
-      y: values ? values.reduce((sum, value) => sum + value, 0) / values.length : null,
-    });
+    weekly.push({ day: week, y: values ? values.reduce((sum, value) => sum + value, 0) / values.length : null });
   }
 
   // Linearly fill only the weekly summary for smoothing; observed dates stay intact.
@@ -316,12 +309,18 @@ export function identifyWaves(points) {
   }
   const validWeekly = weekly.filter(point => point.y !== null);
   if (validWeekly.length < 8) return [];
-  const smooth = validWeekly.map((point, i, list) => ({
-    ...point,
-    y: list.slice(Math.max(0, i - 1), Math.min(list.length, i + 2))
-      .reduce((sum, neighbor) => sum + neighbor.y, 0) /
-      list.slice(Math.max(0, i - 1), Math.min(list.length, i + 2)).length,
-  }));
+  return validWeekly.map((point, i, list) => {
+    const window = list.slice(Math.max(0, i - 1), Math.min(list.length, i + 2));
+    return { ...point, y: window.reduce((sum, neighbor) => sum + neighbor.y, 0) / window.length };
+  });
+}
+
+// Detect distinct rises in a facility's wastewater series. Weekly aggregation and
+// three-week smoothing damp sampling noise; a reported wave needs a 1.7x rise over
+// its preceding 12-week low and a 1.3x decline (or a currently declining endpoint).
+export function identifyWaves(points) {
+  const smooth = smoothedWeeklySeries(points);
+  if (!smooth.length) return [];
 
   const candidates = [];
   for (let i = 1; i < smooth.length - 1; i++) {
@@ -343,7 +342,7 @@ export function identifyWaves(points) {
   });
   selected.sort((a, b) => a.peakIndex - b.peakIndex);
 
-  return selected.map((wave, index) => {
+  const detectedWaves = selected.map((wave, index) => {
     const peak = smooth[wave.peakIndex];
     const crossing = wave.baseline + (peak.y - wave.baseline) * 0.25;
     let startIndex = wave.baselineIndex;
@@ -363,9 +362,81 @@ export function identifyWaves(points) {
       endDate: endIndex === null ? null : formatDay(smooth[endIndex].day),
       baseline: wave.baseline,
       peak: peak.y,
+      endThreshold: crossing,
       ongoing: endIndex === null,
     };
   });
+
+  const forecast = forecastCurrentWaveEnd(points, detectedWaves, smooth);
+  if (forecast && detectedWaves.length) detectedWaves[detectedWaves.length - 1].forecast = forecast;
+  return detectedWaves;
+}
+
+function linearLogDecayForecast(smooth, peakDay, threshold) {
+  const peakIndex = smooth.findIndex(point => point.day === peakDay);
+  const lastIndex = smooth.length - 1;
+  if (peakIndex < 0 || lastIndex - peakIndex < 2) return [];
+  const projections = [];
+
+  for (const windowSize of [3, 4, 5, 6]) {
+    const start = Math.max(peakIndex, lastIndex - windowSize + 1);
+    const window = smooth.slice(start, lastIndex + 1);
+    if (window.length < 3 || window.some(point => !(point.y > 0))) continue;
+    const xs = window.map(point => point.day - window[0].day);
+    const ys = window.map(point => Math.log(point.y));
+    const xMean = xs.reduce((sum, value) => sum + value, 0) / xs.length;
+    const yMean = ys.reduce((sum, value) => sum + value, 0) / ys.length;
+    const denominator = xs.reduce((sum, value) => sum + (value - xMean) ** 2, 0);
+    if (!denominator) continue;
+    const slope = xs.reduce((sum, value, index) => sum + (value - xMean) * (ys[index] - yMean), 0) / denominator;
+    if (slope >= -0.001) continue;
+    const intercept = yMean - slope * xMean;
+    const predictedLatest = intercept + slope * xs[xs.length - 1];
+    const remainingDays = (Math.log(threshold) - predictedLatest) / slope;
+    if (Number.isFinite(remainingDays) && remainingDays > 0 && remainingDays <= 180) projections.push(remainingDays);
+  }
+  return projections;
+}
+
+export function forecastCurrentWaveEnd(points, waves, smoothed = smoothedWeeklySeries(points)) {
+  if (waves.length < 2 || !smoothed.length) return null;
+  const currentWave = waves[waves.length - 1];
+  if (!currentWave.ongoing || currentWave.endDate || !(currentWave.endThreshold > 0)) return null;
+  const peakDay = Math.floor(Date.parse(`${currentWave.peakDate}T00:00:00Z`) / 86400000);
+  const currentIndex = smoothed.length - 1;
+  const elapsedDays = smoothed[currentIndex].day - peakDay;
+  if (elapsedDays < 14 || smoothed[currentIndex].y <= currentWave.endThreshold) return null;
+
+  const modelRemaining = linearLogDecayForecast(smoothed, peakDay, currentWave.endThreshold);
+  const historicalDurations = waves.slice(0, -1)
+    .filter(wave => wave.endDate)
+    .map(wave => {
+      const peak = Math.floor(Date.parse(`${wave.peakDate}T00:00:00Z`) / 86400000);
+      const end = Math.floor(Date.parse(`${wave.endDate}T00:00:00Z`) / 86400000);
+      return end - peak;
+    })
+    .filter(duration => duration > elapsedDays);
+
+  const possibleRemaining = [...modelRemaining];
+  if (historicalDurations.length >= 3) {
+    const durations = historicalDurations.sort((a, b) => a - b);
+    possibleRemaining.push(Math.max(1, quantile(durations, 0.1) - elapsedDays));
+    possibleRemaining.push(Math.max(1, quantile(durations, 0.9) - elapsedDays));
+  }
+  if (!possibleRemaining.length) return null;
+
+  const latestObservedDate = points.reduce((latest, point) =>
+    String(point.originalDate) > latest ? String(point.originalDate) : latest, '');
+  const anchorDay = Math.max(smoothed[currentIndex].day,
+    Math.floor(Date.parse(`${latestObservedDate}T00:00:00Z`) / 86400000));
+  const formatDay = day => new Date(day * 86400000).toISOString().slice(0, 10);
+  return {
+    earliestDate: formatDay(anchorDay + Math.floor(Math.min(...possibleRemaining))),
+    latestDate: formatDay(anchorDay + Math.ceil(Math.max(...possibleRemaining))),
+    threshold: currentWave.endThreshold,
+    method: modelRemaining.length && historicalDurations.length >= 3 ? 'trend + historical waves'
+      : modelRemaining.length ? 'recent decline trend' : 'historical wave durations',
+  };
 }
 
 // Percentile range of the quiet interval between the previous wave's end and the
