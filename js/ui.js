@@ -5,7 +5,7 @@ import { state, syncStateToUrl, sortedSamples } from './state.js';
 import { resolveZipToCountyFips, updateCountyCovidSummary } from './county.js';
 import { pickYearColor, getLatestSampleValue, summarize, inclusivePercentile, sortedSeriesValues, getPercentileEmoji, identifyWaves } from './stats.js';
 import { fuzzyMatchPlant, isZipCodeQuery, getPlantCoordinates, getReferenceCoordsFromZip, haversineDistance, isPlantInactive, loadAndRenderPlantSamples } from './data.js';
-import { resetChartZoom, toggleAllYears, toggleYearVisibility, updateYScale, updateSmoothing } from './chart.js';
+import { resetChartZoom, toggleAllYears, toggleYearVisibility, updateYScale, updateSmoothing, updateChart } from './chart.js';
 import { downloadCSV, sortTableByDate, changePage, handleSearch } from './table.js';
 
     let multiFacilityMode = false;
@@ -382,6 +382,13 @@ import { downloadCSV, sortTableByDate, changePage, handleSearch } from './table.
       renderWastewaterWavesCard(allPointsSorted);
     }
 
+    function setHighlightedWave(value) {
+      const index = value === '' ? -1 : Number(value);
+      state.highlightedWave = Number.isInteger(index) && index >= 0 ? state.detectedWaves[index] || null : null;
+      state.highlightedWaveStartDate = state.highlightedWave?.startDate || null;
+      updateChart();
+    }
+
     function renderWastewaterWavesCard(points) {
       const card = document.getElementById('wastewaterWavesCard');
       const content = document.getElementById('wastewaterWavesContent');
@@ -389,13 +396,29 @@ import { downloadCSV, sortTableByDate, changePage, handleSearch } from './table.
       if (!card || !content) return;
       card.classList.remove('hidden');
 
+      const waveSelector = document.getElementById('waveHighlightSelector');
       if (state.selectedPlantUids.length !== 1) {
+        state.detectedWaves = [];
+        state.highlightedWave = null;
+        state.highlightedWaveStartDate = null;
+        if (waveSelector) waveSelector.innerHTML = '<option value="">Select one facility to highlight a wave</option>';
         content.innerHTML = '<p class="text-xs text-slate-400">Wave summaries are shown for one facility at a time. Select a single facility to view its history.</p>';
         if (facility) facility.textContent = 'Multiple facilities selected';
         return;
       }
 
-      const waves = identifyWaves(points);
+      const waves = identifyWaves(points).map(wave => ({
+        ...wave,
+        highlightEndDate: wave.endDate || points[points.length - 1]?.originalDate,
+      }));
+      state.detectedWaves = waves;
+      state.highlightedWave = waves.find(wave => wave.startDate === state.highlightedWaveStartDate) || null;
+      state.highlightedWaveStartDate = state.highlightedWave?.startDate || null;
+      if (waveSelector) {
+        waveSelector.innerHTML = '<option value="">Highlight wave…</option>' + waves.map((wave, index) =>
+          `<option value="${index}" ${wave.startDate === state.highlightedWaveStartDate ? 'selected' : ''}>Wave ${index + 1}: ${formatShortDate(wave.startDate)} – ${wave.endDate ? formatShortDate(wave.endDate) : 'current'}</option>`
+        ).join('');
+      }
       const metadata = state.plantsCatalog.find(plant => plant.uid === state.selectedPlantUids[0]);
       if (facility) facility.textContent = metadata
         ? `${metadata.name || metadata.site_name} · ${points[0]?.originalDate?.slice(0, 4) || ''}–${points[points.length - 1]?.originalDate?.slice(0, 4) || ''}`
@@ -493,6 +516,7 @@ import { downloadCSV, sortTableByDate, changePage, handleSearch } from './table.
     const CHANGE_ACTIONS = {
       'scale': el => updateYScale(el.value),
       'smoothing': el => updateSmoothing(el.value),
+      'wave-highlight': el => setHighlightedWave(el.value),
     };
 
     export function bindActions() {

@@ -220,10 +220,10 @@ import { updatePlantMetadataUI, renderPlantSearchResults, updateYearlyStatsSumma
       
       const { byYear, years, skipped } = buildSeries(state.rawSamples);
       setSeries(byYear, years, skipped);
+      renderSummaryMetricsRow();
       updateChart();
       updateCustomLegendUI();
       updateYearlyStatsSummaryPanel();
-      renderSummaryMetricsRow();
       renderSampleAccounting();
       applyTableFiltering();
 

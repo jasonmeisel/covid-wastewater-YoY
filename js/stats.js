@@ -331,7 +331,7 @@ export function identifyWaves(points) {
     if (!left.length || !right.length) continue;
     const baseline = Math.min(...left.map(point => point.y));
     const afterLow = Math.min(...right.map(point => point.y));
-    if (baseline <= 0 || smooth[i].y / baseline < 1.7 || smooth[i].y / afterLow < 1.3) continue;
+    if (smooth[i].y <= 50 || baseline <= 0 || smooth[i].y / baseline < 1.7 || smooth[i].y / afterLow < 1.3) continue;
     const baselineIndex = Math.max(0, i - 12) + left.findIndex(point => point.y === baseline);
     candidates.push({ peakIndex: i, baselineIndex, baseline, prominence: smooth[i].y / baseline });
   }

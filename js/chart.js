@@ -1,8 +1,8 @@
 // Source: index.html // [1272-1303] // [1305-1324] // [1326-1740] // [1742-1757] // [1759-1795] // [1854-1860] // [1862-1870] // [1872-1877] // [1879-1884]
 
-import { formatShortDate, formatDate } from './util.js';
+import { formatShortDate, formatDate, parseDateParts } from './util.js';
 import { state, syncStateToUrl } from './state.js';
-import { pickYearColor, dailyAggregate, movingAverage, sortedSeriesValues, inclusivePercentile, percentileStats, getLatestSamplePoint, getPercentileEmoji, summarize } from './stats.js';
+import { pickYearColor, dailyAggregate, movingAverage, sortedSeriesValues, inclusivePercentile, percentileStats, getLatestSamplePoint, getPercentileEmoji, summarize, dayOfYearIndex } from './stats.js';
 
     export function updatePercentileSummaryUI(stats) {
       const currentLabel = document.getElementById('currentValuePercentile');
@@ -104,6 +104,85 @@ import { pickYearColor, dailyAggregate, movingAverage, sortedSeriesValues, inclu
       ].filter(line => line.value !== null);
     }
 
+    function isHighlightedWaveSegment(context, year) {
+      const wave = state.highlightedWave;
+      if (!wave) return false;
+      const startParts = parseDateParts(wave.startDate);
+      const endParts = parseDateParts(wave.highlightEndDate || wave.endDate);
+      if (!startParts || !endParts || year < startParts.year || year > endParts.year) return false;
+
+      const minX = year === startParts.year ? dayOfYearIndex(startParts) : 1;
+      const maxX = year === endParts.year ? dayOfYearIndex(endParts) : 365;
+      // Chart.js segment-scriptable contexts don't consistently expose `dataset`;
+      // resolve it from the chart/index and fail closed if the context is incomplete.
+      const dataset = context?.dataset || context?.chart?.data?.datasets?.[context?.datasetIndex];
+      const data = dataset?.data;
+      const p0 = data?.[context?.p0DataIndex] || context?.p0?.$context?.raw;
+      const p1 = data?.[context?.p1DataIndex] || context?.p1?.$context?.raw;
+      if (!p0 || !p1 || !Number.isFinite(Number(p0.x)) || !Number.isFinite(Number(p1.x))) return false;
+      const midpoint = (Number(p0.x) + Number(p1.x)) / 2;
+      return midpoint >= minX && midpoint <= maxX;
+    }
+
+    const WAVE_HIGHLIGHT_COLOR = 'rgba(250, 204, 21, 1)';
+
+    function isHighlightedWavePeak(context, year) {
+      const peakParts = parseDateParts(state.highlightedWave?.peakDate);
+      return Boolean(peakParts && peakParts.year === year &&
+        Math.abs(Number(context.raw?.x) - dayOfYearIndex(peakParts)) < 0.5);
+    }
+
+    const waveHighlightPlugin = {
+      id: 'waveHighlightLabel',
+      afterDatasetsDraw: chart => {
+        const wave = state.highlightedWave;
+        const peakParts = parseDateParts(wave?.peakDate);
+        if (!wave || !peakParts) return;
+        const datasetIndex = chart.data.datasets.findIndex(dataset => Number(dataset.label) === peakParts.year);
+        if (datasetIndex < 0 || !chart.isDatasetVisible(datasetIndex)) return;
+
+        const dataset = chart.data.datasets[datasetIndex];
+        const peakX = dayOfYearIndex(peakParts);
+        let pointIndex = -1;
+        let distance = Infinity;
+        dataset.data.forEach((point, index) => {
+          const nextDistance = Math.abs(Number(point.x) - peakX);
+          if (nextDistance < distance) {
+            distance = nextDistance;
+            pointIndex = index;
+          }
+        });
+        if (pointIndex < 0 || distance > 0.5) return;
+
+        const point = chart.getDatasetMeta(datasetIndex).data[pointIndex];
+        if (!point || point.skip) return;
+        const { x, y } = point.getProps(['x', 'y'], true);
+        const sameYearWaves = state.detectedWaves.filter(candidate =>
+          parseDateParts(candidate.peakDate)?.year === peakParts.year);
+        const label = `${peakParts.year} Wave #${sameYearWaves.indexOf(wave) + 1}`;
+        const { ctx, chartArea } = chart;
+        ctx.save();
+        ctx.font = '600 11px Inter, sans-serif';
+        const paddingX = 7;
+        const width = ctx.measureText(label).width + paddingX * 2;
+        const height = 20;
+        const left = Math.min(Math.max(x + 8, chartArea.left), chartArea.right - width);
+        const top = y - height - 8 < chartArea.top ? y + 8 : y - height - 8;
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.94)';
+        ctx.strokeStyle = WAVE_HIGHLIGHT_COLOR;
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.roundRect(left, top, width, height, 4);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = WAVE_HIGHLIGHT_COLOR;
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(label, left + paddingX, top + height / 2);
+        ctx.restore();
+      },
+    };
+
     // Derives the Chart.js dataset array from the current state.
     function buildChartDatasets() {
       const isPercentileScale = state.yScaleType === 'percentile';
@@ -135,18 +214,24 @@ import { pickYearColor, dailyAggregate, movingAverage, sortedSeriesValues, inclu
           borderColor: lineColor,
           backgroundColor: colorConf.fill,
           borderWidth: isLatestYear ? 3 : 1,
+          segment: {
+            borderColor: context => isHighlightedWaveSegment(context, Number(yr)) ? WAVE_HIGHLIGHT_COLOR : lineColor,
+            borderWidth: context => isHighlightedWaveSegment(context, Number(yr)) ? 4 : (isLatestYear ? 3 : 1),
+          },
           tension: 0.25,
           cubicInterpolationMode: 'monotone',
-          pointRadius: (context) => {
+          pointRadius: context => {
+            if (isHighlightedWavePeak(context, Number(yr))) return 5;
             const isLatestSample = isLatestYear && context.dataIndex === context.dataset.data.length - 1;
             return isLatestSample ? 5 : 0;
           },
-          pointHoverRadius: (context) => {
+          pointHoverRadius: context => {
+            if (isHighlightedWavePeak(context, Number(yr))) return 7;
             const isLatestSample = isLatestYear && context.dataIndex === context.dataset.data.length - 1;
             return isLatestSample ? 7 : 0;
           },
-          pointBackgroundColor: lineColor,
-          pointBorderColor: lineColor,
+          pointBackgroundColor: context => isHighlightedWavePeak(context, Number(yr)) ? WAVE_HIGHLIGHT_COLOR : lineColor,
+          pointBorderColor: context => isHighlightedWavePeak(context, Number(yr)) ? WAVE_HIGHLIGHT_COLOR : lineColor,
           pointBorderWidth: isLatestYear ? 2 : 1,
           fill: false,
           spanGaps: true,
@@ -371,7 +456,7 @@ import { pickYearColor, dailyAggregate, movingAverage, sortedSeriesValues, inclu
         data: {
           datasets: []
         },
-        plugins: [monthLabelPlugin, percentileLinesPlugin],
+        plugins: [monthLabelPlugin, percentileLinesPlugin, waveHighlightPlugin],
         options: {
           responsive: true,
           maintainAspectRatio: false,

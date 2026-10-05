@@ -31,6 +31,9 @@ export const state = {
   years: [],
   visibleYears: {}, // { '2023': true, '2024': true, ... }
   smoothingWindow: 3, // Standard 3-point moving average
+  detectedWaves: [],
+  highlightedWave: null,
+  highlightedWaveStartDate: null,
   yScaleType: 'linear', // 'linear' or 'logarithmic'
   inactivePlantUids: new Set(),
 

@@ -39,7 +39,7 @@ test('movingAverage interpolates daily points, applies triangular weights, and p
 
 test('identifyWaves reports threshold dates, baseline, peak, and an ongoing wave', () => {
   const start = Date.UTC(2024, 0, 1);
-  const values = [10, 10, 10, 10, 10, 10, 10, 10, 10, 20, 40, 30, 20, 10, 10, 10, 10, 10, 10, 10, 10, 20, 45, 40, 35, 15];
+  const values = [20, 20, 20, 20, 20, 20, 20, 20, 20, 40, 80, 60, 40, 20, 20, 20, 20, 20, 20, 20, 20, 40, 90, 80, 70, 30];
   const series = values.map((y, week) => ({
     originalDate: new Date(start + week * 7 * 86400000).toISOString().slice(0, 10),
     y,
@@ -50,6 +50,12 @@ test('identifyWaves reports threshold dates, baseline, peak, and an ongoing wave
   assert.ok(waves[1].ongoing);
   assert.equal(waves[1].endDate, null);
   assert.ok(waves[1].peak > waves[1].baseline);
+
+  const belowHeuristic = values.map((y, week) => ({
+    y: y / 2,
+    originalDate: new Date(start + week * 7 * 86400000).toISOString().slice(0, 10),
+  }));
+  assert.deepEqual(identifyWaves(belowHeuristic), [], 'peaks at or below 50 do not count as waves');
 });
 
 test('summarize reduces a series to count, mean, peak and latest', () => {
