@@ -317,7 +317,8 @@ function smoothedWeeklySeries(points) {
 
 // Detect distinct rises in a facility's wastewater series. Weekly aggregation and
 // three-week smoothing damp sampling noise; a reported wave needs a 1.7x rise over
-// its preceding 12-week low and a 1.3x decline (or a currently declining endpoint).
+// its preceding 12-week low and a 1.3x decline. A recent peak may qualify earlier
+// once it has turned down by 10%, so an active wave need not wait for a deep decline.
 export function identifyWaves(points) {
   const smooth = smoothedWeeklySeries(points);
   if (!smooth.length) return [];
@@ -330,7 +331,13 @@ export function identifyWaves(points) {
     if (!left.length || !right.length) continue;
     const baseline = Math.min(...left.map(point => point.y));
     const afterLow = Math.min(...right.map(point => point.y));
-    if (smooth[i].y <= 50 || baseline <= 0 || smooth[i].y / baseline < 1.7 || smooth[i].y / afterLow < 1.3) continue;
+    const peak = smooth[i].y;
+    const standardDecline = peak / afterLow >= 1.3;
+    // For a peak in the last six weeks, accept an initial 10% decline as evidence
+    // that it has turned. This provisional threshold avoids delaying current-wave
+    // detection until the series has fallen all the way back toward baseline.
+    const recentTurn = i >= smooth.length - 7 && peak / afterLow >= 1.1;
+    if (peak <= 50 || baseline <= 0 || peak / baseline < 1.7 || (!standardDecline && !recentTurn)) continue;
     const baselineIndex = Math.max(0, i - 12) + left.findIndex(point => point.y === baseline);
     candidates.push({ peakIndex: i, baselineIndex, baseline, prominence: smooth[i].y / baseline });
   }
