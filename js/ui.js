@@ -8,6 +8,16 @@ import { fuzzyMatchPlant, isZipCodeQuery, getPlantCoordinates, getReferenceCoord
 import { resetChartZoom, toggleAllYears, toggleYearVisibility, updateYScale, updateSmoothing } from './chart.js';
 import { downloadCSV, sortTableByDate, changePage, handleSearch } from './table.js';
 
+    let multiFacilityMode = false;
+
+    function toggleMultiFacilityMode() {
+      multiFacilityMode = !multiFacilityMode;
+      const button = document.getElementById('multiFacilityToggle');
+      const label = document.getElementById('multiFacilityModeLabel');
+      if (button) button.setAttribute('aria-pressed', String(multiFacilityMode));
+      if (label) label.textContent = multiFacilityMode ? 'On' : 'Off';
+    }
+
     export function showPlantDropdown() {
       const resultsContainer = document.getElementById('plantSearchResults');
       if (resultsContainer) {
@@ -116,6 +126,13 @@ import { downloadCSV, sortTableByDate, changePage, handleSearch } from './table.
         return;
       }
 
+      if (multiFacilityMode) {
+        const hint = document.createElement('div');
+        hint.className = 'sticky top-0 z-10 p-2 text-[11px] text-teal-200 bg-slate-800 border-b border-slate-700';
+        hint.textContent = 'Tap facilities to add or remove them from the combined selection.';
+        container.appendChild(hint);
+      }
+
       matches.slice(0, 30).forEach(plant => {
         const item = document.createElement('div');
         const isSelected = state.selectedPlantUids.includes(plant.uid);
@@ -149,7 +166,7 @@ import { downloadCSV, sortTableByDate, changePage, handleSearch } from './table.
           </div>
         `;
 
-        item.onclick = event => selectPlant(plant, event.shiftKey);
+        item.onclick = event => selectPlant(plant, event.shiftKey || multiFacilityMode);
         container.appendChild(item);
       });
     }
@@ -180,13 +197,18 @@ import { downloadCSV, sortTableByDate, changePage, handleSearch } from './table.
         : state.selectedPlantUids[0];
       state.currentPlantMetadata = state.plantsCatalog.find(candidate => candidate.uid === state.currentPlantUid) || plant;
       
-      // Update inputs & hide dropdown
-      if (searchInput) searchInput.value = '';
-      const clearBtn = document.getElementById('clearPlantSearchBtn');
-      if (clearBtn) clearBtn.classList.add('hidden');
+      // Keep search results open on touch devices so multiple stations can be toggled in sequence.
+      const keepResultsOpen = multiFacilityMode;
+      if (!keepResultsOpen) {
+        if (searchInput) searchInput.value = '';
+        const clearBtn = document.getElementById('clearPlantSearchBtn');
+        if (clearBtn) clearBtn.classList.add('hidden');
 
-      const resultsContainer = document.getElementById('plantSearchResults');
-      if (resultsContainer) resultsContainer.classList.add('hidden');
+        const resultsContainer = document.getElementById('plantSearchResults');
+        if (resultsContainer) resultsContainer.classList.add('hidden');
+      } else if (searchInput) {
+        renderPlantSearchResults(searchInput.value);
+      }
 
       updatePlantMetadataUI();
       updateCountyCovidSummary();
@@ -405,6 +427,7 @@ import { downloadCSV, sortTableByDate, changePage, handleSearch } from './table.
     const CLICK_ACTIONS = {
       'retry-load': () => loadAndRenderPlantSamples(),
       'plant-clear': () => clearPlantSearch(),
+      'toggle-multi-facility': () => toggleMultiFacilityMode(),
       'chart-reset': () => resetChartZoom(),
       'years-all': el => toggleAllYears(el.dataset.visible === 'true'),
       'toggle-panel': el => togglePanel(el.dataset.target, el.dataset.icon),
