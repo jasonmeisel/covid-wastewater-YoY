@@ -75,7 +75,7 @@ export function extractPmMov(sample) {
 // Groups samples into per-year series aligned on the 1–365 day-of-year axis.
 // Every rejected sample is counted in `skipped` so the UI can report the loss honestly.
 export function buildSeries(samples, { scaleFactor = 1e6 } = {}) {
-  const byYear = {};
+  const byFacilityYear = {};
   const skipped = { total: 0, missingDate: 0, missingValue: 0, nonPositive: 0, unparseableDate: 0 };
 
   (samples || []).forEach(sample => {
@@ -100,23 +100,88 @@ export function buildSeries(samples, { scaleFactor = 1e6 } = {}) {
       return;
     }
 
-    if (!byYear[parts.year]) byYear[parts.year] = [];
-    byYear[parts.year].push({
-      x: dayOfYearIndex(parts), // aligned X coordinate (1-365)
-      y: scaled, // scaled target ratio value (N Gene / PMMoV * 1,000,000)
+    const year = parts.year;
+    const facilityUid = sample._facilityUid || '__single_facility__';
+    byFacilityYear[year] ||= new Map();
+    if (!byFacilityYear[year].has(facilityUid)) byFacilityYear[year].set(facilityUid, []);
+    byFacilityYear[year].get(facilityUid).push({
+      x: dayOfYearIndex(parts),
+      y: scaled,
       originalDate: rawDate,
-      actualYear: parts.year,
+      actualYear: year,
       rawRatio: ratio
     });
   });
 
-  // Sort each year by day of year; leap Feb 29 / Mar 1 collide on x and are ordered by date.
-  Object.values(byYear).forEach(series => {
-    series.sort((a, b) => a.x - b.x || String(a.originalDate).localeCompare(String(b.originalDate)));
-  });
+  const byYear = {};
+  for (const [year, facilities] of Object.entries(byFacilityYear)) {
+    const seriesByFacility = [...facilities.values()].map(series => series.sort((a, b) => a.x - b.x));
+    byYear[year] = seriesByFacility.length > 1
+      ? averageFacilitiesByDay(seriesByFacility)
+      : (seriesByFacility[0] || []);
+  }
 
   const years = Object.keys(byYear).map(Number).sort((a, b) => b - a); // descending sort
   return { byYear, years, skipped };
+}
+
+// Average selected facilities only on days bracketed by that facility's own samples.
+// First collapse same-day samples within each facility, then linearly interpolate each
+// facility independently and average its daily value with the other covered facilities.
+export function averageFacilitiesByDay(facilitySeries) {
+  const dailyByFacility = facilitySeries.map(series => {
+    const grouped = new Map();
+    for (const point of series) {
+      const entry = grouped.get(point.x);
+      if (entry) {
+        entry.y += point.y;
+        entry.rawRatio += point.rawRatio;
+        entry.count++;
+      } else {
+        grouped.set(point.x, { ...point, count: 1 });
+      }
+    }
+    return [...grouped.values()].map(point => ({
+      ...point,
+      y: point.y / point.count,
+      rawRatio: point.rawRatio / point.count,
+    })).sort((a, b) => a.x - b.x);
+  }).filter(series => series.length);
+
+  if (!dailyByFacility.length) return [];
+  const firstDay = Math.min(...dailyByFacility.map(series => series[0].x));
+  const lastDay = Math.max(...dailyByFacility.map(series => series[series.length - 1].x));
+  const result = [];
+
+  for (let day = firstDay; day <= lastDay; day++) {
+    let valueSum = 0;
+    let ratioSum = 0;
+    let facilityCount = 0;
+    let representative = null;
+
+    for (const series of dailyByFacility) {
+      if (day < series[0].x || day > series[series.length - 1].x) continue;
+      let rightIndex = series.findIndex(point => point.x >= day);
+      if (rightIndex < 0) rightIndex = series.length - 1;
+      const right = series[rightIndex];
+      const left = series[Math.max(0, rightIndex - (right.x === day ? 0 : 1))];
+      const fraction = right.x === left.x ? 0 : (day - left.x) / (right.x - left.x);
+      valueSum += left.y + (right.y - left.y) * fraction;
+      ratioSum += left.rawRatio + (right.rawRatio - left.rawRatio) * fraction;
+      facilityCount++;
+      representative ||= left;
+    }
+
+    if (facilityCount) {
+      result.push({
+        ...representative,
+        x: day,
+        y: valueSum / facilityCount,
+        rawRatio: ratioSum / facilityCount,
+      });
+    }
+  }
+  return result;
 }
 
 // Collapses a year's samples onto one point per calendar date, averaging the plants

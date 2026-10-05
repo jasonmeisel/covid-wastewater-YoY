@@ -249,7 +249,7 @@ import { updatePlantMetadataUI, renderPlantSearchResults, updateYearlyStatsSumma
         if (!json || !Array.isArray(json.samples)) {
           throw new Error(`unexpected schema for ${url} (no samples array)`);
         }
-        return json.samples;
+        return json.samples.map(sample => ({ ...sample, _facilityUid: uid }));
       }));
 
       const samples = results.flat();

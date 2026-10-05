@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { quantile, inclusivePercentile, movingAverage, summarize, buildSeries, dailyAggregate } from '../js/stats.js';
+import { quantile, inclusivePercentile, movingAverage, summarize, buildSeries, dailyAggregate, averageFacilitiesByDay } from '../js/stats.js';
 
 // Means of ratios land on values like 1.9999999999999998e-4, so compare with slack.
 const closeTo = (actual, expected, eps = 1e-12) =>
@@ -73,6 +73,17 @@ test('buildSeries falls back to the first target carrying a finite ratio', () =>
     { collection_date: '2024-06-01', targets: { Other: { gc_g_dry_weight_trimmed5_pmmov: 0.5 } } },
   ]);
   assert.equal(byYear[2024][0].rawRatio, 0.5);
+});
+
+test('facilities are interpolated independently before their daily values are averaged', () => {
+  const combined = averageFacilitiesByDay([
+    [{ x: 1, y: 10, rawRatio: 1, originalDate: 'a' }, { x: 3, y: 30, rawRatio: 3, originalDate: 'b' }],
+    [{ x: 2, y: 100, rawRatio: 10, originalDate: 'c' }, { x: 4, y: 200, rawRatio: 20, originalDate: 'd' }],
+  ]);
+
+  assert.deepEqual(combined.map(point => point.x), [1, 2, 3, 4]);
+  assert.deepEqual(combined.map(point => point.y), [10, 60, 90, 200]);
+  // Day 1 and day 4 have only one facility within its sample range; no extrapolation.
 });
 
 test('dailyAggregate averages the plants that reported on the same day', () => {
