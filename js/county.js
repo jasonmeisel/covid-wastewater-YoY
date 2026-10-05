@@ -120,7 +120,7 @@ function renderCountyCard(card, zip) {
         <h2 class="uppercase-label text-slate-400">PMC19 county estimate</h2>
         <span class="px-1.5 py-0.5 rounded-sm uppercase-label ${chipClass}">${escapeHtml(card.statusLabel)}</span>
       </div>
-      <a href="${escapeHtml(card.sourceUrl)}" target="_blank" rel="noopener noreferrer" class="text-[11px] font-semibold text-teal-400 hover:text-teal-300 hover:underline">PMC19.com <span aria-hidden="true">↗</span></a>
+      <a href="https://pmc19.com/" target="_blank" rel="noopener noreferrer" class="text-[11px] font-semibold text-teal-400 hover:text-teal-300 hover:underline">PMC19.com <span aria-hidden="true">↗</span></a>
     </div>
     <p class="mt-1.5 text-sm font-semibold text-slate-100">${escapeHtml(card.countyLabel)}</p>
     ${stats}
