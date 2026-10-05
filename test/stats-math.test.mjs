@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { quantile, inclusivePercentile, movingAverage, summarize, buildSeries, dailyAggregate, averageFacilitiesByDay } from '../js/stats.js';
+import { quantile, inclusivePercentile, movingAverage, summarize, buildSeries, dailyAggregate, averageFacilitiesByDay, identifyWaves } from '../js/stats.js';
 
 // Means of ratios land on values like 1.9999999999999998e-4, so compare with slack.
 const closeTo = (actual, expected, eps = 1e-12) =>
@@ -35,6 +35,21 @@ test('movingAverage interpolates daily points, applies triangular weights, and p
   assert.deepEqual(smoothed[2], observed[2], 'last observed endpoint is preserved verbatim');
   assert.equal(smoothed[0].y, 10 / 3);
   assert.equal(smoothed[1].y, 5);
+});
+
+test('identifyWaves reports threshold dates, baseline, peak, and an ongoing wave', () => {
+  const start = Date.UTC(2024, 0, 1);
+  const values = [10, 10, 10, 10, 10, 10, 10, 10, 10, 20, 40, 30, 20, 10, 10, 10, 10, 10, 10, 10, 10, 20, 45, 40, 35, 15];
+  const series = values.map((y, week) => ({
+    originalDate: new Date(start + week * 7 * 86400000).toISOString().slice(0, 10),
+    y,
+  }));
+  const waves = identifyWaves(series);
+  assert.equal(waves.length, 2);
+  assert.ok(waves[0].endDate, 'first wave has a return below its end threshold');
+  assert.ok(waves[1].ongoing);
+  assert.equal(waves[1].endDate, null);
+  assert.ok(waves[1].peak > waves[1].baseline);
 });
 
 test('summarize reduces a series to count, mean, peak and latest', () => {

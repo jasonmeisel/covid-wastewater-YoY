@@ -265,6 +265,109 @@ export function movingAverage(dataSeries, windowSize, preserveLastPoint = false)
   return smoothed;
 }
 
+// Detect distinct rises in a facility's wastewater series. Weekly aggregation and
+// three-week smoothing damp sampling noise; a reported wave needs a 1.7x rise over
+// its preceding 12-week low and a 1.3x decline (or a currently declining endpoint).
+export function identifyWaves(points) {
+  const byDay = new Map();
+  for (const point of points || []) {
+    const date = String(point.originalDate || '').slice(0, 10);
+    const value = Number(point.y);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !(value > 0)) continue;
+    const values = byDay.get(date) || [];
+    values.push(value);
+    byDay.set(date, values);
+  }
+  if (byDay.size < 8) return [];
+
+  const daily = [...byDay.entries()].map(([date, values]) => ({
+    day: Math.floor(Date.parse(`${date}T00:00:00Z`) / 86400000),
+    date,
+    y: values.reduce((sum, value) => sum + value, 0) / values.length,
+  })).sort((a, b) => a.day - b.day);
+  const weekMap = new Map();
+  daily.forEach(point => {
+    const week = point.day - ((point.day + 3) % 7);
+    const bucket = weekMap.get(week) || [];
+    bucket.push(point.y);
+    weekMap.set(week, bucket);
+  });
+  const weeks = [...weekMap.entries()].sort((a, b) => a[0] - b[0]);
+  const weekly = [];
+  for (let week = weeks[0][0]; week <= weeks[weeks.length - 1][0]; week += 7) {
+    const values = weekMap.get(week);
+    weekly.push({
+      day: week,
+      y: values ? values.reduce((sum, value) => sum + value, 0) / values.length : null,
+    });
+  }
+
+  // Linearly fill only the weekly summary for smoothing; observed dates stay intact.
+  for (let i = 0; i < weekly.length; i++) {
+    if (weekly[i].y !== null) continue;
+    let left = i - 1;
+    let right = i + 1;
+    while (left >= 0 && weekly[left].y === null) left--;
+    while (right < weekly.length && weekly[right].y === null) right++;
+    if (left >= 0 && right < weekly.length) {
+      const fraction = (i - left) / (right - left);
+      weekly[i].y = weekly[left].y + (weekly[right].y - weekly[left].y) * fraction;
+    }
+  }
+  const validWeekly = weekly.filter(point => point.y !== null);
+  if (validWeekly.length < 8) return [];
+  const smooth = validWeekly.map((point, i, list) => ({
+    ...point,
+    y: list.slice(Math.max(0, i - 1), Math.min(list.length, i + 2))
+      .reduce((sum, neighbor) => sum + neighbor.y, 0) /
+      list.slice(Math.max(0, i - 1), Math.min(list.length, i + 2)).length,
+  }));
+
+  const candidates = [];
+  for (let i = 1; i < smooth.length - 1; i++) {
+    if (smooth[i].y < smooth[i - 1].y || smooth[i].y <= smooth[i + 1].y) continue;
+    const left = smooth.slice(Math.max(0, i - 12), i);
+    const right = smooth.slice(i + 1, Math.min(smooth.length, i + 13));
+    if (!left.length || !right.length) continue;
+    const baseline = Math.min(...left.map(point => point.y));
+    const afterLow = Math.min(...right.map(point => point.y));
+    if (baseline <= 0 || smooth[i].y / baseline < 1.7 || smooth[i].y / afterLow < 1.3) continue;
+    const baselineIndex = Math.max(0, i - 12) + left.findIndex(point => point.y === baseline);
+    candidates.push({ peakIndex: i, baselineIndex, baseline, prominence: smooth[i].y / baseline });
+  }
+
+  // Keep the strongest candidate when neighboring bumps are less than eight weeks apart.
+  const selected = [];
+  candidates.sort((a, b) => b.prominence - a.prominence).forEach(candidate => {
+    if (selected.every(other => Math.abs(other.peakIndex - candidate.peakIndex) >= 8)) selected.push(candidate);
+  });
+  selected.sort((a, b) => a.peakIndex - b.peakIndex);
+
+  return selected.map((wave, index) => {
+    const peak = smooth[wave.peakIndex];
+    const crossing = wave.baseline + (peak.y - wave.baseline) * 0.25;
+    let startIndex = wave.baselineIndex;
+    while (startIndex < wave.peakIndex && smooth[startIndex].y < crossing) startIndex++;
+    const nextPeak = selected[index + 1]?.peakIndex ?? smooth.length;
+    let endIndex = null;
+    for (let i = wave.peakIndex + 1; i < nextPeak && i + 1 < smooth.length; i++) {
+      if (smooth[i].y <= crossing && smooth[i + 1].y <= crossing) {
+        endIndex = i;
+        break;
+      }
+    }
+    const formatDay = day => new Date(day * 86400000).toISOString().slice(0, 10);
+    return {
+      startDate: formatDay(smooth[startIndex].day),
+      peakDate: formatDay(peak.day),
+      endDate: endIndex === null ? null : formatDay(smooth[endIndex].day),
+      baseline: wave.baseline,
+      peak: peak.y,
+      ongoing: endIndex === null,
+    };
+  });
+}
+
 // Single reduction over a series: count, arithmetic mean, peak and latest point.
 export function summarize(points) {
   if (!points || points.length === 0) {

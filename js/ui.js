@@ -3,7 +3,7 @@
 import { formatShortDate, formatMonthDay, parseDateParts, escapeHtml } from './util.js';
 import { state, syncStateToUrl, sortedSamples } from './state.js';
 import { resolveZipToCountyFips, updateCountyCovidSummary } from './county.js';
-import { pickYearColor, getLatestSampleValue, summarize, inclusivePercentile, sortedSeriesValues, getPercentileEmoji } from './stats.js';
+import { pickYearColor, getLatestSampleValue, summarize, inclusivePercentile, sortedSeriesValues, getPercentileEmoji, identifyWaves } from './stats.js';
 import { fuzzyMatchPlant, isZipCodeQuery, getPlantCoordinates, getReferenceCoordsFromZip, haversineDistance, isPlantInactive, loadAndRenderPlantSamples } from './data.js';
 import { resetChartZoom, toggleAllYears, toggleYearVisibility, updateYScale, updateSmoothing } from './chart.js';
 import { downloadCSV, sortTableByDate, changePage, handleSearch } from './table.js';
@@ -379,6 +379,53 @@ import { downloadCSV, sortTableByDate, changePage, handleSearch } from './table.
 
       document.getElementById('metricSpanYears').innerText = `${totalYears} Years`;
       document.getElementById('metricSamplesCount').innerText = `${allPointsSorted.length} samples from ${firstYear} - ${lastYear}`;
+      renderWastewaterWavesCard(allPointsSorted);
+    }
+
+    function renderWastewaterWavesCard(points) {
+      const card = document.getElementById('wastewaterWavesCard');
+      const content = document.getElementById('wastewaterWavesContent');
+      const facility = document.getElementById('wastewaterWavesFacility');
+      if (!card || !content) return;
+      card.classList.remove('hidden');
+
+      if (state.selectedPlantUids.length !== 1) {
+        content.innerHTML = '<p class="text-xs text-slate-400">Wave summaries are shown for one facility at a time. Select a single facility to view its history.</p>';
+        if (facility) facility.textContent = 'Multiple facilities selected';
+        return;
+      }
+
+      const waves = identifyWaves(points);
+      const metadata = state.plantsCatalog.find(plant => plant.uid === state.selectedPlantUids[0]);
+      if (facility) facility.textContent = metadata
+        ? `${metadata.name || metadata.site_name} · ${points[0]?.originalDate?.slice(0, 4) || ''}–${points[points.length - 1]?.originalDate?.slice(0, 4) || ''}`
+        : 'Selected facility';
+
+      if (!waves.length) {
+        content.innerHTML = '<p class="text-xs text-slate-400">Not enough distinct wastewater data to identify waves yet.</p>';
+        return;
+      }
+
+      content.innerHTML = `
+        <div class="overflow-x-auto">
+          <table class="w-full min-w-[540px] text-left text-xs">
+            <thead class="text-[10px] uppercase tracking-wide text-slate-500">
+              <tr><th class="py-2 pr-3">Wave</th><th class="py-2 pr-3">Start – end</th><th class="py-2 pr-3">High</th><th class="py-2 pr-3">Baseline</th><th class="py-2">Peak date</th></tr>
+            </thead>
+            <tbody class="divide-y divide-slate-800">
+              ${waves.map((wave, index) => `
+                <tr class="text-slate-300">
+                  <th scope="row" class="py-2 pr-3 font-semibold text-slate-200">${index + 1}${wave.ongoing ? ' · current' : ''}</th>
+                  <td class="py-2 pr-3 whitespace-nowrap">${formatShortDate(wave.startDate)} – ${wave.endDate ? formatShortDate(wave.endDate) : 'Ongoing'}</td>
+                  <td class="py-2 pr-3 font-mono text-rose-300">${wave.peak.toFixed(1)}</td>
+                  <td class="py-2 pr-3 font-mono text-teal-300">${wave.baseline.toFixed(1)}</td>
+                  <td class="py-2 whitespace-nowrap">${formatShortDate(wave.peakDate)}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      `;
     }
 
     // Export chart layout into clean PNG image
