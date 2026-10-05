@@ -443,20 +443,27 @@ import { downloadCSV, sortTableByDate, changePage, handleSearch } from './table.
 
       content.innerHTML = `
         <div class="overflow-x-auto">
-          <table class="w-full min-w-[540px] text-left text-xs">
+          <table class="w-full min-w-[620px] text-left text-xs">
             <thead class="text-[10px] uppercase tracking-wide text-slate-500">
-              <tr><th class="py-2 pr-3">Wave</th><th class="py-2 pr-3">Start – end</th><th class="py-2 pr-3">High</th><th class="py-2 pr-3">Baseline</th><th class="py-2">Peak date</th></tr>
+              <tr><th class="py-2 pr-3">Wave</th><th class="py-2 pr-3">Start – end</th><th class="py-2 pr-3">Length (days)</th><th class="py-2 pr-3">High</th><th class="py-2 pr-3">Baseline</th><th class="py-2">Peak date</th></tr>
             </thead>
             <tbody class="divide-y divide-slate-800">
-              ${waves.map((wave, index) => `
+              ${waves.map((wave, index) => {
+                const endDate = wave.endDate || points.reduce((latest, point) =>
+                  String(point.originalDate) > latest ? String(point.originalDate) : latest, '');
+                const lengthDays = Math.floor((Date.parse(`${endDate.slice(0, 10)}T00:00:00Z`) -
+                  Date.parse(`${wave.startDate}T00:00:00Z`)) / 86400000) + 1;
+                return `
                 <tr class="text-slate-300">
                   <th scope="row" class="py-2 pr-3 font-semibold text-slate-200">${index + 1}${wave.ongoing ? ' · current' : ''}</th>
                   <td class="py-2 pr-3 whitespace-nowrap">${formatShortDate(wave.startDate)} – ${wave.endDate ? formatShortDate(wave.endDate) : 'Ongoing'}</td>
+                  <td class="py-2 pr-3 font-mono whitespace-nowrap">${lengthDays}${wave.ongoing ? '+' : ''}</td>
                   <td class="py-2 pr-3 font-mono text-rose-300">${wave.peak.toFixed(1)}</td>
                   <td class="py-2 pr-3 font-mono text-teal-300">${wave.baseline.toFixed(1)}</td>
                   <td class="py-2 whitespace-nowrap">${formatShortDate(wave.peakDate)}</td>
                 </tr>
-              `).join('')}
+              `;
+              }).join('')}
             </tbody>
           </table>
         </div>
