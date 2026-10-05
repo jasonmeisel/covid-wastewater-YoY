@@ -149,30 +149,55 @@ export function dailyAggregate(series) {
     : { ...entry.point, y: entry.sum / entry.count, rawRatio: entry.ratioSum / entry.count }));
 }
 
-// Dynamic moving average smoothing window logic
+// Interpolate observed values onto daily points, then apply a centered triangular
+// moving average. This smooths by calendar day rather than by observation count,
+// which matters because wastewater sampling is irregular. The latest observed point
+// can remain verbatim so the newest reading is still represented exactly.
 export function movingAverage(dataSeries, windowSize, preserveLastPoint = false) {
   if (windowSize <= 1 || dataSeries.length <= 1) return dataSeries;
 
-  return dataSeries.map((currentPoint, currentIdx, list) => {
-    // Keep only the current year's endpoint tied to the latest observed sample.
-    if (preserveLastPoint && currentIdx === list.length - 1) return currentPoint;
+  const points = dataSeries.map((point, index) => ({
+    point,
+    x: Number.isFinite(point.x) ? point.x : index,
+  })).sort((a, b) => a.x - b.x);
+  const firstDay = Math.ceil(points[0].x);
+  const lastDay = Math.floor(points[points.length - 1].x);
+  if (lastDay < firstDay) return dataSeries;
 
-    let sum = 0;
-    let count = 0;
-    const offset = Math.floor(windowSize / 2);
+  const daily = [];
+  let segment = 0;
+  for (let day = firstDay; day <= lastDay; day++) {
+    while (segment < points.length - 2 && points[segment + 1].x < day) segment++;
+    const left = points[segment];
+    const right = points[Math.min(segment + 1, points.length - 1)];
+    const fraction = right.x === left.x ? 0 : (day - left.x) / (right.x - left.x);
+    daily.push({
+      ...left.point,
+      x: day,
+      y: left.point.y + (right.point.y - left.point.y) * fraction,
+    });
+  }
 
-    for (let i = currentIdx - offset; i <= currentIdx + offset; i++) {
-      if (i >= 0 && i < list.length) {
-        sum += list[i].y;
-        count++;
-      }
+  const radius = Math.floor(windowSize / 2);
+  const smoothed = daily.map((point, index) => {
+    let weightedSum = 0;
+    let totalWeight = 0;
+    for (let offset = -radius; offset <= radius; offset++) {
+      const neighbor = daily[index + offset];
+      if (!neighbor) continue;
+      const weight = radius + 1 - Math.abs(offset);
+      weightedSum += neighbor.y * weight;
+      totalWeight += weight;
     }
-
-    return {
-      ...currentPoint,
-      y: sum / count // smoothed Y coordinate
-    };
+    return { ...point, y: weightedSum / totalWeight };
   });
+
+  if (preserveLastPoint) {
+    const endpoint = points[points.length - 1].point;
+    const endpointIndex = smoothed.findIndex(point => point.x === endpoint.x);
+    if (endpointIndex >= 0) smoothed[endpointIndex] = endpoint;
+  }
+  return smoothed;
 }
 
 // Single reduction over a series: count, arithmetic mean, peak and latest point.

@@ -96,7 +96,7 @@
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
           </button>
         </div>
-        <button id="multiFacilityToggle" type="button" data-action="toggle-multi-facility" aria-pressed="false" class="mt-1.5 inline-flex items-center gap-1.5 rounded-sm border border-slate-700 bg-slate-800/70 px-2 py-1 text-[10px] font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500 transition">
+        <button id="multiFacilityToggle" type="button" data-action="toggle-multi-facility" aria-pressed="false" class="mt-1.5 inline-flex items-center gap-1.5 rounded-sm border border-slate-700 bg-slate-800/70 px-2 py-1 text-[10px] font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500 transition md:hidden">
           Combine facilities <span id="multiFacilityModeLabel" class="rounded-sm bg-slate-700 px-1 py-0.5 text-[9px] text-slate-300">Off</span>
         </button>
 
@@ -194,9 +194,9 @@
             <div class="flex min-w-0 flex-col gap-0.5 md:flex-row md:items-center md:gap-1.5">
               <select id="smoothingSelector" aria-label="Smoothing window" data-action="smoothing" class="w-full min-w-0 bg-slate-700/80 border border-slate-600 text-slate-200 text-xs rounded-sm px-2 py-1 focus:outline-none focus:ring-2 focus:ring-brand-500 cursor-pointer md:w-auto">
                 <option value="1">No Smoothing (Raw)</option>
-                <option value="3" selected>3-Point Moving Average</option>
-                <option value="7">7-Point Moving Average</option>
-                <option value="14">14-Point Moving Average</option>
+                <option value="3" selected>3-Day Weighted Average</option>
+                <option value="7">7-Day Weighted Average</option>
+                <option value="14">14-Day Weighted Average</option>
               </select>
             </div>
 

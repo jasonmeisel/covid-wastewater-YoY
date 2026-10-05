@@ -22,24 +22,19 @@ test('inclusivePercentile reports the share of values at or below the reading', 
   assert.equal(inclusivePercentile(5, []), null);
 });
 
-test('movingAverage smooths interior points and can preserve the last sample', () => {
-  const short = [{ y: 1 }, { y: 2 }, { y: 3 }];
-  const windowed = movingAverage(short, 7);
-  assert.equal(windowed.length, 3);
-  // A window wider than the series averages every available neighbour.
-  assert.deepEqual(windowed.map(p => p.y), [2, 2, 2]);
+test('movingAverage interpolates daily points, applies triangular weights, and preserves the endpoint', () => {
+  const sparse = [{ x: 1, y: 0 }, { x: 5, y: 8 }];
+  const daily = movingAverage(sparse, 3);
+  assert.deepEqual(daily.map(point => point.x), [1, 2, 3, 4, 5]);
+  // Linear interpolation gives [0, 2, 4, 6, 8]; triangular weights smooth day 3 to 4.
+  assert.equal(daily[2].y, 4);
+  assert.equal(movingAverage(sparse, 1), sparse, 'window 1 is a no-op');
 
-  assert.equal(movingAverage(short, 1), short, 'window 1 is a no-op');
-  assert.equal(movingAverage(short, 3, false).length, 3);
-
-  const ramp = Array.from({ length: 10 }, (_, i) => ({ y: i, originalDate: `2024-01-${String(i + 1).padStart(2, '0')}` }));
-  const smoothed = movingAverage(ramp, 7, true);
-  assert.deepEqual(smoothed[9], ramp[9], 'last point is preserved verbatim');
-  const expectedInterior = [2, 3, 4, 5, 6, 7, 8].reduce((a, b) => a + b, 0) / 7;
-  assert.equal(smoothed[5].y, expectedInterior);
-  // Edge points average only the neighbours that exist, so they move even on a linear ramp.
-  assert.equal(smoothed[0].y, (0 + 1 + 2 + 3) / 4);
-  assert.notEqual(smoothed[0].y, ramp[0].y);
+  const observed = [{ x: 1, y: 0 }, { x: 2, y: 10 }, { x: 3, y: 0 }];
+  const smoothed = movingAverage(observed, 3, true);
+  assert.deepEqual(smoothed[2], observed[2], 'last observed endpoint is preserved verbatim');
+  assert.equal(smoothed[0].y, 10 / 3);
+  assert.equal(smoothed[1].y, 5);
 });
 
 test('summarize reduces a series to count, mean, peak and latest', () => {
@@ -135,8 +130,8 @@ test('dailyAggregate then movingAverage gives one smoothed value per day', () =>
   const daily = dailyAggregate(series);
   assert.deepEqual(daily.map(p => p.y), [20, 40]);
 
-  // window 3 => offset 1; both days see each other, so both smooth to (20+40)/2
+  // Triangular weights favor each day's own value while including its neighbor.
   const smoothed = movingAverage(daily, 3, false);
-  assert.deepEqual(smoothed.map(p => p.y), [30, 30], 'window spans days, not samples');
-  assert.equal(new Set(smoothed.map(p => p.originalDate)).size, smoothed.length, 'no duplicate dates');
+  assert.deepEqual(smoothed.map(p => p.y), [80 / 3, 100 / 3], 'window spans calendar days, not samples');
+  assert.equal(new Set(smoothed.map(p => p.x)).size, smoothed.length, 'one point per calendar day');
 });

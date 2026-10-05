@@ -135,6 +135,8 @@ import { pickYearColor, dailyAggregate, movingAverage, sortedSeriesValues, inclu
           borderColor: lineColor,
           backgroundColor: colorConf.fill,
           borderWidth: isLatestYear ? 3 : 1,
+          tension: 0.25,
+          cubicInterpolationMode: 'monotone',
           pointRadius: (context) => {
             const isLatestSample = isLatestYear && context.dataIndex === context.dataset.data.length - 1;
             return isLatestSample ? 5 : 0;
