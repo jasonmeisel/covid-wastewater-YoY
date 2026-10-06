@@ -95,9 +95,10 @@ import { pickYearColor, dailyAggregate, movingAverage, sortedSeriesValues, inclu
     }
 
     function percentileLinesFor(stats, isPercentileScale) {
+      if (isPercentileScale) return [];
       return [{
         label: 'Median',
-        value: isPercentileScale ? 50 : stats.median,
+        value: stats.median,
         color: 'rgba(14, 165, 233, 0.8)',
         dash: [4, 4],
       }].filter(line => line.value !== null);
