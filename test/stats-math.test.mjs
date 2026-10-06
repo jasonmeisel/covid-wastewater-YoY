@@ -39,7 +39,7 @@ test('movingAverage interpolates daily points, applies triangular weights, and p
 
 test('identifyWaves reports threshold dates, baseline, peak, and an ongoing wave', () => {
   const start = Date.UTC(2024, 0, 1);
-  const values = [20, 20, 20, 20, 20, 20, 20, 20, 20, 40, 80, 60, 40, 20, 20, 20, 20, 20, 20, 20, 20, 40, 90, 80, 70, 30];
+  const values = [...Array(8).fill(20), 20, 20, 20, 20, 20, 20, 20, 20, 20, 40, 80, 60, 40, 20, 20, 20, 20, 20, 20, 20, 20, 40, 90, 80, 70, 30];
   const series = values.map((y, week) => ({
     originalDate: new Date(start + week * 7 * 86400000).toISOString().slice(0, 10),
     y,
@@ -74,10 +74,10 @@ test('identifyWaves recognizes a recent peak after an initial decline', () => {
 
 test('identifyWaves dynamically projects an active wave return window', () => {
   const start = Date.UTC(2024, 0, 1);
-  const values = Array(40).fill(10);
-  [20, 45, 80, 60, 45, 30, 20].forEach((value, offset) => { values[9 + offset] = value; });
-  [20, 40, 60, 80, 100, 90, 80, 70, 60, 55, 50, 45, 42].forEach((value, offset) => { values[26 + offset] = value; });
-  values[39] = 50;
+  const values = Array(48).fill(10);
+  [20, 45, 80, 60, 45, 30, 20].forEach((value, offset) => { values[17 + offset] = value; });
+  [20, 40, 60, 80, 100, 90, 80, 70, 60, 55, 50, 45, 42].forEach((value, offset) => { values[34 + offset] = value; });
+  values[47] = 50;
   const series = values.map((y, week) => ({
     originalDate: new Date(start + week * 7 * 86400000).toISOString().slice(0, 10),
     y,

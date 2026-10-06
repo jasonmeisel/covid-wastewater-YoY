@@ -325,6 +325,10 @@ export function identifyWaves(points) {
 
   const candidates = [];
   for (let i = 1; i < smooth.length - 1; i++) {
+    // The 12-week pre-wave low defines the rise threshold. Require a 16-week
+    // history buffer before classifying a peak, so early partial data cannot
+    // make the baseline provisional or pull the wave start artificially early.
+    if (i < 16) continue;
     if (smooth[i].y < smooth[i - 1].y || smooth[i].y <= smooth[i + 1].y) continue;
     const left = smooth.slice(Math.max(0, i - 12), i);
     const right = smooth.slice(i + 1, Math.min(smooth.length, i + 13));
@@ -351,13 +355,15 @@ export function identifyWaves(points) {
 
   const detectedWaves = selected.map((wave, index) => {
     const peak = smooth[wave.peakIndex];
-    const crossing = wave.baseline + (peak.y - wave.baseline) * 0.25;
+    const startCrossing = wave.baseline + (peak.y - wave.baseline) * 0.1;
+    const endCrossing = wave.baseline + (peak.y - wave.baseline) * 0.25;
     let startIndex = wave.baselineIndex;
-    while (startIndex < wave.peakIndex && smooth[startIndex].y < crossing) startIndex++;
+    while (startIndex < wave.peakIndex &&
+      (smooth[startIndex].y < startCrossing || smooth[startIndex].y <= smooth[startIndex - 1].y)) startIndex++;
     const nextPeak = selected[index + 1]?.peakIndex ?? smooth.length;
     let endIndex = null;
     for (let i = wave.peakIndex + 1; i < nextPeak && i + 1 < smooth.length; i++) {
-      if (smooth[i].y <= crossing && smooth[i + 1].y <= crossing) {
+      if (smooth[i].y <= endCrossing && smooth[i + 1].y <= endCrossing) {
         endIndex = i;
         break;
       }
@@ -369,7 +375,7 @@ export function identifyWaves(points) {
       endDate: endIndex === null ? null : formatDay(smooth[endIndex].day),
       baseline: wave.baseline,
       peak: peak.y,
-      endThreshold: crossing,
+      endThreshold: endCrossing,
       ongoing: endIndex === null,
     };
   });
