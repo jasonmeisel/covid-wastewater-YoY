@@ -388,6 +388,7 @@ import { downloadCSV, sortTableByDate, changePage, handleSearch } from './table.
       const phase = document.getElementById('metricWavePhase');
       const remaining = document.getElementById('metricWaveRemaining');
       const baselineRatio = document.getElementById('metricWaveBaselineRatio');
+      remaining?.classList.remove('hidden');
       const activeWave = waves.at(-1)?.ongoing ? waves.at(-1) : null;
       const wave = activeWave || waves.at(-1);
       if (title) title.textContent = activeWave ? 'Current Wave' : 'Previous Wave';
@@ -410,13 +411,21 @@ import { downloadCSV, sortTableByDate, changePage, handleSearch } from './table.
       const startDay = Date.parse(`${wave.startDate}T00:00:00Z`);
       const latestDay = Date.parse(`${latestDate}T00:00:00Z`);
       const endDay = Date.parse(`${waveEndDate}T00:00:00Z`);
-      const daysInto = Math.max(1, Math.floor((Math.min(latestDay, endDay) - startDay) / 86400000) + 1);
-      if (elapsed) elapsed.textContent = `${daysInto} days in`;
-      if (phase) phase.textContent = activeWave ? 'into current wave' : 'into previous wave';
+      if (activeWave) {
+        const daysInto = Math.max(1, Math.floor((latestDay - startDay) / 86400000) + 1);
+        if (elapsed) elapsed.textContent = `${daysInto} days in`;
+        if (phase) phase.textContent = 'into current wave';
+      } else {
+        const daysSince = Math.max(0, Math.floor((latestDay - endDay) / 86400000));
+        if (elapsed) elapsed.textContent = `${daysSince} days since`;
+        if (phase) phase.textContent = `wave ended ${formatShortDate(waveEndDate)}`;
+      }
 
       if (remaining) {
-        if (!activeWave) remaining.textContent = '0 days (ended)';
-        else if (wave.forecast) {
+        if (!activeWave) {
+          remaining.textContent = '';
+          remaining.classList.add('hidden');
+        } else if (wave.forecast) {
           const forecastMidpoint = (Date.parse(`${wave.forecast.earliestDate}T00:00:00Z`) +
             Date.parse(`${wave.forecast.latestDate}T00:00:00Z`)) / 2;
           const daysRemaining = Math.max(0, Math.round((forecastMidpoint - latestDay) / 86400000));
