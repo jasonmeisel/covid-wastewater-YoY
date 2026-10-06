@@ -372,13 +372,6 @@ import { downloadCSV, sortTableByDate, changePage, handleSearch } from './table.
         `of ${allPointsSorted.length} samples in this selection`;
       document.getElementById('metricPercentileEmoji').innerText = getPercentileEmoji(currentPercentile);
 
-      // Dataset Span statistics
-      const firstYear = parseDateParts(allPointsSorted[0].originalDate)?.year ?? null;
-      const lastYear = parseDateParts(allPointsSorted[allPointsSorted.length - 1].originalDate)?.year ?? null;
-      const totalYears = firstYear !== null && lastYear !== null ? lastYear - firstYear + 1 : 0;
-
-      document.getElementById('metricSpanYears').innerText = `${totalYears} Years`;
-      document.getElementById('metricSamplesCount').innerText = `${allPointsSorted.length} samples from ${firstYear} - ${lastYear}`;
       renderWastewaterWavesCard(allPointsSorted);
     }
 
@@ -387,6 +380,72 @@ import { downloadCSV, sortTableByDate, changePage, handleSearch } from './table.
       state.highlightedWave = Number.isInteger(index) && index >= 0 ? state.detectedWaves[index] || null : null;
       state.highlightedWaveStartDate = state.highlightedWave?.startDate || null;
       updateChart();
+    }
+
+    function renderWaveMetric(points, waves) {
+      const title = document.getElementById('metricWaveTitle');
+      const elapsed = document.getElementById('metricWaveElapsed');
+      const phase = document.getElementById('metricWavePhase');
+      const remaining = document.getElementById('metricWaveRemaining');
+      const baselineRatio = document.getElementById('metricWaveBaselineRatio');
+      const activeWave = waves.at(-1)?.ongoing ? waves.at(-1) : null;
+      const wave = activeWave || waves.at(-1);
+      if (title) title.textContent = activeWave ? 'Current Wave' : 'Previous Wave';
+
+      if (!wave) {
+        if (elapsed) elapsed.textContent = '—';
+        if (phase) phase.textContent = state.selectedPlantUids.length === 1 ? 'No qualifying wave identified' : 'Select one facility';
+        if (remaining) remaining.textContent = '— days remaining';
+        if (baselineRatio) {
+          baselineRatio.textContent = 'Latest baseline ratio: —';
+          baselineRatio.classList.remove('text-rose-400', 'font-bold');
+          baselineRatio.classList.add('text-slate-400');
+        }
+        return;
+      }
+
+      const latestDate = points.reduce((latest, point) =>
+        String(point.originalDate).slice(0, 10) > latest ? String(point.originalDate).slice(0, 10) : latest, '');
+      const waveEndDate = wave.endDate || latestDate;
+      const startDay = Date.parse(`${wave.startDate}T00:00:00Z`);
+      const latestDay = Date.parse(`${latestDate}T00:00:00Z`);
+      const endDay = Date.parse(`${waveEndDate}T00:00:00Z`);
+      const daysInto = Math.max(1, Math.floor((Math.min(latestDay, endDay) - startDay) / 86400000) + 1);
+      if (elapsed) elapsed.textContent = `${daysInto} days`;
+      if (phase) phase.textContent = activeWave ? 'into current wave' : 'into previous wave';
+
+      if (remaining) {
+        if (!activeWave) remaining.textContent = '0 days (ended)';
+        else if (wave.forecast) {
+          const forecastMidpoint = (Date.parse(`${wave.forecast.earliestDate}T00:00:00Z`) +
+            Date.parse(`${wave.forecast.latestDate}T00:00:00Z`)) / 2;
+          const daysRemaining = Math.max(0, Math.round((forecastMidpoint - latestDay) / 86400000));
+          remaining.textContent = `~${daysRemaining} days remaining`;
+        } else remaining.textContent = 'Estimate unavailable';
+      }
+
+      const waveIndex = waves.indexOf(wave);
+      const precedingWave = waves.slice(0, waveIndex).reverse().find(candidate => candidate.endDate);
+      const baselineStart = precedingWave?.endDate || '';
+      const baselineValues = points.filter(point => {
+        const date = String(point.originalDate || '').slice(0, 10);
+        return date < wave.startDate && (!baselineStart || date >= baselineStart);
+      }).map(point => Number(point.y)).filter(Number.isFinite).sort((a, b) => a - b);
+      const middle = Math.floor(baselineValues.length / 2);
+      const median = baselineValues.length
+        ? baselineValues.length % 2 ? baselineValues[middle] : (baselineValues[middle - 1] + baselineValues[middle]) / 2
+        : null;
+      const latestPoint = [...points].reverse().find(point => String(point.originalDate).slice(0, 10) === latestDate);
+      const ratio = median > 0 && latestPoint ? latestPoint.y / median : null;
+      if (baselineRatio) {
+        baselineRatio.textContent = ratio === null
+          ? 'Latest is —× baseline'
+          : `Latest is ${ratio.toFixed(1)}× baseline`;
+        const elevated = ratio > 2;
+        baselineRatio.classList.toggle('text-rose-400', elevated);
+        baselineRatio.classList.toggle('font-bold', elevated);
+        baselineRatio.classList.toggle('text-slate-400', !elevated);
+      }
     }
 
     function renderWastewaterWavesCard(points) {
@@ -400,6 +459,7 @@ import { downloadCSV, sortTableByDate, changePage, handleSearch } from './table.
 
       const waveSelector = document.getElementById('waveHighlightSelector');
       if (state.selectedPlantUids.length !== 1) {
+        renderWaveMetric(points, []);
         state.detectedWaves = [];
         state.highlightedWave = null;
         state.highlightedWaveStartDate = null;
@@ -415,6 +475,7 @@ import { downloadCSV, sortTableByDate, changePage, handleSearch } from './table.
         highlightEndDate: wave.endDate || points[points.length - 1]?.originalDate,
       }));
       state.detectedWaves = waves;
+      renderWaveMetric(points, waves);
       const currentWave = waves[waves.length - 1];
       const currentWaveForecast = currentWave?.forecast;
       if (forecastMessage && currentWaveForecast) {

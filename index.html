@@ -151,15 +151,17 @@
         </div>
       </div>
 
-      <!-- Reporting Range -->
+      <!-- Current / Previous Wave -->
       <div class="px-3 md:px-4 py-3 flex flex-col gap-1.5 min-w-0">
         <div class="flex items-center justify-between gap-1">
-          <span class="uppercase-label text-slate-500 truncate">Reporting Range</span>
+          <span class="uppercase-label text-slate-500 truncate" id="metricWaveTitle">Current Wave</span>
           <svg class="w-3 h-3 shrink-0 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
         </div>
         <div class="min-w-0">
-          <h3 class="metric-value text-slate-100 truncate" id="metricSpanYears">0 Years</h3>
-          <p class="metric-sub mt-1.5 text-slate-400" id="metricSamplesCount">0 total samples</p>
+          <h3 class="metric-value text-slate-100 truncate" id="metricWaveElapsed">—</h3>
+          <p class="metric-sub mt-1.5 text-slate-400" id="metricWavePhase">into current wave</p>
+          <p class="metric-sub mt-1 text-slate-400" id="metricWaveRemaining">Estimated to continue: —</p>
+          <p class="metric-sub mt-1 text-slate-400" id="metricWaveBaselineRatio">Latest / pre-wave baseline: —</p>
         </div>
       </div>
     </div>
