@@ -58,6 +58,20 @@ test('identifyWaves reports threshold dates, baseline, peak, and an ongoing wave
   assert.deepEqual(identifyWaves(belowHeuristic), [], 'peaks at or below 50 do not count as waves');
 });
 
+test('identifyWaves detects a strong ongoing rise before it has peaked', () => {
+  const start = Date.UTC(2026, 0, 5);
+  const values = [...Array(25).fill(10), 18, 28, 45, 75, 115, 165, 210];
+  const series = values.map((y, week) => ({
+    originalDate: new Date(start + week * 7 * 86400000).toISOString().slice(0, 10),
+    y,
+  }));
+  const current = identifyWaves(series).at(-1);
+  assert.ok(current, 'a sustained rising series should count as an active wave');
+  assert.equal(current.ongoing, true);
+  assert.equal(current.endDate, null);
+  assert.ok(current.peak > current.baseline * 1.7);
+});
+
 test('identifyWaves recognizes a recent peak after an initial decline', () => {
   const start = Date.UTC(2026, 0, 5);
   const values = [...Array(25).fill(10), 20, 40, 80, 120, 110, 95, 85];

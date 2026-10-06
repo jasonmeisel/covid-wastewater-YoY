@@ -346,6 +346,21 @@ export function identifyWaves(points) {
     candidates.push({ peakIndex: i, baselineIndex, baseline, prominence: smooth[i].y / baseline });
   }
 
+  // An active rise has no local maximum/decline yet, so the peak-based pass above
+  // cannot identify it. Include a provisional wave when the latest smoothed weeks
+  // show a sustained rise that has already cleared the same prominence threshold.
+  const latestIndex = smooth.length - 1;
+  if (latestIndex >= 16 && smooth[latestIndex].y > smooth[latestIndex - 1].y &&
+      smooth[latestIndex - 1].y > smooth[latestIndex - 2].y) {
+    const left = smooth.slice(Math.max(0, latestIndex - 12), latestIndex);
+    const baseline = Math.min(...left.map(point => point.y));
+    const peak = smooth[latestIndex].y;
+    if (baseline > 0 && peak > 50 && peak / baseline >= 1.7) {
+      const baselineIndex = Math.max(0, latestIndex - 12) + left.findIndex(point => point.y === baseline);
+      candidates.push({ peakIndex: latestIndex, baselineIndex, baseline, prominence: peak / baseline });
+    }
+  }
+
   // Keep the strongest candidate when neighboring bumps are less than eight weeks apart.
   const selected = [];
   candidates.sort((a, b) => b.prominence - a.prominence).forEach(candidate => {
