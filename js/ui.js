@@ -411,7 +411,7 @@ import { downloadCSV, sortTableByDate, changePage, handleSearch } from './table.
       const latestDay = Date.parse(`${latestDate}T00:00:00Z`);
       const endDay = Date.parse(`${waveEndDate}T00:00:00Z`);
       const daysInto = Math.max(1, Math.floor((Math.min(latestDay, endDay) - startDay) / 86400000) + 1);
-      if (elapsed) elapsed.textContent = `${daysInto} days`;
+      if (elapsed) elapsed.textContent = `${daysInto} days in`;
       if (phase) phase.textContent = activeWave ? 'into current wave' : 'into previous wave';
 
       if (remaining) {
