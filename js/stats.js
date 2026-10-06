@@ -380,6 +380,17 @@ export function identifyWaves(points) {
     };
   });
 
+  // A wave with no threshold crossing is only ongoing when it is the newest
+  // detected wave. If a later wave has started, close the earlier wave the day
+  // before that start instead of letting its status remain "ongoing" forever.
+  for (let i = 0; i < detectedWaves.length - 1; i++) {
+    if (detectedWaves[i].endDate !== null) continue;
+    const nextStart = Date.parse(`${detectedWaves[i + 1].startDate}T00:00:00Z`);
+    if (!Number.isFinite(nextStart)) continue;
+    detectedWaves[i].endDate = new Date(nextStart - 86400000).toISOString().slice(0, 10);
+    detectedWaves[i].ongoing = false;
+  }
+
   const forecast = forecastCurrentWaveEnd(points, detectedWaves, smooth);
   if (forecast && detectedWaves.length) detectedWaves[detectedWaves.length - 1].forecast = forecast;
   return detectedWaves;
