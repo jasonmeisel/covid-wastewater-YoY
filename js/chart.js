@@ -126,11 +126,8 @@ import { pickYearColor, dailyAggregate, movingAverage, sortedSeriesValues, inclu
       const p1 = data?.[context?.p1DataIndex] || context?.p1?.$context?.raw;
       if (!p0 || !p1 || !Number.isFinite(Number(p0.x)) || !Number.isFinite(Number(p1.x))) return false;
       const midpoint = (Number(p0.x) + Number(p1.x)) / 2;
-      if (isTimeline) return waves.some(wave => {
-        const start = Math.floor(Date.parse(`${wave.startDate}T00:00:00Z`) / 86400000);
-        const end = Math.floor(Date.parse(`${wave.highlightEndDate || wave.endDate}T00:00:00Z`) / 86400000);
-        return Number.isFinite(start) && Number.isFinite(end) && midpoint >= start && midpoint <= end;
-      });
+      if (isTimeline) return getTimelineHighlightCache(data).ranges.some(range =>
+        midpoint >= range.start && midpoint <= range.end);
       const wave = waves[0];
       const startParts = parseDateParts(wave.startDate);
       const endParts = parseDateParts(wave.highlightEndDate || wave.endDate);
@@ -142,6 +139,32 @@ import { pickYearColor, dailyAggregate, movingAverage, sortedSeriesValues, inclu
     }
 
     const WAVE_HIGHLIGHT_COLOR = 'rgba(250, 204, 21, 1)';
+    let timelineHighlightCache = null;
+
+    function getTimelineHighlightCache(data) {
+      const source = state.highlightAllWaves ? state.detectedWaves : state.highlightedWave;
+      if (timelineHighlightCache?.data === data && timelineHighlightCache.source === source) return timelineHighlightCache;
+      const waves = state.highlightAllWaves ? source : source ? [source] : [];
+      const ranges = [];
+      const nearestPeakIndices = new Set();
+      for (const wave of waves) {
+        const start = Math.floor(Date.parse(`${wave.startDate}T00:00:00Z`) / 86400000);
+        const end = Math.floor(Date.parse(`${wave.highlightEndDate || wave.endDate}T00:00:00Z`) / 86400000);
+        const peak = Math.floor(Date.parse(`${wave.peakDate}T00:00:00Z`) / 86400000);
+        if (Number.isFinite(start) && Number.isFinite(end)) ranges.push({ start, end });
+        if (Number.isFinite(peak) && data?.length) {
+          let nearest = 0;
+          let distance = Infinity;
+          for (let i = 0; i < data.length; i++) {
+            const nextDistance = Math.abs(Number(data[i].x) - peak);
+            if (nextDistance < distance) { nearest = i; distance = nextDistance; }
+          }
+          if (distance <= 14) nearestPeakIndices.add(nearest);
+        }
+      }
+      timelineHighlightCache = { data, source, ranges, nearestPeakIndices };
+      return timelineHighlightCache;
+    }
 
     function isHighlightedWavePeak(context, year) {
       const waves = state.chartMode === 'timeline' && state.highlightAllWaves
@@ -149,12 +172,7 @@ import { pickYearColor, dailyAggregate, movingAverage, sortedSeriesValues, inclu
         : state.highlightedWave ? [state.highlightedWave] : [];
       return waves.some(wave => {
         if (state.chartMode === 'timeline') {
-          const peak = Math.floor(Date.parse(`${wave.peakDate}T00:00:00Z`) / 86400000);
-          const data = context.dataset?.data || [];
-          const nearest = data.reduce((best, point, index) =>
-            Math.abs(Number(point.x) - peak) < Math.abs(Number(data[best]?.x) - peak) ? index : best, 0);
-          return Number.isFinite(peak) && context.dataIndex === nearest &&
-            Math.abs(Number(context.raw?.x) - peak) <= 14;
+          return getTimelineHighlightCache(context.dataset?.data || []).nearestPeakIndices.has(context.dataIndex);
         }
         const peakParts = parseDateParts(wave.peakDate);
         return Boolean(peakParts && peakParts.year === year &&
