@@ -264,9 +264,8 @@ import { pickYearColor, dailyAggregate, movingAverage, sortedSeriesValues, inclu
       const currentDay = Math.floor(Date.parse(`${String(latestPoint.originalDate).slice(0, 10)}T00:00:00Z`) / 86400000);
       const forecastEndDay = Math.floor(Date.parse(`${endDate}T00:00:00Z`) / 86400000);
       const lastDayThisYear = Math.floor(Date.parse(`${latestYear}-12-31T00:00:00Z`) / 86400000);
-      const displayedEndDay = Math.min(forecastEndDay, lastDayThisYear);
       if (!(startX < peakX && peakX < currentX && startDay < peakDay && peakDay < currentDay &&
-          currentDay < forecastEndDay && displayedEndDay > currentDay)) return null;
+          currentDay < forecastEndDay && lastDayThisYear > currentDay)) return null;
       const nearestPoint = x => currentDataset.data.reduce((closest, point) =>
         Math.abs(Number(point.x) - x) < Math.abs(Number(closest.x) - x) ? point : closest,
       currentDataset.data[0]);
@@ -274,9 +273,12 @@ import { pickYearColor, dailyAggregate, movingAverage, sortedSeriesValues, inclu
       const currentY = Number(currentDataset.data.at(-1).y);
       const baselineRange = preWaveBaselineRange(sortedSamples(), state.detectedWaves);
       const baseline = baselineRange?.p90 ?? wave.baseline;
+      const medianBaseline = baselineRange?.median ?? wave.baseline;
       const percentileValues = sortedSeriesValues();
       const endY = state.yScaleType === 'percentile' ? inclusivePercentile(baseline, percentileValues) : baseline;
-      if (![peakY, currentY, endY].every(Number.isFinite)) return null;
+      const medianY = state.yScaleType === 'percentile'
+        ? inclusivePercentile(medianBaseline, percentileValues) : medianBaseline;
+      if (![peakY, currentY, endY, medianY].every(Number.isFinite) || currentY <= medianY) return null;
 
       // Fit a quadratic through the wave peak, current value and forecast-end
       // baseline. These three anchors preserve the current point and endpoint;
@@ -290,12 +292,19 @@ import { pickYearColor, dailyAggregate, movingAverage, sortedSeriesValues, inclu
           i === j ? product : product * (t - other.t) / (node.t - other.t), 1);
         return sum + node.y * basis;
       }, 0);
-      const currentT = tCurrent;
-      const displayedEndT = (displayedEndDay - startDay) / (forecastEndDay - startDay);
+      // Extend the same fitted quadratic beyond its forecast midpoint until it
+      // first reaches the pre-wave median; keep the chart's projection in this year.
+      let displayedEndDay = lastDayThisYear;
+      for (let day = currentDay + 1; day <= lastDayThisYear; day++) {
+        const t = (day - startDay) / (forecastEndDay - startDay);
+        if (evaluate(t) <= medianY) {
+          displayedEndDay = day;
+          break;
+        }
+      }
       const data = [];
-      for (let index = 0; index <= 32; index++) {
-        const t = currentT + (displayedEndT - currentT) * index / 32;
-        const day = Math.floor(startDay + (forecastEndDay - startDay) * t);
+      for (let day = currentDay; day <= displayedEndDay; day++) {
+        const t = (day - startDay) / (forecastEndDay - startDay);
         const date = new Date(day * 86400000).toISOString().slice(0, 10);
         data.push({ x: dayOfYearIndex(parseDateParts(date)), y: evaluate(t) });
       }
@@ -691,9 +700,9 @@ import { pickYearColor, dailyAggregate, movingAverage, sortedSeriesValues, inclu
 
       const yOptions = chart.options.scales.y;
       yOptions.type = isPercentileScale ? 'linear' : state.yScaleType;
-      yOptions.min = isPercentileScale ? 0 : state.yScaleType === 'linear' ? 0 : 0.1;
+      yOptions.min = isPercentileScale ? 0 : state.yScaleType === 'linear' ? 0 : 1;
       yOptions.max = isPercentileScale ? 100 : undefined;
-      yOptions.suggestedMin = isPercentileScale ? 0 : state.yScaleType === 'linear' ? 0 : 0.1;
+      yOptions.suggestedMin = isPercentileScale ? 0 : state.yScaleType === 'linear' ? 0 : 1;
       yOptions.suggestedMax = isPercentileScale ? 100 : undefined;
       yOptions.title.text = isPercentileScale
         ? 'Percentile'
