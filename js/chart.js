@@ -239,6 +239,75 @@ import { pickYearColor, dailyAggregate, movingAverage, sortedSeriesValues, inclu
       });
     }
 
+    function buildWaveProjectionDataset(seriesDatasets) {
+      const wave = state.detectedWaves.at(-1);
+      if (!wave?.ongoing || !wave.forecast) return null;
+
+      const latestYear = state.years.reduce((max, year) => Math.max(max, Number(year)), 0);
+      const startParts = parseDateParts(wave.startDate);
+      const latestPoint = getLatestSamplePoint();
+      const endDate = new Date((Date.parse(`${wave.forecast.earliestDate}T00:00:00Z`) +
+        Date.parse(`${wave.forecast.latestDate}T00:00:00Z`)) / 2).toISOString().slice(0, 10);
+      const endParts = parseDateParts(endDate);
+      const currentParts = parseDateParts(latestPoint?.originalDate);
+      if (!startParts || !latestPoint || !endParts || startParts.year !== latestYear ||
+          endParts.year > latestYear + 1 || currentParts?.year !== latestYear) return null;
+
+      const currentDataset = seriesDatasets.find(dataset => Number(dataset.label) === latestYear);
+      if (!currentDataset?.data?.length) return null;
+      const startX = dayOfYearIndex(startParts);
+      const currentX = Number(currentDataset.data.at(-1).x);
+      const startDay = Math.floor(Date.parse(`${wave.startDate}T00:00:00Z`) / 86400000);
+      const currentDay = Math.floor(Date.parse(`${String(latestPoint.originalDate).slice(0, 10)}T00:00:00Z`) / 86400000);
+      const forecastEndDay = Math.floor(Date.parse(`${endDate}T00:00:00Z`) / 86400000);
+      const lastDayThisYear = Math.floor(Date.parse(`${latestYear}-12-31T00:00:00Z`) / 86400000);
+      const displayedEndDay = Math.min(forecastEndDay, lastDayThisYear);
+      if (!(startX < currentX && startDay < currentDay && currentDay < forecastEndDay)) return null;
+
+      const startPoint = currentDataset.data.reduce((closest, point) =>
+        Math.abs(Number(point.x) - startX) < Math.abs(Number(closest.x) - startX) ? point : closest,
+      currentDataset.data[0]);
+      const startY = Number(startPoint.y);
+      const currentY = Number(currentDataset.data.at(-1).y);
+      const baselineRange = preWaveBaselineRange(sortedSamples(), state.detectedWaves);
+      const baseline = baselineRange?.p90 ?? wave.baseline;
+      const percentileValues = sortedSeriesValues();
+      const endY = state.yScaleType === 'percentile' ? inclusivePercentile(baseline, percentileValues) : baseline;
+      if (![startY, currentY, endY].every(Number.isFinite)) return null;
+
+      // Fit y = a*t² + b*t + c through wave start (t=0), current value and
+      // forecast end (t=1). If the forecast crosses New Year, draw only through Dec 31.
+      const currentT = (currentDay - startDay) / (forecastEndDay - startDay);
+      const displayedEndT = (displayedEndDay - startDay) / (forecastEndDay - startDay);
+      const currentDelta = currentY - startY;
+      const endDelta = endY - startY;
+      const a = (currentDelta - endDelta * currentT) / (currentT * currentT - currentT);
+      const b = endDelta - a;
+      const data = [];
+      for (let index = 0; index <= 32; index++) {
+        const t = currentT + (displayedEndT - currentT) * index / 32;
+        const day = Math.floor(startDay + (forecastEndDay - startDay) * t);
+        const date = new Date(day * 86400000).toISOString().slice(0, 10);
+        data.push({ x: dayOfYearIndex(parseDateParts(date)), y: a * t * t + b * t + startY });
+      }
+      const color = document.documentElement.classList.contains('dark')
+        ? 'rgba(250, 204, 21, 0.95)' : 'rgba(180, 83, 9, 0.95)';
+      return {
+        label: 'Projected wave decline',
+        data,
+        borderColor: color,
+        backgroundColor: 'transparent',
+        borderWidth: 2,
+        borderDash: [2, 4],
+        pointRadius: 0,
+        pointHoverRadius: 0,
+        tension: 0,
+        fill: false,
+        spanGaps: false,
+        order: -1,
+      };
+    }
+
     // One-time setup: canvas context, drawing plugins, pan/pinch handlers and the Chart instance.
     export function createChart(canvasElement = document.getElementById('yoyChart')) {
       if (!canvasElement) return null;
@@ -600,7 +669,9 @@ import { pickYearColor, dailyAggregate, movingAverage, sortedSeriesValues, inclu
       const stats = percentileStats(percentileValues);
       updatePercentileSummaryUI(stats);
 
-      chart.data.datasets = buildChartDatasets();
+      const seriesDatasets = buildChartDatasets();
+      const projectionDataset = buildWaveProjectionDataset(seriesDatasets);
+      chart.data.datasets = projectionDataset ? [...seriesDatasets, projectionDataset] : seriesDatasets;
       const preWaveRange = preWaveBaselineRange(sortedSamples(), state.detectedWaves);
       chart.options.plugins.percentileLines.lines = percentileLinesFor(stats, isPercentileScale);
       chart.options.plugins.percentileLines.band = preWaveRange ? {
