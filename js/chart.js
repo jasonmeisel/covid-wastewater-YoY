@@ -276,25 +276,29 @@ import { pickYearColor, dailyAggregate, movingAverage, sortedSeriesValues, inclu
       const baseline = baselineRange?.p90 ?? wave.baseline;
       const medianBaseline = baselineRange?.median ?? wave.baseline;
       const percentileValues = sortedSeriesValues();
-      const endY = state.yScaleType === 'percentile' ? inclusivePercentile(baseline, percentileValues) : baseline;
+      const forecastBaselineY = state.yScaleType === 'percentile'
+        ? inclusivePercentile(baseline, percentileValues) : baseline;
       const medianY = state.yScaleType === 'percentile'
         ? inclusivePercentile(medianBaseline, percentileValues) : medianBaseline;
-      if (![peakY, currentY, endY, medianY].every(Number.isFinite) || currentY <= medianY) return null;
+      if (![peakY, currentY, forecastBaselineY, medianY].every(Number.isFinite) || currentY <= medianY) return null;
+      // Keep a downward projection even when the baseline's upper bound is above
+      // the current value; in that case anchor the forecast at the lower median.
+      const endY = forecastBaselineY < currentY ? forecastBaselineY : medianY;
 
-      // Fit a quadratic through the wave peak, current value and forecast-end
-      // baseline. These three anchors preserve the current point and endpoint;
-      // the peak shapes the curve without adding a fourth, incompatible constraint.
-      // If the forecast crosses New Year, draw only through Dec 31.
+      // Fit a concave-down quadratic through the current point and forecast end,
+      // choosing curvature closest to the observed peak while keeping the
+      // projected segment descending. Continue this same curve until the median.
       const tPeak = (peakDay - startDay) / (forecastEndDay - startDay);
       const tCurrent = (currentDay - startDay) / (forecastEndDay - startDay);
-      const nodes = [{ t: tPeak, y: peakY }, { t: tCurrent, y: currentY }, { t: 1, y: endY }];
-      const evaluate = t => nodes.reduce((sum, node, i) => {
-        const basis = nodes.reduce((product, other, j) =>
-          i === j ? product : product * (t - other.t) / (node.t - other.t), 1);
-        return sum + node.y * basis;
-      }, 0);
-      // Extend the same fitted quadratic beyond its forecast midpoint until it
-      // first reaches the pre-wave median; keep the chart's projection in this year.
+      const secant = (endY - currentY) / (1 - tCurrent);
+      const peakCurvature = (peakY - currentY - secant * (tPeak - tCurrent)) /
+        ((tPeak - tCurrent) * (tPeak - 1));
+      const minCurvature = secant / (1 - tCurrent);
+      const curvature = Math.min(-1e-9, Math.max(minCurvature, peakCurvature));
+      const linear = secant - curvature * (1 + tCurrent);
+      const constant = currentY - curvature * tCurrent * tCurrent - linear * tCurrent;
+      const evaluate = t => curvature * t * t + linear * t + constant;
+      // If the forecast crosses New Year, draw only through Dec 31.
       let displayedEndDay = lastDayThisYear;
       for (let day = currentDay + 1; day <= lastDayThisYear; day++) {
         const t = (day - startDay) / (forecastEndDay - startDay);
