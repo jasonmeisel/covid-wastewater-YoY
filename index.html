@@ -177,36 +177,30 @@
         <!-- Chart Controls Header -->
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-2 mb-3">
           <div class="min-w-0">
-            <h2 class="text-base md:text-lg font-bold text-slate-100 whitespace-nowrap overflow-hidden text-ellipsis">Year-over-Year Seasonal Overlay</h2>
-            <p class="mt-0.5 text-[11px] leading-relaxed text-slate-400">Daily SARS-CoV-2 levels normalized by PMMoV; each line is a calendar year aligned by day of year.</p>
+            <h2 id="chartTitle" class="text-base md:text-lg font-bold text-slate-100 whitespace-nowrap overflow-hidden text-ellipsis">Year-over-Year Seasonal Overlay</h2>
+            <p id="chartDescription" class="mt-0.5 text-[11px] leading-relaxed text-slate-400">Daily SARS-CoV-2 levels normalized by PMMoV; each line is a calendar year aligned by day of year.</p>
           </div>
           
           <!-- Select Controls -->
-          <div class="grid grid-cols-2 gap-2 md:flex md:items-center" aria-label="Chart controls">
-            <!-- Y Scale Mode Selector (New Feature) -->
-            <div class="flex min-w-0 flex-col gap-0.5 md:flex-row md:items-center md:gap-1.5">
-              <select id="scaleTypeSelector" aria-label="Y-axis scale" data-action="scale" class="w-full min-w-0 bg-slate-700/80 border border-slate-600 text-slate-200 text-xs rounded-sm px-2 py-1 focus:outline-none focus:ring-2 focus:ring-brand-500 cursor-pointer md:w-auto">
-                <option value="linear" selected>Linear Scale</option>
-                <option value="logarithmic">Logarithmic</option>
-                <option value="percentile">Percentile Scale</option>
-              </select>
-            </div>
-
-            <!-- Smoothing Option -->
-            <div class="flex min-w-0 flex-col gap-0.5 md:flex-row md:items-center md:gap-1.5">
-              <select id="smoothingSelector" aria-label="Smoothing window" data-action="smoothing" class="w-full min-w-0 bg-slate-700/80 border border-slate-600 text-slate-200 text-xs rounded-sm px-2 py-1 focus:outline-none focus:ring-2 focus:ring-brand-500 cursor-pointer md:w-auto">
-                <option value="1">No Smoothing (Raw)</option>
-                <option value="3" selected>3-Day Weighted Average</option>
-                <option value="7">7-Day Weighted Average</option>
-                <option value="14">14-Day Weighted Average</option>
-              </select>
-            </div>
-            <div class="flex min-w-0 flex-col gap-0.5 md:flex-row md:items-center md:gap-1.5">
-              <select id="waveHighlightSelector" aria-label="Highlight a wastewater wave" data-action="wave-highlight" class="w-full min-w-0 bg-slate-700/80 border border-slate-600 text-slate-200 text-xs rounded-sm px-2 py-1 focus:outline-none focus:ring-2 focus:ring-brand-500 cursor-pointer md:w-auto">
-                <option value="">Highlight wave…</option>
-              </select>
-            </div>
-
+          <div class="grid w-full grid-cols-2 gap-2 md:w-auto" aria-label="Chart controls">
+            <select id="chartModeSelector" aria-label="Chart time mode" data-action="chart-mode" class="w-full min-w-0 bg-slate-700/80 border border-slate-600 text-slate-200 text-xs rounded-sm px-2 py-1 focus:outline-none focus:ring-2 focus:ring-brand-500 cursor-pointer">
+              <option value="yoy" selected>Year over year</option>
+              <option value="timeline">Continuous timeline</option>
+            </select>
+            <select id="scaleTypeSelector" aria-label="Y-axis scale" data-action="scale" class="w-full min-w-0 bg-slate-700/80 border border-slate-600 text-slate-200 text-xs rounded-sm px-2 py-1 focus:outline-none focus:ring-2 focus:ring-brand-500 cursor-pointer">
+              <option value="linear" selected>Linear Scale</option>
+              <option value="logarithmic">Logarithmic</option>
+              <option value="percentile">Percentile Scale</option>
+            </select>
+            <select id="smoothingSelector" aria-label="Smoothing window" data-action="smoothing" class="w-full min-w-0 bg-slate-700/80 border border-slate-600 text-slate-200 text-xs rounded-sm px-2 py-1 focus:outline-none focus:ring-2 focus:ring-brand-500 cursor-pointer">
+              <option value="1">No Smoothing (Raw)</option>
+              <option value="3" selected>3-Day Weighted Average</option>
+              <option value="7">7-Day Weighted Average</option>
+              <option value="14">14-Day Weighted Average</option>
+            </select>
+            <select id="waveHighlightSelector" aria-label="Highlight a wastewater wave" data-action="wave-highlight" class="w-full min-w-0 bg-slate-700/80 border border-slate-600 text-slate-200 text-xs rounded-sm px-2 py-1 focus:outline-none focus:ring-2 focus:ring-brand-500 cursor-pointer">
+              <option value="">Highlight wave…</option>
+            </select>
           </div>
         </div>
 

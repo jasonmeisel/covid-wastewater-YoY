@@ -59,9 +59,19 @@ import { pickYearColor, dailyAggregate, movingAverage, sortedSeriesValues, inclu
     // Build Chart JS configuration and inject into container.
     // createChart() runs once per page; updateChart() re-derives datasets and options from state.
 
+    function fullXAxisBounds() {
+      if (state.chartMode !== 'timeline') return { min: 1, max: 365 };
+      const points = sortedSamples();
+      if (!points.length) return { min: 0, max: 1 };
+      const dates = points.map(point => Math.floor(Date.parse(`${String(point.originalDate).slice(0, 10)}T00:00:00Z`) / 86400000));
+      const projection = state.chartInstance?.data?.datasets?.find(dataset => dataset.label === 'Projected wave decline');
+      const min = Math.min(...dates);
+      const max = Math.max(...dates, ...(projection?.data || []).map(point => point.x));
+      return { min, max: max > min ? max : min + 1 };
+    }
+
     const clampXAxisRange = (min, max) => {
-      const fullMin = 1;
-      const fullMax = 365;
+      const { min: fullMin, max: fullMax } = fullXAxisBounds();
       if (min <= fullMin && max >= fullMax) {
         return { min: fullMin, max: fullMax };
       }
@@ -105,37 +115,98 @@ import { pickYearColor, dailyAggregate, movingAverage, sortedSeriesValues, inclu
     }
 
     function isHighlightedWaveSegment(context, year) {
-      const wave = state.highlightedWave;
-      if (!wave) return false;
-      const startParts = parseDateParts(wave.startDate);
-      const endParts = parseDateParts(wave.highlightEndDate || wave.endDate);
-      if (!startParts || !endParts || year < startParts.year || year > endParts.year) return false;
-
-      const minX = year === startParts.year ? dayOfYearIndex(startParts) : 1;
-      const maxX = year === endParts.year ? dayOfYearIndex(endParts) : 365;
-      // Chart.js segment-scriptable contexts don't consistently expose `dataset`;
-      // resolve it from the chart/index and fail closed if the context is incomplete.
+      const isTimeline = state.chartMode === 'timeline';
+      const waves = isTimeline && state.highlightAllWaves
+        ? state.detectedWaves
+        : state.highlightedWave ? [state.highlightedWave] : [];
+      if (!waves.length) return false;
       const dataset = context?.dataset || context?.chart?.data?.datasets?.[context?.datasetIndex];
       const data = dataset?.data;
       const p0 = data?.[context?.p0DataIndex] || context?.p0?.$context?.raw;
       const p1 = data?.[context?.p1DataIndex] || context?.p1?.$context?.raw;
       if (!p0 || !p1 || !Number.isFinite(Number(p0.x)) || !Number.isFinite(Number(p1.x))) return false;
       const midpoint = (Number(p0.x) + Number(p1.x)) / 2;
+      if (isTimeline) return waves.some(wave => {
+        const start = Math.floor(Date.parse(`${wave.startDate}T00:00:00Z`) / 86400000);
+        const end = Math.floor(Date.parse(`${wave.highlightEndDate || wave.endDate}T00:00:00Z`) / 86400000);
+        return Number.isFinite(start) && Number.isFinite(end) && midpoint >= start && midpoint <= end;
+      });
+      const wave = waves[0];
+      const startParts = parseDateParts(wave.startDate);
+      const endParts = parseDateParts(wave.highlightEndDate || wave.endDate);
+      if (!startParts || !endParts || year < startParts.year || year > endParts.year) return false;
+
+      const minX = year === startParts.year ? dayOfYearIndex(startParts) : 1;
+      const maxX = year === endParts.year ? dayOfYearIndex(endParts) : 365;
       return midpoint >= minX && midpoint <= maxX;
     }
 
     const WAVE_HIGHLIGHT_COLOR = 'rgba(250, 204, 21, 1)';
 
     function isHighlightedWavePeak(context, year) {
-      const peakParts = parseDateParts(state.highlightedWave?.peakDate);
-      return Boolean(peakParts && peakParts.year === year &&
-        Math.abs(Number(context.raw?.x) - dayOfYearIndex(peakParts)) < 0.5);
+      const waves = state.chartMode === 'timeline' && state.highlightAllWaves
+        ? state.detectedWaves
+        : state.highlightedWave ? [state.highlightedWave] : [];
+      return waves.some(wave => {
+        if (state.chartMode === 'timeline') {
+          const peak = Math.floor(Date.parse(`${wave.peakDate}T00:00:00Z`) / 86400000);
+          const data = context.dataset?.data || [];
+          const nearest = data.reduce((best, point, index) =>
+            Math.abs(Number(point.x) - peak) < Math.abs(Number(data[best]?.x) - peak) ? index : best, 0);
+          return Number.isFinite(peak) && context.dataIndex === nearest &&
+            Math.abs(Number(context.raw?.x) - peak) <= 14;
+        }
+        const peakParts = parseDateParts(wave.peakDate);
+        return Boolean(peakParts && peakParts.year === year &&
+          Math.abs(Number(context.raw?.x) - dayOfYearIndex(peakParts)) < 0.5);
+      });
     }
 
     const waveHighlightPlugin = {
       id: 'waveHighlightLabel',
       afterDatasetsDraw: chart => {
-        const wave = state.highlightedWave;
+        const waves = state.chartMode === 'timeline' && state.highlightAllWaves
+          ? state.detectedWaves
+          : state.highlightedWave ? [state.highlightedWave] : [];
+        if (state.chartMode === 'timeline') {
+          const datasetIndex = chart.data.datasets.findIndex(dataset => dataset.label === 'All dates');
+          if (datasetIndex < 0 || !chart.isDatasetVisible(datasetIndex)) return;
+          const dataset = chart.data.datasets[datasetIndex];
+          const { ctx, chartArea } = chart;
+          waves.forEach((wave, index) => {
+            const peakX = Math.floor(Date.parse(`${wave.peakDate}T00:00:00Z`) / 86400000);
+            let pointIndex = -1;
+            let distance = Infinity;
+            dataset.data.forEach((point, i) => {
+              const nextDistance = Math.abs(Number(point.x) - peakX);
+              if (nextDistance < distance) { distance = nextDistance; pointIndex = i; }
+            });
+            if (pointIndex < 0) return;
+            const point = chart.getDatasetMeta(datasetIndex).data[pointIndex];
+            if (!point || point.skip) return;
+            const { x, y } = point.getProps(['x', 'y'], true);
+            const peakYear = parseDateParts(wave.peakDate)?.year;
+            const sameYearWaves = state.detectedWaves.filter(candidate =>
+              parseDateParts(candidate.peakDate)?.year === peakYear);
+            const label = `${peakYear} Wave #${sameYearWaves.indexOf(wave) + 1}`;
+            ctx.save();
+            ctx.font = '600 8.5px Inter, sans-serif';
+            const paddingX = 5.25;
+            const width = ctx.measureText(label).width + paddingX * 2;
+            const height = 15;
+            const left = Math.min(Math.max(x + 8, chartArea.left), chartArea.right - width);
+            const top = y - height - 14 < chartArea.top ? y + 2 : y - height - 14;
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.94)';
+            ctx.strokeStyle = WAVE_HIGHLIGHT_COLOR;
+            ctx.lineWidth = 0.75;
+            ctx.beginPath(); ctx.roundRect(left, top, width, height, 4); ctx.fill(); ctx.stroke();
+            ctx.fillStyle = WAVE_HIGHLIGHT_COLOR; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+            ctx.fillText(label, left + paddingX, top + height / 2);
+            ctx.restore();
+          });
+          return;
+        }
+        const wave = waves[0];
         const peakParts = parseDateParts(wave?.peakDate);
         if (!wave || !peakParts) return;
         const datasetIndex = chart.data.datasets.findIndex(dataset => Number(dataset.label) === peakParts.year);
@@ -189,6 +260,37 @@ import { pickYearColor, dailyAggregate, movingAverage, sortedSeriesValues, inclu
       const percentileValues = sortedSeriesValues();
       const percentileLookup = value => inclusivePercentile(value, percentileValues);
       const latestYear = state.years.reduce((max, yr) => Math.max(max, Number(yr)), 0);
+      if (state.chartMode === 'timeline') {
+        const absoluteDated = sortedSamples().map(point => ({
+          ...point,
+          x: Math.floor(Date.parse(`${String(point.originalDate).slice(0, 10)}T00:00:00Z`) / 86400000),
+        }));
+        const chronological = dailyAggregate(absoluteDated);
+        const smoothed = movingAverage(chronological, state.smoothingWindow, true);
+        const data = smoothed.map(point => ({
+          ...point,
+          value: point.y,
+          y: isPercentileScale ? percentileLookup(point.y) : point.y,
+        }));
+        return [{
+          label: 'All dates',
+          data,
+          borderColor: pickYearColor(latestYear).stroke,
+          backgroundColor: 'transparent',
+          borderWidth: 2.5,
+          segment: {
+            borderColor: context => isHighlightedWaveSegment(context, latestYear) ? WAVE_HIGHLIGHT_COLOR : pickYearColor(latestYear).stroke,
+            borderWidth: context => isHighlightedWaveSegment(context, latestYear) ? 4 : 2.5,
+          },
+          pointRadius: context => isHighlightedWavePeak(context, latestYear)
+            ? 5 : context.dataIndex === context.dataset.data.length - 1 ? 4 : 0,
+          pointHoverRadius: context => isHighlightedWavePeak(context, latestYear) ? 7 : 5,
+          pointBackgroundColor: context => isHighlightedWavePeak(context, latestYear) ? WAVE_HIGHLIGHT_COLOR : pickYearColor(latestYear).stroke,
+          pointBorderColor: context => isHighlightedWavePeak(context, latestYear) ? WAVE_HIGHLIGHT_COLOR : pickYearColor(latestYear).stroke,
+          fill: false,
+          spanGaps: true,
+        }];
+      }
 
       return state.years.map(yr => {
         const colorConf = pickYearColor(yr);
@@ -243,6 +345,7 @@ import { pickYearColor, dailyAggregate, movingAverage, sortedSeriesValues, inclu
     function buildWaveProjectionDataset(seriesDatasets) {
       const wave = state.detectedWaves.at(-1);
       if (!wave?.ongoing || !wave.forecast) return null;
+      const isTimeline = state.chartMode === 'timeline';
 
       const latestYear = state.years.reduce((max, year) => Math.max(max, Number(year)), 0);
       const startParts = parseDateParts(wave.startDate);
@@ -252,13 +355,14 @@ import { pickYearColor, dailyAggregate, movingAverage, sortedSeriesValues, inclu
         Date.parse(`${wave.forecast.latestDate}T00:00:00Z`)) / 2).toISOString().slice(0, 10);
       const endParts = parseDateParts(endDate);
       const currentParts = parseDateParts(latestPoint?.originalDate);
-      if (!startParts || !peakParts || !latestPoint || !endParts || startParts.year !== latestYear ||
-          peakParts.year !== latestYear || endParts.year > latestYear + 1 || currentParts?.year !== latestYear) return null;
+      if (!startParts || !peakParts || !latestPoint || !endParts ||
+          (!isTimeline && (startParts.year !== latestYear || peakParts.year !== latestYear ||
+            endParts.year > latestYear + 1 || currentParts?.year !== latestYear))) return null;
 
-      const currentDataset = seriesDatasets.find(dataset => Number(dataset.label) === latestYear);
+      const currentDataset = seriesDatasets.find(dataset => isTimeline || Number(dataset.label) === latestYear);
       if (!currentDataset?.data?.length) return null;
-      const startX = dayOfYearIndex(startParts);
-      const peakX = dayOfYearIndex(peakParts);
+      const startX = isTimeline ? Math.floor(Date.parse(`${wave.startDate}T00:00:00Z`) / 86400000) : dayOfYearIndex(startParts);
+      const peakX = isTimeline ? Math.floor(Date.parse(`${wave.peakDate}T00:00:00Z`) / 86400000) : dayOfYearIndex(peakParts);
       const currentX = Number(currentDataset.data.at(-1).x);
       const startDay = Math.floor(Date.parse(`${wave.startDate}T00:00:00Z`) / 86400000);
       const peakDay = Math.floor(Date.parse(`${wave.peakDate}T00:00:00Z`) / 86400000);
@@ -266,7 +370,7 @@ import { pickYearColor, dailyAggregate, movingAverage, sortedSeriesValues, inclu
       const forecastEndDay = Math.floor(Date.parse(`${endDate}T00:00:00Z`) / 86400000);
       const lastDayThisYear = Math.floor(Date.parse(`${latestYear}-12-31T00:00:00Z`) / 86400000);
       if (!(startX < peakX && peakX < currentX && startDay < peakDay && peakDay < currentDay &&
-          currentDay < forecastEndDay && lastDayThisYear > currentDay)) return null;
+          currentDay < forecastEndDay && (isTimeline || lastDayThisYear > currentDay))) return null;
       const nearestPoint = x => currentDataset.data.reduce((closest, point) =>
         Math.abs(Number(point.x) - x) < Math.abs(Number(closest.x) - x) ? point : closest,
       currentDataset.data[0]);
@@ -299,8 +403,9 @@ import { pickYearColor, dailyAggregate, movingAverage, sortedSeriesValues, inclu
       const constant = currentY - curvature * tCurrent * tCurrent - linear * tCurrent;
       const evaluate = t => curvature * t * t + linear * t + constant;
       // If the forecast crosses New Year, draw only through Dec 31.
-      let displayedEndDay = lastDayThisYear;
-      for (let day = currentDay + 1; day <= lastDayThisYear; day++) {
+      const projectionLimitDay = isTimeline ? currentDay + 365 : lastDayThisYear;
+      let displayedEndDay = projectionLimitDay;
+      for (let day = currentDay + 1; day <= projectionLimitDay; day++) {
         const t = (day - startDay) / (forecastEndDay - startDay);
         if (evaluate(t) <= medianY) {
           displayedEndDay = day;
@@ -311,7 +416,7 @@ import { pickYearColor, dailyAggregate, movingAverage, sortedSeriesValues, inclu
       for (let day = currentDay; day <= displayedEndDay; day++) {
         const t = (day - startDay) / (forecastEndDay - startDay);
         const date = new Date(day * 86400000).toISOString().slice(0, 10);
-        data.push({ x: dayOfYearIndex(parseDateParts(date)), y: evaluate(t) });
+        data.push({ x: isTimeline ? day : dayOfYearIndex(parseDateParts(date)), y: evaluate(t) });
       }
       const color = document.documentElement.classList.contains('dark')
         ? 'rgba(250, 204, 21, 0.95)' : 'rgba(180, 83, 9, 0.95)';
@@ -345,6 +450,7 @@ import { pickYearColor, dailyAggregate, movingAverage, sortedSeriesValues, inclu
       const monthLabelPlugin = {
         id: 'monthLabels',
         afterDraw: (chart) => {
+          if (state.chartMode === 'timeline') return;
           const dark = document.documentElement.classList.contains('dark');
           const { ctx, chartArea: { bottom }, scales: { x } } = chart;
           ctx.save();
@@ -470,7 +576,8 @@ import { pickYearColor, dailyAggregate, movingAverage, sortedSeriesValues, inclu
 
         const xScale = state.chartInstance?.scales?.x;
         if (!xScale) return;
-        if (xScale.min <= 1 && xScale.max >= 365) return;
+        const bounds = fullXAxisBounds();
+        if (xScale.min <= bounds.min && xScale.max >= bounds.max) return;
 
         customPanState.active = true;
         customPanState.startX = event.clientX;
@@ -544,8 +651,9 @@ import { pickYearColor, dailyAggregate, movingAverage, sortedSeriesValues, inclu
         const range = xScale.max - xScale.min;
         const nextRange = event.deltaY < 0 ? range * 0.96 : range * 1.04;
 
-        if (nextRange >= 364) {
-          applyXAxisRange(1, 365);
+        if (nextRange >= fullXAxisBounds().max - fullXAxisBounds().min) {
+          const bounds = fullXAxisBounds();
+          applyXAxisRange(bounds.min, bounds.max);
           return;
         }
 
@@ -601,7 +709,12 @@ import { pickYearColor, dailyAggregate, movingAverage, sortedSeriesValues, inclu
                 color: isDark ? '#334155' : '#cbd5e1'
               },
               ticks: {
-                display: false
+                display: true,
+                maxTicksLimit: 12,
+                autoSkip: true,
+                callback: value => state.chartMode === 'timeline'
+                  ? new Date(Number(value) * 86400000).toLocaleDateString('en-US', { month: 'short', year: '2-digit', timeZone: 'UTC' })
+                  : ''
               }
             },
             y: {
@@ -688,6 +801,15 @@ import { pickYearColor, dailyAggregate, movingAverage, sortedSeriesValues, inclu
 
       const isDark = document.documentElement.classList.contains('dark');
       const isPercentileScale = state.yScaleType === 'percentile';
+      const isTimeline = state.chartMode === 'timeline';
+      const title = document.getElementById('chartTitle');
+      const description = document.getElementById('chartDescription');
+      const legend = document.getElementById('legendContainer')?.parentElement;
+      if (title) title.textContent = isTimeline ? 'Continuous Timeline' : 'Year-over-Year Seasonal Overlay';
+      if (description) description.textContent = isTimeline
+        ? 'Daily normalized SARS-CoV-2 wastewater levels over time, including the projected wave decline when available.'
+        : 'Daily SARS-CoV-2 levels normalized by PMMoV; each line is a calendar year aligned by day of year.';
+      if (legend) legend.classList.toggle('hidden', isTimeline);
       const percentileValues = sortedSeriesValues();
       const stats = percentileStats(percentileValues);
       updatePercentileSummaryUI(stats);
@@ -724,8 +846,9 @@ import { pickYearColor, dailyAggregate, movingAverage, sortedSeriesValues, inclu
       tooltip.borderColor = isDark ? '#334155' : '#e2e8f0';
 
       // A fresh render starts unzoomed; the chart used to be destroyed and rebuilt on every toggle.
-      chart.options.scales.x.min = 1;
-      chart.options.scales.x.max = 365;
+      const xBounds = fullXAxisBounds();
+      chart.options.scales.x.min = xBounds.min;
+      chart.options.scales.x.max = xBounds.max;
 
       const canvas = document.getElementById('yoyChart');
       if (canvas) {
@@ -740,7 +863,8 @@ import { pickYearColor, dailyAggregate, movingAverage, sortedSeriesValues, inclu
     }
 
     export function resetChartZoom() {
-      applyXAxisRange(1, 365);
+      const bounds = fullXAxisBounds();
+      applyXAxisRange(bounds.min, bounds.max);
     }
 
     // Render interactive HTML legend items with live analytics values
@@ -814,6 +938,12 @@ import { pickYearColor, dailyAggregate, movingAverage, sortedSeriesValues, inclu
       });
       syncStateToUrl();
       updateCustomLegendUI();
+      updateChart();
+    }
+
+    export function updateChartMode(value) {
+      state.chartMode = value === 'timeline' ? 'timeline' : 'yoy';
+      syncStateToUrl();
       updateChart();
     }
 

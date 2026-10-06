@@ -34,7 +34,9 @@ export const state = {
   detectedWaves: [],
   highlightedWave: null,
   highlightedWaveStartDate: null,
+  highlightAllWaves: false,
   yScaleType: 'linear', // 'linear' or 'logarithmic'
+  chartMode: 'yoy', // 'yoy' seasonal overlay or continuous timeline
   inactivePlantUids: new Set(),
 
   // UI table state
@@ -82,6 +84,8 @@ export function syncStateToUrl() {
   if (state.selectedPmcZip) params.set('pmcZip', state.selectedPmcZip);
   if (state.smoothingWindow !== DEFAULTS.smoothing) params.set('smoothing', String(state.smoothingWindow));
   if (state.yScaleType !== DEFAULTS.scale) params.set('scale', state.yScaleType);
+  if (state.chartMode !== 'yoy') params.set('chart', state.chartMode);
+  if (state.chartMode === 'timeline' && state.highlightAllWaves) params.set('highlight', 'all');
 
   // Years: only include hidden years (default = all visible)
   const hiddenYears = state.years.filter(yr => !state.visibleYears[yr]).map(String);
@@ -112,6 +116,8 @@ export function applyStateFromUrl() {
 
   const scaleParam = params.get('scale');
   if (scaleParam === 'linear' || scaleParam === 'logarithmic' || scaleParam === 'percentile') state.yScaleType = scaleParam;
+  if (params.get('chart') === 'timeline') state.chartMode = 'timeline';
+  state.highlightAllWaves = state.chartMode === 'timeline' && params.get('highlight') === 'all';
 
   // Hidden years from URL
   const hideParam = params.get('hide');
@@ -129,4 +135,6 @@ export function syncControlsFromState() {
   if (scaleSel) scaleSel.value = state.yScaleType;
   const smoothSel = document.getElementById('smoothingSelector');
   if (smoothSel) smoothSel.value = String(state.smoothingWindow);
+  const chartModeSel = document.getElementById('chartModeSelector');
+  if (chartModeSel) chartModeSel.value = state.chartMode;
 }
