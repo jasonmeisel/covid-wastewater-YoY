@@ -4,6 +4,7 @@ import { formatShortDate, formatMonthDay, parseDateParts, escapeHtml } from './u
 import { state, syncStateToUrl, sortedSamples } from './state.js';
 import { resolveZipToCountyFips, updateCountyCovidSummary } from './county.js';
 import { pickYearColor, getLatestSampleValue, summarize, inclusivePercentile, sortedSeriesValues, getPercentileEmoji, identifyWaves } from './stats.js';
+import { predictTrainedWaveEnd } from './wave-model.js';
 import { fuzzyMatchPlant, isZipCodeQuery, getPlantCoordinates, getReferenceCoordsFromZip, haversineDistance, isPlantInactive, loadAndRenderPlantSamples } from './data.js';
 import { resetChartZoom, toggleAllYears, toggleYearVisibility, updateYScale, updateSmoothing, updateChart, updateChartMode } from './chart.js';
 import { downloadCSV, sortTableByDate, changePage, handleSearch } from './table.js';
@@ -423,7 +424,7 @@ import { downloadCSV, sortTableByDate, changePage, handleSearch } from './table.
       if (!wave) {
         if (elapsed) elapsed.textContent = '—';
         if (phase) phase.textContent = '';
-        if (remaining) remaining.textContent = '— days remaining';
+        if (remaining) remaining.textContent = 'Estimated end unavailable';
         if (progress) progress.textContent = '—% through wave';
         if (baselineRatio) {
           baselineRatio.textContent = 'Latest baseline ratio: —';
@@ -469,7 +470,7 @@ import { downloadCSV, sortTableByDate, changePage, handleSearch } from './table.
           const daysRemaining = Math.max(0, Math.round((forecastMidpoint - latestDay) / 86400000));
           const daysElapsed = Math.max(0, Math.floor((latestDay - startDay) / 86400000) + 1);
           const percentThrough = Math.round(100 * daysElapsed / (daysElapsed + daysRemaining));
-          remaining.textContent = `~${daysRemaining} days remaining`;
+          remaining.textContent = `~${daysRemaining} days to estimated end`;
           if (progress) progress.textContent = `~${percentThrough}% through wave`;
         } else {
           remaining.textContent = 'Estimate unavailable';
@@ -523,19 +524,32 @@ import { downloadCSV, sortTableByDate, changePage, handleSearch } from './table.
         return;
       }
 
+      const modelForecast = predictTrainedWaveEnd(points);
       const waves = identifyWaves(points).map(wave => ({
         ...wave,
+        forecast: null,
         highlightEndDate: wave.endDate || points[points.length - 1]?.originalDate,
       }));
+      const currentDetectedWave = waves.at(-1);
+      if (modelForecast && currentDetectedWave?.ongoing) {
+        currentDetectedWave.forecast = {
+          earliestDate: modelForecast.earliestDate,
+          latestDate: modelForecast.latestDate,
+          remainingDays: modelForecast.remainingDays,
+          method: modelForecast.method,
+          modelPeakDate: modelForecast.activeWave.peakDate,
+          cutoffDate: modelForecast.cutoffDate,
+        };
+      }
       state.detectedWaves = waves;
       renderWaveMetric(points, waves);
       const currentWave = waves[waves.length - 1];
       const currentWaveForecast = currentWave?.forecast;
       if (forecastMessage && currentWaveForecast) {
-        forecastMessage.textContent = `If the current decline continues, this wave is estimated to return below its end threshold between ${formatShortDate(currentWaveForecast.earliestDate)} and ${formatShortDate(currentWaveForecast.latestDate)}. This exploratory range combines the recent decline trend with prior completed-wave durations and updates with new samples.`;
+        forecastMessage.textContent = `The pooled ridge model estimates that the current wave will cross its end threshold around ${formatShortDate(currentWaveForecast.earliestDate)} (about ${Math.round(currentWaveForecast.remainingDays)} days after the latest sample). This estimate is shown from 14 days post-peak, before sustained decline is established, so it can be uncertain. No calibrated prediction interval is available.`;
         forecastMessage.classList.remove('hidden');
       } else if (forecastMessage && currentWave?.ongoing) {
-        forecastMessage.textContent = 'A wave is still active, but there is not yet enough sustained post-peak decline to estimate an end-date range.';
+        forecastMessage.textContent = 'A wave is still active, but the trained estimate is withheld until at least 14 days have passed since the detected peak.';
         forecastMessage.classList.remove('hidden');
       }
       state.highlightedWave = waves.find(wave => wave.startDate === state.highlightedWaveStartDate) || null;

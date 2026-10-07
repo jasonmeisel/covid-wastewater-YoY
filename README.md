@@ -13,12 +13,15 @@ Served statically with no build step (GitHub Pages publishes the repo root).
 | `js/main.js` | Entry point: URL state, event delegation, initial loads |
 | `js/state.js` | Mutable state, `setSeries()`, `sortedSamples()`, URL sync |
 | `js/util.js` | DOM-free date/number/escaping helpers |
-| `js/stats.js` | DOM-free parsing, day-of-year bucketing, smoothing, percentiles |
+| `js/stats.js` | DOM-free parsing, day-of-year bucketing, smoothing, percentiles and wave detection |
+| `js/wave-model.js` | Prefix-only 14-day-smoothed features and runtime pooled ridge inference |
+| `js/wave-model-weights.js` | Baked pooled ridge coefficients and training/validation metadata |
 | `js/county.js` | PMC19 county card model (`buildCountyCard`) and renderer |
 | `js/{data,chart,table,ui}.js` | Fetching, Chart.js, the table, and DOM rendering |
 | `tools/build-zip-data.mjs` | Regenerates `data/zip-lookup.json` from GeoNames `US.txt` |
 | `tools/backtest-wave-end.mjs` | Walk-forward evaluation of wave end-date forecast intervals |
-| `tools/train-wave-model.mjs` | Cached active-facility label audit, lead-time backtest, matched baselines, Bayesian Weibull survival, one-forecast-per-wave Bayesian hazard, and ridge/analog experiments (raw and chart-smoothed) |
+| `tools/train-wave-model.mjs` | Cached active-facility label audit, lead-time backtest, matched baselines, Bayesian survival/hazard and ridge/analog experiments |
+| `tools/build-wave-model-weights.mjs` | Fits and bakes the pooled ridge model from cached chart-smoothed training rows |
 | `fetch-pmc.sh` | Slims the PMC19 feed into `data/pmc-counties.json` |
 | `fetch-plants.sh` | Slims the GCS plant catalog into `data/plants.json` |
 
@@ -34,7 +37,8 @@ python3 -m http.server 8765      # module scripts and fetch() need HTTP, not fil
 node --test test/*.test.mjs      # unit tests (node:test only, no dependencies)
 node tools/backtest-wave-end.mjs points.json  # walk-forward wave-end forecast evaluation
 RUN_LA_WAVE_BACKTEST=1 node --test test/la-wave-backtest.test.mjs  # fetch/cache default LA data and evaluate
-node tools/train-wave-model.mjs             # top 16 active facilities; raw, chart-smoothed, Bayesian survival, and weekly hazard comparisons
+node tools/train-wave-model.mjs             # top 16 active facilities; evaluate raw, smoothed, and survival/hazard variants
+node tools/build-wave-model-weights.mjs      # refresh js/wave-model-weights.js from cached training rows
 node tools/train-wave-model.mjs --refresh   # fetch fresh samples before rebuilding experiment
 ./fetch-pmc.sh                   # refresh data/pmc-counties.json from pmc19.com
 ./fetch-plants.sh                # refresh data/plants.json from the GCS catalog
