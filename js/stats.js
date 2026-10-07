@@ -269,7 +269,7 @@ export function movingAverage(dataSeries, windowSize, preserveLastPoint = false)
   return smoothed;
 }
 
-function smoothedWeeklySeries(points) {
+function smoothedWeeklySeries(points, { smoothWeekly = true } = {}) {
   const byDay = new Map();
   for (const point of points || []) {
     const date = String(point.originalDate || '').slice(0, 10);
@@ -313,6 +313,7 @@ function smoothedWeeklySeries(points) {
   }
   const validWeekly = weekly.filter(point => point.y !== null);
   if (validWeekly.length < 8) return [];
+  if (!smoothWeekly) return validWeekly;
   return validWeekly.map((point, i, list) => {
     const window = list.slice(Math.max(0, i - 1), Math.min(list.length, i + 2));
     return { ...point, y: window.reduce((sum, neighbor) => sum + neighbor.y, 0) / window.length };
@@ -323,8 +324,10 @@ function smoothedWeeklySeries(points) {
 // three-week smoothing damp sampling noise; a reported wave needs a 1.7x rise over
 // its preceding 12-week low and a 1.3x decline. A recent peak may qualify earlier
 // once it has turned down by 10%, so an active wave need not wait for a deep decline.
-export function identifyWaves(points) {
-  const smooth = smoothedWeeklySeries(points);
+export function identifyWaves(points, { preSmoothed = false } = {}) {
+  // Callers that supply the chart's already-smoothed signal can skip the extra
+  // three-week moving average while retaining the detector's weekly aggregation.
+  const smooth = smoothedWeeklySeries(points, { smoothWeekly: !preSmoothed });
   if (!smooth.length) return [];
 
   const candidates = [];

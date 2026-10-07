@@ -3,7 +3,7 @@
 // used by the app: this script evaluates a leakage-conscious baseline first.
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
-import { buildSeries, identifyWaves, quantile } from '../js/stats.js';
+import { buildSeries, dailyAggregate, identifyWaves, movingAverage, quantile } from '../js/stats.js';
 
 const DAY = 86400000;
 const dayNumber = date => Math.floor(Date.parse(`${date}T00:00:00Z`) / DAY);
@@ -12,7 +12,7 @@ const FEATURES = ['elapsedDays', 'logAboveThreshold', 'logBelowPeak', 'logSlope'
 
 function linearFit(values) {
   if (values.length < 3) return { slope: 0, r2: 0 };
-  const xs = values.map((_, i) => i * 7);
+  const xs = values.map((point, i) => Number.isFinite(point.day) ? point.day - values[0].day : i * 7);
   const ys = values.map(point => Math.log(point.y));
   const xm = xs.reduce((a, b) => a + b, 0) / xs.length;
   const ym = ys.reduce((a, b) => a + b, 0) / ys.length;
@@ -24,11 +24,27 @@ function linearFit(values) {
   return { slope, r2: total ? Math.max(0, 1 - residual / total) : 0 };
 }
 
+// Match the chart's continuous-timeline path: absolute-day x, daily aggregation,
+// triangular smoothing, and exact latest-observation preservation.
+export function smoothTimelineLikeChart(points, windowDays = 14) {
+  const dated = (points || []).filter(point => validDate(point.originalDate) && Number(point.y) > 0)
+    .map(point => ({ ...point, originalDate: String(point.originalDate).slice(0, 10), x: dayNumber(point.originalDate) }))
+    .sort((a, b) => a.x - b.x);
+  const daily = dailyAggregate(dated);
+  return movingAverage(daily, windowDays, true).map(point => {
+    const date = new Date(Number(point.x) * DAY).toISOString().slice(0, 10);
+    return { ...point, x: Number(point.x), day: Number(point.x), originalDate: date };
+  });
+}
+
 // Feature rows use only measurements available on or before the forecast cutoff.
-export function waveTrainingRows(facilityUid, points) {
+// smoothingDays=14 makes the whole variant use the chart's triangular line signal.
+export function waveTrainingRows(facilityUid, points, { smoothingDays = 0 } = {}) {
   const series = (points || []).filter(point => validDate(point.originalDate) && Number(point.y) > 0)
     .slice().sort((a, b) => String(a.originalDate).localeCompare(String(b.originalDate)));
-  const completed = identifyWaves(series).filter(wave => wave.endDate && !wave.ongoing && wave.endConfirmed);
+  const fullSignal = smoothingDays ? smoothTimelineLikeChart(series, smoothingDays) : series;
+  const preSmoothed = Boolean(smoothingDays);
+  const completed = identifyWaves(fullSignal, { preSmoothed }).filter(wave => wave.endDate && !wave.ongoing && wave.endConfirmed);
   const rows = [];
   for (const truth of completed) {
     const peakDay = dayNumber(truth.peakDate);
@@ -39,12 +55,13 @@ export function waveTrainingRows(facilityUid, points) {
       if (cutoff < peakDay + 14 || cutoff >= endDay) continue;
       // Derive the features from the estimator's prefix-only wave state. Using
       // the full-series peak or threshold here would leak future observations.
-      const prefix = series.slice(0, index + 1);
-      const detected = identifyWaves(prefix);
+      const rawPrefix = series.slice(0, index + 1);
+      const prefix = smoothingDays ? smoothTimelineLikeChart(rawPrefix, smoothingDays) : rawPrefix;
+      const detected = identifyWaves(prefix, { preSmoothed });
       const active = detected.find(wave => wave.ongoing && !wave.endDate && wave.peakDate === truth.peakDate);
       if (!active || !(active.endThreshold > 0) || !(active.peak > 0)) continue;
-      const recent = prefix.filter(point => dayNumber(String(point.originalDate).slice(0, 10)) >= cutoff - 42)
-        .map(point => ({ day: dayNumber(String(point.originalDate).slice(0, 10)), y: Number(point.y) }));
+      const recent = prefix.filter(point => (Number.isFinite(point.day) ? point.day : dayNumber(String(point.originalDate).slice(0, 10))) >= cutoff - 42)
+        .map(point => ({ day: Number.isFinite(point.day) ? point.day : dayNumber(String(point.originalDate).slice(0, 10)), y: Number(point.y) }));
       if (!recent.length) continue;
       const fit = linearFit(recent.slice(-7));
       rows.push({
@@ -441,38 +458,80 @@ async function main() {
     await Promise.all(plants.map(plant => rm(`${cacheDir}/facility-samples/${plant.uid}.json`, { force: true })));
   }
   const facilities = await fetchFacilitySamples(plants);
-  const labelAudit = facilities.map(facility => ({
-    uid: facility.uid,
-    waves: identifyWaves(facility.points).map(wave => ({
-      peakDate: wave.peakDate, endDate: wave.endDate,
-      endConfirmed: wave.endConfirmed, ongoing: wave.ongoing,
-    })),
-  }));
-  const labelCounts = labelAudit.flatMap(facility => facility.waves).reduce((counts, wave) => {
+  const auditVariant = smoothingDays => facilities.map(facility => {
+    const signal = smoothingDays ? smoothTimelineLikeChart(facility.points, smoothingDays) : facility.points;
+    return {
+      uid: facility.uid,
+      waves: identifyWaves(signal, { preSmoothed: Boolean(smoothingDays) }).map(wave => ({
+        peakDate: wave.peakDate, endDate: wave.endDate,
+        endConfirmed: wave.endConfirmed, ongoing: wave.ongoing,
+      })),
+    };
+  });
+  const countLabels = audit => audit.flatMap(facility => facility.waves).reduce((counts, wave) => {
     if (wave.ongoing) counts.ongoing++;
     else if (wave.endConfirmed) counts.thresholdConfirmed++;
     else counts.inferredNextWave++;
     return counts;
   }, { thresholdConfirmed: 0, inferredNextWave: 0, ongoing: 0 });
+  const labelAudit = auditVariant(0);
+  const smoothedLabelAudit = auditVariant(14);
+  const labelCounts = countLabels(labelAudit);
+  const smoothedLabelCounts = countLabels(smoothedLabelAudit);
   const rows = facilities.flatMap(facility => waveTrainingRows(facility.uid, facility.points));
+  const smoothedRows = facilities.flatMap(facility => waveTrainingRows(facility.uid, facility.points, { smoothingDays: 14 }));
   await writeFile(`${cacheDir}/wave-training-rows.json`, JSON.stringify({
     generatedAt: new Date().toISOString(),
     facilityCount: facilities.filter(item => !item.error).length,
     labelCounts,
     labelAudit,
+    smoothed14LabelCounts: smoothedLabelCounts,
+    smoothed14LabelAudit: smoothedLabelAudit,
     plants: facilities.map(({ uid, sampleCount, error }) => ({ uid, sampleCount, error })),
     rows,
+    smoothed14Rows: smoothedRows,
   }, null, 2));
   const result = evaluatePooledModel(rows);
+  const smoothedResult = evaluatePooledModel(smoothedRows);
   const { predictions, ...summary } = result;
+  const { predictions: smoothedPredictions, ...smoothedSummary } = smoothedResult;
+  const rowKey = row => `${row.facilityUid}/${row.wavePeakDate}/${row.endDate}/${row.cutoffDate}`;
+  const smoothedByKey = new Map(smoothedPredictions.map(row => [rowKey(row), row]));
+  const sameLabelAndCutoff = predictions.flatMap(raw => {
+    const smoothed = smoothedByKey.get(rowKey(raw));
+    return smoothed ? [{ raw, smoothed }] : [];
+  });
+  const pairedSmoothingMetrics = errorFor => {
+    const errors = sameLabelAndCutoff.map(({ raw, smoothed }) => [errorFor(raw), errorFor(smoothed)])
+      .filter(pair => pair.every(Number.isFinite));
+    return {
+      count: errors.length,
+      rawMeanAbsoluteErrorDays: errors.length ? errors.reduce((sum, pair) => sum + pair[0], 0) / errors.length : null,
+      smoothedMeanAbsoluteErrorDays: errors.length ? errors.reduce((sum, pair) => sum + pair[1], 0) / errors.length : null,
+    };
+  };
   console.log(JSON.stringify({
     selectedFacilities: plants.map(plant => ({ uid: plant.uid, name: plant.name, population: plant.sewershed_pop })),
     successfulFeeds: facilities.filter(item => !item.error).length,
     failedFeeds: facilities.filter(item => item.error).map(item => ({ uid: item.uid, error: item.error })),
-    rowCount: rows.length,
-    labelCounts,
-    completedWaves: new Set(rows.map(row => `${row.facilityUid}/${row.wavePeakDate}`)).size,
-    ...summary,
+    rawVariant: {
+      rowCount: rows.length, labelCounts,
+      completedWaves: new Set(rows.map(row => `${row.facilityUid}/${row.wavePeakDate}`)).size,
+      ...summary,
+    },
+    chart14DayVariant: {
+      rowCount: smoothedRows.length, labelCounts: smoothedLabelCounts,
+      completedWaves: new Set(smoothedRows.map(row => `${row.facilityUid}/${row.wavePeakDate}`)).size,
+      ...smoothedSummary,
+    },
+    sameWaveCutoffComparison: {
+      sharedForecasts: sameLabelAndCutoff.length,
+      ridge: pairedSmoothingMetrics(row => row.absoluteErrorDays),
+      historicalDuration: pairedSmoothingMetrics(row => Number.isFinite(row.historicalDurationDays)
+        ? Math.abs(row.historicalDurationDays - row.remainingDays) : null),
+      waveAnalogs: pairedSmoothingMetrics(row => Number.isFinite(row.analogMedianDays)
+        ? Math.abs(row.analogMedianDays - row.remainingDays) : null),
+    },
   }, null, 2));
 }
 

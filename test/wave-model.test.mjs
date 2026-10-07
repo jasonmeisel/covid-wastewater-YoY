@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { fitRidge, predictRidge, predictWaveAnalogs, predictCalibratedWaveAnalogs, selectTopActivePlants } from '../tools/train-wave-model.mjs';
+import { fitRidge, predictRidge, predictWaveAnalogs, predictCalibratedWaveAnalogs, selectTopActivePlants, smoothTimelineLikeChart } from '../tools/train-wave-model.mjs';
 
 test('top-active plant selection applies the 3-month activity rule and ranks by population', () => {
   const plants = [
@@ -14,6 +14,19 @@ test('top-active plant selection applies the 3-month activity rule and ranks by 
     stale: { covid: { lastSampleDate: '2024-01-01' } },
   };
   assert.deepEqual(selectTopActivePlants(plants, activity, { now: new Date('2025-03-01T00:00:00Z') }).map(p => p.uid), ['large', 'small']);
+});
+
+test('14-day smoothing matches timeline chart behavior and uses only the supplied prefix', () => {
+  const points = Array.from({ length: 25 }, (_, i) => ({
+    originalDate: new Date(Date.UTC(2024, 0, i + 1)).toISOString().slice(0, 10),
+    y: i === 16 ? 100 : 10,
+  }));
+  const prefix = points.slice(0, 20);
+  const smoothPrefix = smoothTimelineLikeChart(prefix, 14);
+  assert.equal(smoothPrefix.at(-1).originalDate, prefix.at(-1).originalDate);
+  assert.equal(smoothPrefix.at(-1).y, prefix.at(-1).y, 'chart preserves the latest reading');
+  assert.ok(smoothPrefix.every(point => point.originalDate <= prefix.at(-1).originalDate), 'no future samples appear');
+  assert.ok(smoothPrefix.find(point => point.originalDate === '2024-01-17').y < 100, 'the spike is smoothed');
 });
 
 test('wave analog prediction takes one nearest snapshot per wave and returns median quantiles', () => {
