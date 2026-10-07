@@ -3,7 +3,7 @@
 // used by the app: this script evaluates a leakage-conscious baseline first.
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
-import { buildSeries, identifyWaves } from '../js/stats.js';
+import { buildSeries, identifyWaves, quantile } from '../js/stats.js';
 
 const DAY = 86400000;
 const dayNumber = date => Math.floor(Date.parse(`${date}T00:00:00Z`) / DAY);
@@ -28,7 +28,7 @@ function linearFit(values) {
 export function waveTrainingRows(facilityUid, points) {
   const series = (points || []).filter(point => validDate(point.originalDate) && Number(point.y) > 0)
     .slice().sort((a, b) => String(a.originalDate).localeCompare(String(b.originalDate)));
-  const completed = identifyWaves(series).filter(wave => wave.endDate && !wave.ongoing);
+  const completed = identifyWaves(series).filter(wave => wave.endDate && !wave.ongoing && wave.endConfirmed);
   const rows = [];
   for (const truth of completed) {
     const peakDay = dayNumber(truth.peakDate);
@@ -122,6 +122,73 @@ export function predictRidge(model, features) {
   return Math.max(0, Math.min(180, prediction));
 }
 
+// A transparent analog/nearest-wave model: select one closest observed snapshot
+// per completed training wave, then summarize remaining durations with quantiles.
+export function predictWaveAnalogs(rows, features, k = 7) {
+  if (!rows.length) return null;
+  const means = FEATURES.map(feature => rows.reduce((sum, row) => sum + row.x[feature], 0) / rows.length);
+  const scales = FEATURES.map((feature, i) => Math.sqrt(rows.reduce((sum, row) => sum + (row.x[feature] - means[i]) ** 2, 0) / rows.length) || 1);
+  const closestByWave = new Map();
+  for (const row of rows) {
+    const distance = FEATURES.reduce((sum, feature, i) => sum + ((row.x[feature] - features[feature]) / scales[i]) ** 2, 0);
+    const id = `${row.facilityUid}/${row.wavePeakDate}`;
+    if (!closestByWave.has(id) || distance < closestByWave.get(id).distance) {
+      closestByWave.set(id, { distance, remainingDays: row.remainingDays });
+    }
+  }
+  const neighbors = [...closestByWave.values()].sort((a, b) => a.distance - b.distance).slice(0, k);
+  if (neighbors.length < k) return null;
+  const durations = neighbors.map(row => row.remainingDays).sort((a, b) => a - b);
+  return {
+    neighbors: neighbors.length,
+    medianDays: quantile(durations, 0.5),
+    lowerDays: quantile(durations, 0.1),
+    upperDays: quantile(durations, 0.9),
+  };
+}
+
+// Split earlier completed waves into analog-fit and calibration folds. Calibration
+// uses each held-out wave's worst interval miss, so repeated snapshots do not count
+// as independent calibration observations.
+export function predictCalibratedWaveAnalogs(trainingRows, features, { k = 7, coverage = 0.8 } = {}) {
+  const waves = new Map();
+  for (const row of trainingRows) {
+    const id = `${row.facilityUid}/${row.wavePeakDate}`;
+    const group = waves.get(id) || { id, endDate: row.endDate, rows: [] };
+    group.rows.push(row);
+    waves.set(id, group);
+  }
+  const ordered = [...waves.values()].sort((a, b) => a.endDate.localeCompare(b.endDate) || a.id.localeCompare(b.id));
+  const calibrationWaves = ordered.filter((_, index) => index % 4 === 0);
+  const fitWaves = ordered.filter((_, index) => index % 4 !== 0);
+  const fitRows = fitWaves.flatMap(wave => wave.rows);
+  if (fitWaves.length < k || calibrationWaves.length < 3) return null;
+  const analog = predictWaveAnalogs(fitRows, features, k);
+  if (!analog) return null;
+
+  const scores = [];
+  for (const wave of calibrationWaves) {
+    const waveScores = wave.rows.map(row => {
+      const interval = predictWaveAnalogs(fitRows, row.x, k);
+      if (!interval) return null;
+      return Math.max(0, interval.lowerDays - row.remainingDays, row.remainingDays - interval.upperDays);
+    }).filter(Number.isFinite);
+    if (waveScores.length) scores.push(Math.max(...waveScores));
+  }
+  if (scores.length < 3) return null;
+  scores.sort((a, b) => a - b);
+  const rank = Math.min(scores.length, Math.ceil((scores.length + 1) * coverage));
+  const adjustmentDays = scores[rank - 1];
+  return {
+    ...analog,
+    lowerDays: Math.max(0, analog.lowerDays - adjustmentDays),
+    upperDays: analog.upperDays + adjustmentDays,
+    adjustmentDays,
+    calibrationWaves: scores.length,
+    fitWaves: fitWaves.length,
+  };
+}
+
 // Compare rolling model predictions against the current estimator. At each target
 // cutoff, only completed training waves ending before that date are eligible; the
 // target facility is excluded to test transfer to unseen facilities.
@@ -133,13 +200,66 @@ export function evaluatePooledModel(rows, lambda = 1) {
     const model = fitRidge(training, lambda);
     const prediction = predictRidge(model, target.x);
     if (prediction === null) continue;
-    predictions.push({ ...target, predictedDays: prediction, absoluteErrorDays: Math.abs(prediction - target.remainingDays), trainingWaves: new Set(training.map(row => `${row.facilityUid}/${row.wavePeakDate}`)).size });
+    const analog = predictWaveAnalogs(training, target.x, 7);
+    const calibratedAnalog = predictCalibratedWaveAnalogs(training, target.x, { k: 7, coverage: 0.8 });
+    const trendDays = target.x.logSlope < -0.005 && target.x.logAboveThreshold > 0
+      ? Math.min(180, -target.x.logAboveThreshold / target.x.logSlope) : null;
+    const historicalWaves = new Map();
+    for (const row of training) {
+      const key = `${row.facilityUid}/${row.wavePeakDate}`;
+      if (!historicalWaves.has(key)) historicalWaves.set(key, dayNumber(row.endDate) - dayNumber(row.wavePeakDate));
+    }
+    const historicalRemaining = [...historicalWaves.values()]
+      .map(duration => duration - target.x.elapsedDays).filter(duration => duration > 0).sort((a, b) => a - b);
+    const historicalDurationDays = historicalRemaining.length >= 3
+      ? historicalRemaining[Math.floor((historicalRemaining.length - 1) / 2)] : null;
+    predictions.push({
+      ...target, predictedDays: prediction,
+      absoluteErrorDays: Math.abs(prediction - target.remainingDays),
+      recentTrendDays: trendDays,
+      historicalDurationDays,
+      analogMedianDays: analog?.medianDays ?? null,
+      analogLowerDays: analog?.lowerDays ?? null,
+      analogUpperDays: analog?.upperDays ?? null,
+      calibratedAnalogMedianDays: calibratedAnalog?.medianDays ?? null,
+      calibratedAnalogLowerDays: calibratedAnalog?.lowerDays ?? null,
+      calibratedAnalogUpperDays: calibratedAnalog?.upperDays ?? null,
+      calibratedAnalogAdjustmentDays: calibratedAnalog?.adjustmentDays ?? null,
+      analogCalibrationWaves: calibratedAnalog?.calibrationWaves ?? null,
+      trainingWaves: historicalWaves.size,
+    });
   }
   const errors = predictions.map(row => row.absoluteErrorDays).sort((a, b) => a - b);
+  const errorsFor = selector => predictions.filter(row => Number.isFinite(selector(row)))
+    .map(row => Math.abs(selector(row) - row.remainingDays)).sort((a, b) => a - b);
   const pairedPredictions = predictions.filter(row => Number.isFinite(row.currentBaselineDays));
   const pairedModelErrors = pairedPredictions.map(row => row.absoluteErrorDays).sort((a, b) => a - b);
-  const baselineErrors = pairedPredictions
-    .map(row => Math.abs(row.currentBaselineDays - row.remainingDays)).sort((a, b) => a - b);
+  const baselineErrors = errorsFor(row => row.currentBaselineDays);
+  const trendErrors = errorsFor(row => row.recentTrendDays);
+  const historicalErrors = errorsFor(row => row.historicalDurationDays);
+  const analogErrors = errorsFor(row => row.analogMedianDays);
+  const calibratedAnalogErrors = errorsFor(row => row.calibratedAnalogMedianDays);
+  const analogIntervals = predictions.filter(row => Number.isFinite(row.analogLowerDays) && Number.isFinite(row.analogUpperDays));
+  const calibratedIntervals = predictions.filter(row => Number.isFinite(row.calibratedAnalogLowerDays) && Number.isFinite(row.calibratedAnalogUpperDays));
+  const intervalSummary = (intervals, lowerKey = 'analogLowerDays', upperKey = 'analogUpperDays') => {
+    const widths = intervals.map(row => row[upperKey] - row[lowerKey]);
+    const waves = new Map();
+    for (const row of intervals) {
+      const key = `${row.facilityUid}/${row.wavePeakDate}`;
+      const wave = waves.get(key) || { covered: true };
+      if (row.remainingDays < row[lowerKey] || row.remainingDays > row[upperKey]) wave.covered = false;
+      waves.set(key, wave);
+    }
+    const waveValues = [...waves.values()];
+    return {
+      count: intervals.length,
+      snapshotCoveragePercent: intervals.length ? 100 * intervals.filter(row => row.remainingDays >= row[lowerKey] && row.remainingDays <= row[upperKey]).length / intervals.length : null,
+      meanWidthDays: widths.length ? widths.reduce((sum, width) => sum + width, 0) / widths.length : null,
+      medianWidthDays: widths.length ? [...widths].sort((a, b) => a - b)[Math.floor(widths.length / 2)] : null,
+      waveCount: waveValues.length,
+      wholeWaveCoveragePercent: waveValues.length ? 100 * waveValues.filter(wave => wave.covered).length / waveValues.length : null,
+    };
+  };
   const meanByWave = selector => {
     const groups = new Map();
     for (const row of predictions) {
@@ -157,6 +277,110 @@ export function evaluatePooledModel(rows, lambda = 1) {
       mean: values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : null,
     };
   };
+  const allMethods = [
+    ['ridge', 'predictedDays'],
+    ['currentEstimator', 'currentBaselineDays'],
+    ['recentTrend', 'recentTrendDays'],
+    ['historicalDuration', 'historicalDurationDays'],
+    ['waveAnalogs', 'analogMedianDays'],
+    ['calibratedWaveAnalogs', 'calibratedAnalogMedianDays'],
+  ];
+  const commonRows = predictions.filter(row => allMethods.every(([, key]) => Number.isFinite(row[key])));
+  const matchedMethodSummary = key => {
+    const methodErrors = commonRows.map(row => Math.abs(row[key] - row.remainingDays));
+    const waveGroups = new Map();
+    for (const row of commonRows) {
+      const id = `${row.facilityUid}/${row.wavePeakDate}`;
+      const values = waveGroups.get(id) || [];
+      values.push(Math.abs(row[key] - row.remainingDays));
+      waveGroups.set(id, values);
+    }
+    const waveMeans = [...waveGroups.values()].map(values => values.reduce((sum, value) => sum + value, 0) / values.length);
+    return {
+      snapshots: methodErrors.length,
+      meanAbsoluteErrorDays: methodErrors.length ? methodErrors.reduce((sum, value) => sum + value, 0) / methodErrors.length : null,
+      medianAbsoluteErrorDays: methodErrors.length ? [...methodErrors].sort((a, b) => a - b)[Math.floor(methodErrors.length / 2)] : null,
+      within14DaysPercent: methodErrors.length ? 100 * methodErrors.filter(error => error <= 14).length / methodErrors.length : null,
+      waves: waveMeans.length,
+      meanWaveAbsoluteErrorDays: waveMeans.length ? waveMeans.reduce((sum, value) => sum + value, 0) / waveMeans.length : null,
+    };
+  };
+  const leadTimeBands = [
+    { label: '0-13 days', min: 0, max: 14 },
+    { label: '14-27 days', min: 14, max: 28 },
+    { label: '28-55 days', min: 28, max: 56 },
+    { label: '56+ days', min: 56, max: Infinity },
+  ].map(band => {
+    const subset = predictions.filter(row => row.remainingDays >= band.min && row.remainingDays < band.max);
+    const summarizeErrors = errors => ({
+      count: errors.length,
+      meanAbsoluteErrorDays: errors.length ? errors.reduce((sum, error) => sum + error, 0) / errors.length : null,
+      medianAbsoluteErrorDays: errors.length ? [...errors].sort((a, b) => a - b)[Math.floor(errors.length / 2)] : null,
+      within7DaysPercent: errors.length ? 100 * errors.filter(error => error <= 7).length / errors.length : null,
+      within14DaysPercent: errors.length ? 100 * errors.filter(error => error <= 14).length / errors.length : null,
+    });
+    const waveMetrics = (items, errorOf) => {
+      const groups = new Map();
+      for (const row of items) {
+        const error = errorOf(row);
+        if (!Number.isFinite(error)) continue;
+        const key = `${row.facilityUid}/${row.wavePeakDate}`;
+        const values = groups.get(key) || [];
+        values.push(error);
+        groups.set(key, values);
+      }
+      const waveErrors = [...groups.values()].map(values => values.reduce((sum, value) => sum + value, 0) / values.length);
+      return {
+        waveCount: waveErrors.length,
+        meanWaveAbsoluteErrorDays: waveErrors.length ? waveErrors.reduce((sum, value) => sum + value, 0) / waveErrors.length : null,
+        wavesWithin14DaysPercent: waveErrors.length ? 100 * waveErrors.filter(value => value <= 14).length / waveErrors.length : null,
+      };
+    };
+    const eligible = rows.filter(row => row.remainingDays >= band.min && row.remainingDays < band.max).length;
+    const methodStats = selector => {
+      const candidates = subset.filter(row => Number.isFinite(selector(row)));
+      const methodErrors = candidates.map(row => Math.abs(selector(row) - row.remainingDays));
+      return {
+        ...summarizeErrors(methodErrors),
+        availabilityPercent: eligible ? 100 * candidates.length / eligible : null,
+        ...waveMetrics(candidates, row => Math.abs(selector(row) - row.remainingDays)),
+      };
+    };
+    return {
+      ...band,
+      eligibleSnapshots: eligible,
+      model: methodStats(row => row.predictedDays),
+      currentEstimator: methodStats(row => row.currentBaselineDays),
+      recentTrend: methodStats(row => row.recentTrendDays),
+      historicalDuration: methodStats(row => row.historicalDurationDays),
+      waveAnalogs: methodStats(row => row.analogMedianDays),
+      calibratedWaveAnalogs: methodStats(row => row.calibratedAnalogMedianDays),
+      waveAnalogInterval: intervalSummary(subset.filter(row => Number.isFinite(row.analogLowerDays) && Number.isFinite(row.analogUpperDays))),
+      calibratedWaveAnalogInterval: intervalSummary(
+        subset.filter(row => Number.isFinite(row.calibratedAnalogLowerDays) && Number.isFinite(row.calibratedAnalogUpperDays)),
+        'calibratedAnalogLowerDays', 'calibratedAnalogUpperDays'),
+      matchedCutoffs: (() => {
+        const matched = subset.filter(row => allMethods.every(([, key]) => Number.isFinite(row[key])));
+        const statsFor = key => {
+          const methodErrors = matched.map(row => Math.abs(row[key] - row.remainingDays));
+          const waveGroups = new Map();
+          for (const row of matched) {
+            const id = `${row.facilityUid}/${row.wavePeakDate}`;
+            const values = waveGroups.get(id) || [];
+            values.push(Math.abs(row[key] - row.remainingDays));
+            waveGroups.set(id, values);
+          }
+          const waveMeans = [...waveGroups.values()].map(values => values.reduce((sum, value) => sum + value, 0) / values.length);
+          return {
+            snapshots: methodErrors.length,
+            meanAbsoluteErrorDays: methodErrors.length ? methodErrors.reduce((sum, value) => sum + value, 0) / methodErrors.length : null,
+            meanWaveAbsoluteErrorDays: waveMeans.length ? waveMeans.reduce((sum, value) => sum + value, 0) / waveMeans.length : null,
+          };
+        };
+        return Object.fromEntries(allMethods.map(([name, key]) => [name, statsFor(key)]));
+      })(),
+    };
+  });
   return {
     predictions,
     predictionCount: predictions.length,
@@ -171,6 +395,21 @@ export function evaluatePooledModel(rows, lambda = 1) {
     waveErrorSummary: meanByWave(row => row.absoluteErrorDays),
     currentBaselineWaveErrorSummary: meanByWave(row => Number.isFinite(row.currentBaselineDays)
       ? Math.abs(row.currentBaselineDays - row.remainingDays) : null),
+    waveAnalogsCount: analogErrors.length,
+    waveAnalogsMeanAbsoluteErrorDays: analogErrors.length ? analogErrors.reduce((sum, n) => sum + n, 0) / analogErrors.length : null,
+    waveAnalogsMedianAbsoluteErrorDays: analogErrors.length ? analogErrors[Math.floor(analogErrors.length / 2)] : null,
+    waveAnalogsWithin14DaysPercent: analogErrors.length ? 100 * analogErrors.filter(error => error <= 14).length / analogErrors.length : null,
+    waveAnalogIntervals: intervalSummary(analogIntervals),
+    calibratedWaveAnalogs: {
+      count: calibratedAnalogErrors.length,
+      meanAbsoluteErrorDays: calibratedAnalogErrors.length ? calibratedAnalogErrors.reduce((sum, value) => sum + value, 0) / calibratedAnalogErrors.length : null,
+      medianAbsoluteErrorDays: calibratedAnalogErrors.length ? calibratedAnalogErrors[Math.floor(calibratedAnalogErrors.length / 2)] : null,
+      within14DaysPercent: calibratedAnalogErrors.length ? 100 * calibratedAnalogErrors.filter(error => error <= 14).length / calibratedAnalogErrors.length : null,
+    },
+    calibratedWaveAnalogIntervals: intervalSummary(calibratedIntervals, 'calibratedAnalogLowerDays', 'calibratedAnalogUpperDays'),
+    leadTimeBands,
+    commonCutoffCount: commonRows.length,
+    matchedMethods: Object.fromEntries(allMethods.map(([name, key]) => [name, matchedMethodSummary(key)])),
   };
 }
 
@@ -202,10 +441,25 @@ async function main() {
     await Promise.all(plants.map(plant => rm(`${cacheDir}/facility-samples/${plant.uid}.json`, { force: true })));
   }
   const facilities = await fetchFacilitySamples(plants);
+  const labelAudit = facilities.map(facility => ({
+    uid: facility.uid,
+    waves: identifyWaves(facility.points).map(wave => ({
+      peakDate: wave.peakDate, endDate: wave.endDate,
+      endConfirmed: wave.endConfirmed, ongoing: wave.ongoing,
+    })),
+  }));
+  const labelCounts = labelAudit.flatMap(facility => facility.waves).reduce((counts, wave) => {
+    if (wave.ongoing) counts.ongoing++;
+    else if (wave.endConfirmed) counts.thresholdConfirmed++;
+    else counts.inferredNextWave++;
+    return counts;
+  }, { thresholdConfirmed: 0, inferredNextWave: 0, ongoing: 0 });
   const rows = facilities.flatMap(facility => waveTrainingRows(facility.uid, facility.points));
   await writeFile(`${cacheDir}/wave-training-rows.json`, JSON.stringify({
     generatedAt: new Date().toISOString(),
     facilityCount: facilities.filter(item => !item.error).length,
+    labelCounts,
+    labelAudit,
     plants: facilities.map(({ uid, sampleCount, error }) => ({ uid, sampleCount, error })),
     rows,
   }, null, 2));
@@ -216,6 +470,7 @@ async function main() {
     successfulFeeds: facilities.filter(item => !item.error).length,
     failedFeeds: facilities.filter(item => item.error).map(item => ({ uid: item.uid, error: item.error })),
     rowCount: rows.length,
+    labelCounts,
     completedWaves: new Set(rows.map(row => `${row.facilityUid}/${row.wavePeakDate}`)).size,
     ...summary,
   }, null, 2));

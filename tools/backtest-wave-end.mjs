@@ -14,7 +14,7 @@ export function backtestWaveEnd(points) {
   const ordered = (points || [])
     .filter(point => /^\d{4}-\d{2}-\d{2}$/.test(String(point.originalDate)) && Number(point.y) > 0)
     .slice().sort((a, b) => String(a.originalDate).localeCompare(String(b.originalDate)));
-  const waves = identifyWaves(ordered).filter(wave => wave.endDate && !wave.ongoing);
+  const waves = identifyWaves(ordered).filter(wave => wave.endDate && !wave.ongoing && wave.endConfirmed);
   const forecasts = [];
 
   for (const truth of waves) {

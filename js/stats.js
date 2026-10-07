@@ -398,6 +398,9 @@ export function identifyWaves(points) {
       startDate: formatDay(smooth[startIndex].day),
       peakDate: formatDay(peak.day),
       endDate: endIndex === null ? null : formatDay(smooth[endIndex].day),
+      // True only when the sustained end-threshold crossing was actually found;
+      // a later-wave start may close an otherwise unconfirmed wave below.
+      endConfirmed: endIndex !== null,
       baseline: wave.baseline,
       peak: peak.y,
       endThreshold: endCrossing,

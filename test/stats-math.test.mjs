@@ -55,7 +55,9 @@ test('identifyWaves reports threshold dates, baseline, peak, and an ongoing wave
   const waves = identifyWaves(series);
   assert.equal(waves.length, 2);
   assert.ok(waves[0].endDate, 'first wave has a return below its end threshold');
+  assert.equal(waves[0].endConfirmed, true);
   assert.ok(waves[1].ongoing);
+  assert.equal(waves[1].endConfirmed, false);
   assert.equal(waves[1].endDate, null);
   assert.ok(waves[1].peak > waves[1].baseline);
 
@@ -64,6 +66,18 @@ test('identifyWaves reports threshold dates, baseline, peak, and an ongoing wave
     originalDate: new Date(start + week * 7 * 86400000).toISOString().slice(0, 10),
   }));
   assert.deepEqual(identifyWaves(belowHeuristic), [], 'peaks at or below 50 do not count as waves');
+});
+
+test('identifyWaves distinguishes inferred closure from a confirmed threshold crossing', () => {
+  const values = [...Array(24).fill(10), 20, 40, 80, 100, 95, 85, 70, 60, 65, 70, 90, 120, 130, 100, 80, 60, 50, 40, 30, 20, 15, 12, 10, 10, 10];
+  const start = Date.UTC(2023, 0, 2);
+  const series = values.map((y, week) => ({
+    originalDate: new Date(start + week * 7 * 86400000).toISOString().slice(0, 10), y,
+  }));
+  const waves = identifyWaves(series);
+  assert.equal(waves.length, 2);
+  assert.equal(waves[0].endConfirmed, false, 'later wave start closed the first wave without a threshold crossing');
+  assert.equal(waves[1].endConfirmed, true, 'second wave returned below its threshold');
 });
 
 test('identifyWaves detects a strong ongoing rise before it has peaked', () => {

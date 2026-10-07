@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { fitRidge, predictRidge, selectTopActivePlants } from '../tools/train-wave-model.mjs';
+import { fitRidge, predictRidge, predictWaveAnalogs, predictCalibratedWaveAnalogs, selectTopActivePlants } from '../tools/train-wave-model.mjs';
 
 test('top-active plant selection applies the 3-month activity rule and ranks by population', () => {
   const plants = [
@@ -14,6 +14,38 @@ test('top-active plant selection applies the 3-month activity rule and ranks by 
     stale: { covid: { lastSampleDate: '2024-01-01' } },
   };
   assert.deepEqual(selectTopActivePlants(plants, activity, { now: new Date('2025-03-01T00:00:00Z') }).map(p => p.uid), ['large', 'small']);
+});
+
+test('wave analog prediction takes one nearest snapshot per wave and returns median quantiles', () => {
+  const rows = Array.from({ length: 7 }, (_, i) => ({
+    facilityUid: `facility-${i}`,
+    wavePeakDate: `2024-01-0${i + 1}`,
+    x: { elapsedDays: i, logAboveThreshold: i, logBelowPeak: -i, logSlope: -0.01 * i, slopeR2: i / 10 },
+    remainingDays: 10 + i * 5,
+  }));
+  // Duplicate a wave with an inferior feature match; it must not count twice.
+  rows.push({ ...rows[0], x: { ...rows[0].x, elapsedDays: 100 }, remainingDays: 999 });
+  const prediction = predictWaveAnalogs(rows, rows[0].x, 7);
+  assert.equal(prediction.neighbors, 7);
+  assert.equal(prediction.medianDays, 25);
+  assert.ok(prediction.lowerDays <= prediction.medianDays);
+  assert.ok(prediction.upperDays >= prediction.medianDays);
+});
+
+test('wave analog intervals calibrate using held-out whole waves', () => {
+  const rows = Array.from({ length: 12 }, (_, wave) => Array.from({ length: 2 }, (_, cutoff) => ({
+    facilityUid: `facility-${wave}`,
+    wavePeakDate: new Date(Date.UTC(2024, wave, 1)).toISOString().slice(0, 10),
+    endDate: new Date(Date.UTC(2024, wave + 1, 1)).toISOString().slice(0, 10),
+    x: { elapsedDays: 15 + cutoff * 7, logAboveThreshold: 1 + wave / 10, logBelowPeak: -wave / 20, logSlope: -0.01 - wave / 1000, slopeR2: 0.5 + wave / 100 },
+    remainingDays: 20 + wave + cutoff * 3,
+  }))).flat();
+  const prediction = predictCalibratedWaveAnalogs(rows, rows[0].x, { k: 7, coverage: 0.8 });
+  assert.ok(prediction);
+  assert.ok(prediction.calibrationWaves >= 3);
+  assert.ok(prediction.adjustmentDays >= 0);
+  assert.ok(prediction.lowerDays <= prediction.medianDays);
+  assert.ok(prediction.upperDays >= prediction.medianDays);
 });
 
 test('ridge model learns a simple relationship and returns a bounded prediction', () => {
