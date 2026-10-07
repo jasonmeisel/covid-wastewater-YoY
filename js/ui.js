@@ -411,16 +411,20 @@ import { downloadCSV, sortTableByDate, changePage, handleSearch } from './table.
       const elapsed = document.getElementById('metricWaveElapsed');
       const phase = document.getElementById('metricWavePhase');
       const remaining = document.getElementById('metricWaveRemaining');
+      const progress = document.getElementById('metricWaveProgress');
       const baselineRatio = document.getElementById('metricWaveBaselineRatio');
       remaining?.classList.remove('hidden');
+      progress?.classList.remove('hidden');
+      phase?.classList.remove('hidden');
       const activeWave = waves.at(-1)?.ongoing ? waves.at(-1) : null;
       const wave = activeWave || waves.at(-1);
       if (title) title.textContent = activeWave ? 'Current Wave' : 'Previous Wave';
 
       if (!wave) {
         if (elapsed) elapsed.textContent = '—';
-        if (phase) phase.textContent = state.selectedPlantUids.length === 1 ? 'No qualifying wave identified' : 'Select one facility';
+        if (phase) phase.textContent = '';
         if (remaining) remaining.textContent = '— days remaining';
+        if (progress) progress.textContent = '—% through wave';
         if (baselineRatio) {
           baselineRatio.textContent = 'Latest baseline ratio: —';
           baselineRatio.classList.remove('text-rose-400', 'font-bold');
@@ -438,23 +442,39 @@ import { downloadCSV, sortTableByDate, changePage, handleSearch } from './table.
       if (activeWave) {
         const daysInto = Math.max(1, Math.floor((latestDay - startDay) / 86400000) + 1);
         if (elapsed) elapsed.textContent = `${daysInto} days in`;
-        if (phase) phase.textContent = 'into current wave';
+        if (phase) {
+          phase.textContent = '';
+          phase.classList.add('hidden');
+        }
       } else {
         const daysSince = Math.max(0, Math.floor((latestDay - endDay) / 86400000));
         if (elapsed) elapsed.textContent = `${daysSince} days since`;
-        if (phase) phase.textContent = `wave ended ${formatShortDate(waveEndDate)}`;
+        if (phase) {
+          phase.textContent = `wave ended ${formatShortDate(waveEndDate)}`;
+          phase.classList.remove('hidden');
+        }
       }
 
       if (remaining) {
         if (!activeWave) {
           remaining.textContent = '';
           remaining.classList.add('hidden');
+          if (progress) {
+            progress.textContent = '';
+            progress.classList.add('hidden');
+          }
         } else if (wave.forecast) {
           const forecastMidpoint = (Date.parse(`${wave.forecast.earliestDate}T00:00:00Z`) +
             Date.parse(`${wave.forecast.latestDate}T00:00:00Z`)) / 2;
           const daysRemaining = Math.max(0, Math.round((forecastMidpoint - latestDay) / 86400000));
+          const daysElapsed = Math.max(0, Math.floor((latestDay - startDay) / 86400000) + 1);
+          const percentThrough = Math.round(100 * daysElapsed / (daysElapsed + daysRemaining));
           remaining.textContent = `~${daysRemaining} days remaining`;
-        } else remaining.textContent = 'Estimate unavailable';
+          if (progress) progress.textContent = `~${percentThrough}% through wave`;
+        } else {
+          remaining.textContent = 'Estimate unavailable';
+          if (progress) progress.textContent = '—% through wave';
+        }
       }
 
       const waveIndex = waves.indexOf(wave);
