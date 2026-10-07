@@ -438,7 +438,10 @@ function linearLogDecayForecast(smooth, peakDay, threshold) {
     const denominator = xs.reduce((sum, value) => sum + (value - xMean) ** 2, 0);
     if (!denominator) continue;
     const slope = xs.reduce((sum, value, index) => sum + (value - xMean) * (ys[index] - yMean), 0) / denominator;
-    if (slope >= -0.001) continue;
+    // Very shallow fitted declines are dominated by wastewater sampling noise and
+    // extrapolate to implausibly distant end dates. Require a meaningful log-scale
+    // decline before projecting this window; historical durations remain available.
+    if (slope >= -0.005) continue;
     const intercept = yMean - slope * xMean;
     const predictedLatest = intercept + slope * xs[xs.length - 1];
     const remainingDays = (Math.log(threshold) - predictedLatest) / slope;
