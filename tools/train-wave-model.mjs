@@ -4,6 +4,8 @@
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
 import { buildSeries, dailyAggregate, identifyWaves, movingAverage, quantile } from '../js/stats.js';
+import { durationOutcome, fitBayesianWeibullSurvival, predictBayesianWeibullRemaining } from './bayesian-wave-survival.mjs';
+import { fitBayesianHazard, predictBayesianHazard } from './bayesian-wave-hazard.mjs';
 
 const DAY = 86400000;
 const dayNumber = date => Math.floor(Date.parse(`${date}T00:00:00Z`) / DAY);
@@ -37,18 +39,44 @@ export function smoothTimelineLikeChart(points, windowDays = 14) {
   });
 }
 
-// Feature rows use only measurements available on or before the forecast cutoff.
-// smoothingDays=14 makes the whole variant use the chart's triangular line signal.
-export function waveTrainingRows(facilityUid, points, { smoothingDays = 0 } = {}) {
+// Complete Monday-Sunday averages from the chart's 14-day-smoothed signal.
+function completedWeeklyMeans(points) {
+  const smoothed = smoothTimelineLikeChart(points, 14);
+  if (smoothed.length < 7) return [];
+  const byWeek = new Map();
+  for (const point of smoothed) {
+    const week = point.day - ((point.day + 3) % 7);
+    const values = byWeek.get(week) || [];
+    values.push(point.y);
+    byWeek.set(week, values);
+  }
+  const lastDay = smoothed.at(-1).day;
+  return [...byWeek.entries()].filter(([start, values]) => start >= smoothed[0].day && start + 6 <= lastDay && values.length === 7)
+    .sort((a, b) => a[0] - b[0]).map(([start, values]) => ({
+      day: start + 3, y: values.reduce((sum, value) => sum + value, 0) / values.length,
+    }));
+}
+
+function completedWeeklyDeclines(points) {
+  const weeks = completedWeeklyMeans(points).map(point => point.y);
+  let declines = 0;
+  for (let i = weeks.length - 1; i > 0 && weeks[i] < weeks[i - 1]; i--) declines++;
+  return declines;
+}
+
+export function waveTrainingRows(facilityUid, points, { smoothingDays = 0, includeCensored = false, weeklySlope = false } = {}) {
   const series = (points || []).filter(point => validDate(point.originalDate) && Number(point.y) > 0)
     .slice().sort((a, b) => String(a.originalDate).localeCompare(String(b.originalDate)));
   const fullSignal = smoothingDays ? smoothTimelineLikeChart(series, smoothingDays) : series;
   const preSmoothed = Boolean(smoothingDays);
-  const completed = identifyWaves(fullSignal, { preSmoothed }).filter(wave => wave.endDate && !wave.ongoing && wave.endConfirmed);
+  const lastObservedDate = String(series.at(-1)?.originalDate || '').slice(0, 10);
+  const waves = identifyWaves(fullSignal, { preSmoothed }).filter(wave => includeCensored || (wave.endDate && !wave.ongoing && wave.endConfirmed));
   const rows = [];
-  for (const truth of completed) {
+  for (const truth of waves) {
+    const observedEndDate = truth.endDate || lastObservedDate;
     const peakDay = dayNumber(truth.peakDate);
-    const endDay = dayNumber(truth.endDate);
+    const endDay = dayNumber(observedEndDate);
+    if (!Number.isFinite(endDay) || endDay <= peakDay) continue;
     for (let index = 0; index < series.length; index++) {
       const cutoffDate = String(series[index].originalDate).slice(0, 10);
       const cutoff = dayNumber(cutoffDate);
@@ -63,10 +91,12 @@ export function waveTrainingRows(facilityUid, points, { smoothingDays = 0 } = {}
       const recent = prefix.filter(point => (Number.isFinite(point.day) ? point.day : dayNumber(String(point.originalDate).slice(0, 10))) >= cutoff - 42)
         .map(point => ({ day: Number.isFinite(point.day) ? point.day : dayNumber(String(point.originalDate).slice(0, 10)), y: Number(point.y) }));
       if (!recent.length) continue;
-      const fit = linearFit(recent.slice(-7));
+      const fit = weeklySlope
+        ? linearFit(completedWeeklyMeans(rawPrefix).slice(-4))
+        : linearFit(recent.slice(-7));
       rows.push({
         facilityUid: String(facilityUid), wavePeakDate: truth.peakDate,
-        cutoffDate, endDate: truth.endDate,
+        cutoffDate, endDate: observedEndDate, event: Boolean(truth.endConfirmed),
         x: {
           elapsedDays: cutoff - dayNumber(active.peakDate),
           logAboveThreshold: Math.log(Math.max(0.01, recent.at(-1).y / active.endThreshold)),
@@ -75,6 +105,7 @@ export function waveTrainingRows(facilityUid, points, { smoothingDays = 0 } = {}
           slopeR2: fit.r2,
         },
         remainingDays: endDay - cutoff,
+        declineWeeks: completedWeeklyDeclines(rawPrefix),
         currentBaselineDays: active.forecast
           ? (dayNumber(active.forecast.earliestDate) + dayNumber(active.forecast.latestDate)) / 2 - cutoff
           : null,
@@ -430,6 +461,173 @@ export function evaluatePooledModel(rows, lambda = 1) {
   };
 }
 
+// Confirmed endings are events; inferred closures and current waves are right-censored
+// at their closure or last observed date, respectively.
+export function waveSurvivalOutcomes(facilityUid, points) {
+  const series = (points || []).filter(point => validDate(point.originalDate) && Number(point.y) > 0)
+    .slice().sort((a, b) => String(a.originalDate).localeCompare(String(b.originalDate)));
+  if (!series.length) return [];
+  const lastObservedDate = String(series.at(-1).originalDate).slice(0, 10);
+  return identifyWaves(series).map(wave => durationOutcome(facilityUid, wave, lastObservedDate)).filter(Boolean);
+}
+
+export function buildWaveHazardRows(snapshotRows) {
+  const waves = new Map();
+  for (const row of snapshotRows || []) {
+    const key = `${row.facilityUid}/${row.wavePeakDate}`;
+    const values = waves.get(key) || [];
+    values.push(row);
+    waves.set(key, values);
+  }
+  const result = [];
+  for (const values of waves.values()) {
+    values.sort((a, b) => a.cutoffDate.localeCompare(b.cutoffDate));
+    const byWeek = new Map();
+    const peak = dayNumber(values[0].wavePeakDate);
+    for (const row of values) {
+      const cutoff = dayNumber(row.cutoffDate);
+      const week = Math.floor((cutoff - peak - 14) / 7);
+      if (week < 0) continue;
+      const prior = byWeek.get(week);
+      if (!prior || row.cutoffDate > prior.cutoffDate) byWeek.set(week, row);
+    }
+    for (const row of byWeek.values()) {
+      const remainingDays = dayNumber(row.endDate) - dayNumber(row.cutoffDate);
+      if (!(remainingDays > 0)) continue;
+      // Censoring inside the next week means the binary hazard outcome is unknown.
+      if (!row.event && remainingDays < 7) continue;
+      const eventNextWeek = row.event && remainingDays <= 7 ? 1 : 0;
+      result.push({
+        facilityUid: row.facilityUid, wavePeakDate: row.wavePeakDate,
+        cutoffDate: row.cutoffDate,
+        outcomeDate: eventNextWeek ? row.endDate : new Date((dayNumber(row.cutoffDate) + 7) * DAY).toISOString().slice(0, 10),
+        eventNextWeek, censoredWave: !row.event, x: row.x,
+      });
+    }
+  }
+  return result.sort((a, b) => a.cutoffDate.localeCompare(b.cutoffDate));
+}
+
+function errorSummary(values) {
+  const errors = values.filter(Number.isFinite).sort((a, b) => a - b);
+  return {
+    count: errors.length,
+    meanAbsoluteErrorDays: errors.length ? errors.reduce((sum, value) => sum + value, 0) / errors.length : null,
+    medianAbsoluteErrorDays: errors.length ? errors[Math.floor(errors.length / 2)] : null,
+    within14DaysPercent: errors.length ? 100 * errors.filter(value => value <= 14).length / errors.length : null,
+  };
+}
+
+// The fixed issuance rule is >=14 days post-peak plus three consecutive declines
+// in complete calendar-week means of the chart's 14-day-smoothed signal.
+export function evaluateBayesianWaveHazard(snapshotRows, hazardRows, regressionRows) {
+  const grouped = new Map();
+  for (const row of snapshotRows || []) {
+    if (!row.event) continue;
+    const key = `${row.facilityUid}/${row.wavePeakDate}`;
+    const values = grouped.get(key) || [];
+    values.push(row);
+    grouped.set(key, values);
+  }
+  const targets = [...grouped.values()].map(values => values.filter(row => row.x.elapsedDays >= 14 && row.declineWeeks >= 3)
+    .sort((a, b) => a.cutoffDate.localeCompare(b.cutoffDate))[0]).filter(Boolean);
+  const predictions = [];
+  for (const target of targets) {
+    const cutoff = target.cutoffDate;
+    const trainingRisk = hazardRows.filter(row => row.facilityUid !== target.facilityUid && row.outcomeDate < cutoff);
+    const model = fitBayesianHazard(trainingRisk);
+    if (!model) continue;
+    const distribution = predictBayesianHazard(model, target.x, { seed: dayNumber(cutoff) + dayNumber(target.wavePeakDate) });
+    if (!distribution) continue;
+    const training = regressionRows.filter(row => row.facilityUid !== target.facilityUid && row.endDate < cutoff);
+    const ridge = predictRidge(fitRidge(training), target.x);
+    const historical = new Map();
+    for (const row of training) historical.set(`${row.facilityUid}/${row.wavePeakDate}`, dayNumber(row.endDate) - dayNumber(row.wavePeakDate));
+    const priorRemaining = [...historical.values()].map(duration => duration - target.x.elapsedDays).filter(value => value > 0).sort((a, b) => a - b);
+    const historicalDays = priorRemaining.length >= 3 ? priorRemaining[Math.floor((priorRemaining.length - 1) / 2)] : null;
+    predictions.push({
+      ...target,
+      ...distribution,
+      ridgeDays: ridge,
+      historicalDays,
+      remainingDays: dayNumber(target.endDate) - dayNumber(target.cutoffDate),
+      currentBaselineDays: target.currentBaselineDays,
+      trainingCensoredWaves: new Set(trainingRisk.filter(row => row.censoredWave)
+        .map(row => `${row.facilityUid}/${row.wavePeakDate}`)).size,
+    });
+  }
+  const intervals = predictions.filter(row => Number.isFinite(row.lowerDays) && Number.isFinite(row.upperDays));
+  const widths = intervals.map(row => row.upperDays - row.lowerDays);
+  return {
+    issuanceRule: '>=14 days post-peak and 3 consecutive complete weekly declines in the chart 14-day-smoothed signal',
+    eligibleCompletedWaves: grouped.size,
+    issuedForecasts: predictions.length,
+    availabilityPercent: grouped.size ? 100 * predictions.length / grouped.size : null,
+    waves: predictions.length,
+    bayesianHazard: errorSummary(predictions.map(row => Math.abs(row.medianDays - row.remainingDays))),
+    ridge: errorSummary(predictions.map(row => Number.isFinite(row.ridgeDays) ? Math.abs(row.ridgeDays - row.remainingDays) : null)),
+    historicalDuration: errorSummary(predictions.map(row => Number.isFinite(row.historicalDays) ? Math.abs(row.historicalDays - row.remainingDays) : null)),
+    currentEstimator: errorSummary(predictions.map(row => Number.isFinite(row.currentBaselineDays) ? Math.abs(row.currentBaselineDays - row.remainingDays) : null)),
+    intervalCoveragePercent: intervals.length ? 100 * intervals.filter(row => row.remainingDays >= row.lowerDays && row.remainingDays <= row.upperDays).length / intervals.length : null,
+    meanIntervalWidthDays: widths.length ? widths.reduce((sum, value) => sum + value, 0) / widths.length : null,
+    medianTrainingWaves: predictions.length ? [...predictions.map(row => row.trainingWaves)].sort((a, b) => a - b)[Math.floor(predictions.length / 2)] : null,
+    medianTrainingEvents: predictions.length ? [...predictions.map(row => row.trainingEvents)].sort((a, b) => a - b)[Math.floor(predictions.length / 2)] : null,
+    predictions,
+  };
+}
+
+export function evaluateBayesianSurvival(rows, outcomes) {
+  const predictions = [];
+  const modelCache = new Map();
+  for (const target of rows) {
+    const cutoff = target.cutoffDate;
+    const key = `${target.facilityUid}/${cutoff}`;
+    let model = modelCache.get(key);
+    if (model === undefined) {
+      const eligible = outcomes.filter(row => row.facilityUid !== target.facilityUid && row.observationDate < cutoff);
+      model = fitBayesianWeibullSurvival(eligible);
+      modelCache.set(key, model || null);
+    }
+    if (!model) continue;
+    const prediction = predictBayesianWeibullRemaining(model, target.x.elapsedDays);
+    if (!prediction) continue;
+    predictions.push({
+      ...target,
+      survivalMedianDays: prediction.medianDays,
+      survivalLowerDays: prediction.lowerDays,
+      survivalUpperDays: prediction.upperDays,
+      survivalTrainingWaves: prediction.trainingWaves,
+      survivalTrainingEvents: prediction.trainingEvents,
+      survivalTrainingCensored: prediction.trainingCensored,
+      survivalAbsoluteErrorDays: Math.abs(prediction.medianDays - target.remainingDays),
+    });
+  }
+  const errors = predictions.map(row => row.survivalAbsoluteErrorDays).sort((a, b) => a - b);
+  const waveErrors = new Map();
+  for (const row of predictions) {
+    const id = `${row.facilityUid}/${row.wavePeakDate}`;
+    const values = waveErrors.get(id) || [];
+    values.push(row.survivalAbsoluteErrorDays);
+    waveErrors.set(id, values);
+  }
+  const meanWaveErrors = [...waveErrors.values()].map(values => values.reduce((sum, value) => sum + value, 0) / values.length);
+  const covered = predictions.filter(row => row.remainingDays >= row.survivalLowerDays && row.remainingDays <= row.survivalUpperDays);
+  const widths = predictions.map(row => row.survivalUpperDays - row.survivalLowerDays);
+  return {
+    predictions,
+    snapshots: predictions.length,
+    waves: waveErrors.size,
+    meanAbsoluteErrorDays: errors.length ? errors.reduce((sum, value) => sum + value, 0) / errors.length : null,
+    medianAbsoluteErrorDays: errors.length ? errors[Math.floor(errors.length / 2)] : null,
+    meanWaveAbsoluteErrorDays: meanWaveErrors.length ? meanWaveErrors.reduce((sum, value) => sum + value, 0) / meanWaveErrors.length : null,
+    within14DaysPercent: errors.length ? 100 * errors.filter(value => value <= 14).length / errors.length : null,
+    intervalCoveragePercent: predictions.length ? 100 * covered.length / predictions.length : null,
+    meanIntervalWidthDays: widths.length ? widths.reduce((sum, value) => sum + value, 0) / widths.length : null,
+    medianTrainingEvents: predictions.length ? [...predictions.map(row => row.survivalTrainingEvents)].sort((a, b) => a - b)[Math.floor(predictions.length / 2)] : null,
+    medianTrainingCensored: predictions.length ? [...predictions.map(row => row.survivalTrainingCensored)].sort((a, b) => a - b)[Math.floor(predictions.length / 2)] : null,
+  };
+}
+
 export function selectTopActivePlants(plants, activity, { now = new Date(), limit = 16 } = {}) {
   const cutoff = new Date(now);
   cutoff.setMonth(cutoff.getMonth() - 3);
@@ -480,6 +678,13 @@ async function main() {
   const smoothedLabelCounts = countLabels(smoothedLabelAudit);
   const rows = facilities.flatMap(facility => waveTrainingRows(facility.uid, facility.points));
   const smoothedRows = facilities.flatMap(facility => waveTrainingRows(facility.uid, facility.points, { smoothingDays: 14 }));
+  const survivalOutcomes = facilities.flatMap(facility => waveSurvivalOutcomes(facility.uid, facility.points));
+  const survivalResult = evaluateBayesianSurvival(rows, survivalOutcomes);
+  const { predictions: survivalPredictions, ...survivalSummary } = survivalResult;
+  const hazardSnapshots = facilities.flatMap(facility => waveTrainingRows(facility.uid, facility.points, { smoothingDays: 14, includeCensored: true, weeklySlope: true }));
+  const hazardRows = buildWaveHazardRows(hazardSnapshots);
+  const hazardResult = evaluateBayesianWaveHazard(hazardSnapshots, hazardRows, smoothedRows);
+  const { predictions: hazardPredictions, ...hazardSummary } = hazardResult;
   await writeFile(`${cacheDir}/wave-training-rows.json`, JSON.stringify({
     generatedAt: new Date().toISOString(),
     facilityCount: facilities.filter(item => !item.error).length,
@@ -490,6 +695,13 @@ async function main() {
     plants: facilities.map(({ uid, sampleCount, error }) => ({ uid, sampleCount, error })),
     rows,
     smoothed14Rows: smoothedRows,
+    survivalOutcomes,
+    bayesianSurvivalSummary: survivalSummary,
+    bayesianSurvivalPredictions: survivalPredictions,
+    hazardSnapshotRows: hazardSnapshots,
+    bayesianHazardRows: hazardRows,
+    bayesianHazardSummary: hazardSummary,
+    bayesianHazardPredictions: hazardPredictions,
   }, null, 2));
   const result = evaluatePooledModel(rows);
   const smoothedResult = evaluatePooledModel(smoothedRows);
@@ -532,6 +744,8 @@ async function main() {
       waveAnalogs: pairedSmoothingMetrics(row => Number.isFinite(row.analogMedianDays)
         ? Math.abs(row.analogMedianDays - row.remainingDays) : null),
     },
+    bayesianWeibullSurvival: survivalSummary,
+    bayesianDiscreteHazard: hazardSummary,
   }, null, 2));
 }
 

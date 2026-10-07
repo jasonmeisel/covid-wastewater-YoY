@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { fitRidge, predictRidge, predictWaveAnalogs, predictCalibratedWaveAnalogs, selectTopActivePlants, smoothTimelineLikeChart } from '../tools/train-wave-model.mjs';
+import { evaluateBayesianSurvival, fitRidge, predictRidge, predictWaveAnalogs, predictCalibratedWaveAnalogs, selectTopActivePlants, smoothTimelineLikeChart } from '../tools/train-wave-model.mjs';
 
 test('top-active plant selection applies the 3-month activity rule and ranks by population', () => {
   const plants = [
@@ -27,6 +27,25 @@ test('14-day smoothing matches timeline chart behavior and uses only the supplie
   assert.equal(smoothPrefix.at(-1).y, prefix.at(-1).y, 'chart preserves the latest reading');
   assert.ok(smoothPrefix.every(point => point.originalDate <= prefix.at(-1).originalDate), 'no future samples appear');
   assert.ok(smoothPrefix.find(point => point.originalDate === '2024-01-17').y < 100, 'the spike is smoothed');
+});
+
+test('Bayesian survival backtest excludes held-out facilities and outcomes observed after cutoff', () => {
+  const outcomes = Array.from({ length: 10 }, (_, i) => ({
+    facilityUid: `training-${i}`,
+    wavePeakDate: `2024-01-${String(i + 1).padStart(2, '0')}`,
+    observationDate: '2024-06-01', durationDays: 40 + i * 5, event: true,
+  }));
+  outcomes.push(
+    { facilityUid: 'held-out', wavePeakDate: '2024-02-01', observationDate: '2024-05-01', durationDays: 80, event: true },
+    { facilityUid: 'future', wavePeakDate: '2024-03-01', observationDate: '2024-08-01', durationDays: 90, event: true },
+  );
+  const result = evaluateBayesianSurvival([{
+    facilityUid: 'held-out', wavePeakDate: '2024-04-01', endDate: '2024-07-30', cutoffDate: '2024-07-01',
+    remainingDays: 29, x: { elapsedDays: 60 },
+  }], outcomes);
+  assert.equal(result.snapshots, 1);
+  assert.equal(result.predictions[0].survivalTrainingEvents, 10);
+  assert.equal(result.predictions[0].survivalTrainingCensored, 0);
 });
 
 test('wave analog prediction takes one nearest snapshot per wave and returns median quantiles', () => {
