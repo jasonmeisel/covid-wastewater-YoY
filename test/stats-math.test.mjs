@@ -37,6 +37,14 @@ test('movingAverage interpolates daily points, applies triangular weights, and p
   assert.equal(smoothed[1].y, 5);
 });
 
+test('movingAverage supports an exact 30-day triangular window', () => {
+  const series = Array.from({ length: 40 }, (_, x) => ({ x, y: x === 15 ? 100 : 0 }));
+  const smoothed = movingAverage(series, 30);
+  assert.equal(smoothed.length, 40);
+  assert.ok(smoothed[15].y > 0, 'the center contributes to its own weighted mean');
+  assert.equal(smoothed[30].y, 0, 'the window spans 30 days, not 31');
+});
+
 test('identifyWaves reports threshold dates, baseline, peak, and an ongoing wave', () => {
   const start = Date.UTC(2024, 0, 1);
   const values = [...Array(8).fill(20), 20, 20, 20, 20, 20, 20, 20, 20, 20, 40, 80, 60, 40, 20, 20, 20, 20, 20, 20, 20, 20, 40, 90, 80, 70, 30];

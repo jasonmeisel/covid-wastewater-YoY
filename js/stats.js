@@ -243,14 +243,18 @@ export function movingAverage(dataSeries, windowSize, preserveLastPoint = false)
     });
   }
 
-  const radius = Math.floor(windowSize / 2);
+  // Support exact even-sized windows too (e.g. 14 or 30 days), centered
+  // between samples with a symmetric triangular weighting kernel.
+  const halfWindow = (windowSize - 1) / 2;
+  const leftRadius = Math.floor(halfWindow);
+  const rightRadius = Math.ceil(halfWindow);
   const smoothed = daily.map((point, index) => {
     let weightedSum = 0;
     let totalWeight = 0;
-    for (let offset = -radius; offset <= radius; offset++) {
+    for (let offset = -leftRadius; offset <= rightRadius; offset++) {
       const neighbor = daily[index + offset];
       if (!neighbor) continue;
-      const weight = radius + 1 - Math.abs(offset);
+      const weight = halfWindow + 1 - Math.abs(offset);
       weightedSum += neighbor.y * weight;
       totalWeight += weight;
     }

@@ -112,7 +112,7 @@ export function applyStateFromUrl() {
   }
 
   const smoothingParam = parseInt(params.get('smoothing'), 10);
-  if ([1, 3, 7, 14].includes(smoothingParam)) state.smoothingWindow = smoothingParam;
+  if ([1, 3, 7, 14, 30].includes(smoothingParam)) state.smoothingWindow = smoothingParam;
 
   const scaleParam = params.get('scale');
   if (scaleParam === 'linear' || scaleParam === 'logarithmic' || scaleParam === 'percentile') state.yScaleType = scaleParam;
