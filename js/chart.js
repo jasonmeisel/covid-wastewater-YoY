@@ -338,8 +338,7 @@ import { pickYearColor, dailyAggregate, movingAverage, sortedSeriesValues, inclu
             borderColor: context => isHighlightedWaveSegment(context, Number(yr)) ? WAVE_HIGHLIGHT_COLOR : lineColor,
             borderWidth: context => isHighlightedWaveSegment(context, Number(yr)) ? 4 : (isLatestYear ? 3 : 1),
           },
-          tension: 0.25,
-          cubicInterpolationMode: 'monotone',
+          tension: 0,
           pointRadius: context => {
             if (isHighlightedWavePeak(context, Number(yr))) return 5;
             const isLatestSample = isLatestYear && context.dataIndex === context.dataset.data.length - 1;
