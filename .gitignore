@@ -3,3 +3,4 @@ __pycache__/
 .cache/
 
 pmc-current.json
+.pi/

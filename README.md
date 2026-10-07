@@ -18,6 +18,7 @@ Served statically with no build step (GitHub Pages publishes the repo root).
 | `js/{data,chart,table,ui}.js` | Fetching, Chart.js, the table, and DOM rendering |
 | `tools/build-zip-data.mjs` | Regenerates `data/zip-lookup.json` from GeoNames `US.txt` |
 | `tools/backtest-wave-end.mjs` | Walk-forward evaluation of wave end-date forecast intervals |
+| `tools/train-wave-model.mjs` | Cached top-active-facility data prep and held-out-facility ridge experiment |
 | `fetch-pmc.sh` | Slims the PMC19 feed into `data/pmc-counties.json` |
 | `fetch-plants.sh` | Slims the GCS plant catalog into `data/plants.json` |
 
@@ -33,6 +34,8 @@ python3 -m http.server 8765      # module scripts and fetch() need HTTP, not fil
 node --test test/*.test.mjs      # unit tests (node:test only, no dependencies)
 node tools/backtest-wave-end.mjs points.json  # walk-forward wave-end forecast evaluation
 RUN_LA_WAVE_BACKTEST=1 node --test test/la-wave-backtest.test.mjs  # fetch/cache default LA data and evaluate
+node tools/train-wave-model.mjs             # top 16 active facilities; uses per-plant cache
+node tools/train-wave-model.mjs --refresh   # fetch fresh samples before rebuilding experiment
 ./fetch-pmc.sh                   # refresh data/pmc-counties.json from pmc19.com
 ./fetch-plants.sh                # refresh data/plants.json from the GCS catalog
 ```
