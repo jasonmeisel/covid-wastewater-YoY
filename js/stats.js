@@ -341,7 +341,13 @@ export function identifyWaves(points) {
     // that it has turned. This provisional threshold avoids delaying current-wave
     // detection until the series has fallen all the way back toward baseline.
     const recentTurn = i >= smooth.length - 7 && peak / afterLow >= 1.1;
-    if (peak <= 50 || baseline <= 0 || peak / baseline < 1.7 || (!standardDecline && !recentTurn)) continue;
+    // A newly reached high may flatten or dip slightly before there is enough
+    // follow-up data to establish a decline. If it is within three weeks of the
+    // latest observation and clears the rise threshold, keep it provisionally
+    // active rather than dropping an otherwise obvious surge.
+    const recentUnconfirmedRise = i >= smooth.length - 4;
+    if (peak <= 50 || baseline <= 0 || peak / baseline < 1.7 ||
+        (!standardDecline && !recentTurn && !recentUnconfirmedRise)) continue;
     const baselineIndex = Math.max(0, i - 12) + left.findIndex(point => point.y === baseline);
     candidates.push({ peakIndex: i, baselineIndex, baseline, prominence: smooth[i].y / baseline });
   }
