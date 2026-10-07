@@ -17,6 +17,7 @@ Served statically with no build step (GitHub Pages publishes the repo root).
 | `js/county.js` | PMC19 county card model (`buildCountyCard`) and renderer |
 | `js/{data,chart,table,ui}.js` | Fetching, Chart.js, the table, and DOM rendering |
 | `tools/build-zip-data.mjs` | Regenerates `data/zip-lookup.json` from GeoNames `US.txt` |
+| `tools/backtest-wave-end.mjs` | Walk-forward evaluation of wave end-date forecast intervals |
 | `fetch-pmc.sh` | Slims the PMC19 feed into `data/pmc-counties.json` |
 | `fetch-plants.sh` | Slims the GCS plant catalog into `data/plants.json` |
 
@@ -30,6 +31,8 @@ or matches on are committed and served.
 ```bash
 python3 -m http.server 8765      # module scripts and fetch() need HTTP, not file://
 node --test test/*.test.mjs      # unit tests (node:test only, no dependencies)
+node tools/backtest-wave-end.mjs points.json  # walk-forward wave-end forecast evaluation
+RUN_LA_WAVE_BACKTEST=1 node --test test/la-wave-backtest.test.mjs  # fetch/cache default LA data and evaluate
 ./fetch-pmc.sh                   # refresh data/pmc-counties.json from pmc19.com
 ./fetch-plants.sh                # refresh data/plants.json from the GCS catalog
 ```
