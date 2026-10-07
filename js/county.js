@@ -96,37 +96,33 @@ function renderCountyCard(card, zip) {
   const stats = card.prevalencePercent === null
     ? ''
     : `
-      <dl class="mt-4 flex flex-wrap items-stretch gap-x-8 gap-y-4">
+      <dl class="flex items-center gap-6">
         <div class="min-w-0">
-          <dt class="uppercase-label text-slate-500">Infectious now</dt>
-          <dd class="mt-1.5 metric-value text-rose-300 tabular-nums">${card.prevalenceCapped ? '&gt;' : '≈'}${card.prevalencePercent}<span class="text-lg font-bold">%</span></dd>
+          <dt class="uppercase-label text-slate-400">Infectious now</dt>
+          <dd class="mt-0.5 metric-value text-rose-300 tabular-nums">${card.prevalenceCapped ? '&gt;' : '≈'}${card.prevalencePercent}<span class="text-lg font-bold">%</span></dd>
         </div>
         <div class="min-w-0">
-          <dt class="uppercase-label text-slate-500">Residents</dt>
-          <dd class="mt-1.5 metric-value text-slate-100 tabular-nums">1<span class="text-lg font-bold text-slate-500"> in </span>${card.prevalenceOneIn}</dd>
+          <dt class="uppercase-label text-slate-400">Residents</dt>
+          <dd class="mt-0.5 metric-value text-slate-100 tabular-nums">1<span class="text-lg font-bold text-slate-400"> in </span>${card.prevalenceOneIn}</dd>
         </div>
       </dl>
-      <p class="mt-3 text-[11px] leading-relaxed text-slate-500 max-w-2xl">${escapeHtml(card.prevalenceSentence)}</p>
     `;
-
-  const metaParts = [];
-  if (zip) metaParts.push(`ZIP ${escapeHtml(zip)}`);
-  metaParts.push(`Updated ${escapeHtml(card.updatedDate)}`);
-  if (card.weekEnding) metaParts.push(`Week ending ${escapeHtml(card.weekEnding)}`);
-
   summary.innerHTML = `
-    <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-      <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-        <h2 class="uppercase-label text-slate-400">PMC19 county estimate</h2>
-        <span class="px-1.5 py-0.5 rounded-sm uppercase-label ${chipClass}">${escapeHtml(card.statusLabel)}</span>
+    <div class="grid grid-cols-1 items-center gap-y-2 md:grid-cols-[minmax(12rem,1fr)_auto_minmax(15rem,1.2fr)] md:gap-x-8 md:gap-y-0">
+      <div class="min-w-0">
+        <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
+          <h2 class="uppercase-label text-slate-300">PMC19 county estimate</h2>
+          <span class="px-1.5 py-0.5 rounded-sm uppercase-label ${chipClass}">${escapeHtml(card.statusLabel)}</span>
+        </div>
+        <p class="mt-0.5 text-sm font-semibold text-slate-100">${escapeHtml(card.countyLabel)}</p>
       </div>
-      <a href="https://pmc19.com/" target="_blank" rel="noopener noreferrer" class="text-[11px] font-semibold text-teal-400 hover:text-teal-300 hover:underline">PMC19.com <span aria-hidden="true">↗</span></a>
-    </div>
-    <p class="mt-1.5 text-sm font-semibold text-slate-100">${escapeHtml(card.countyLabel)}</p>
-    ${stats}
-    <div class="mt-4 pt-3 border-t border-slate-800/90 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[11px] text-slate-500">
-      ${metaParts.map(part => `<span>${part}</span>`).join('<span aria-hidden="true" class="text-slate-700">·</span>')}
-      <span class="text-slate-400 basis-full md:basis-auto md:before:content-['·'] md:before:mr-2.5 md:before:text-slate-700">${escapeHtml(card.statusNote)}</span>
+      ${stats}
+      <div class="flex flex-wrap items-center gap-x-2.5 gap-y-1 border-t border-slate-800/90 pt-2 text-[11px] text-slate-400 md:border-0 md:pt-0 md:text-xs md:justify-end">
+        <span>Updated ${escapeHtml(card.updatedDate)}</span>
+        ${card.weekEnding ? `<span class="text-slate-600" aria-hidden="true">·</span><span>Week ending ${escapeHtml(card.weekEnding)}</span>` : ''}
+        <a href="https://pmc19.com/" target="_blank" rel="noopener noreferrer" class="hidden font-semibold text-teal-400 hover:text-teal-300 hover:underline md:inline">PMC19.com <span aria-hidden="true">↗</span></a>
+        ${zip ? `<span class="text-slate-600" aria-hidden="true">·</span><span>ZIP ${escapeHtml(zip)}</span>` : ''}
+      </div>
     </div>
   `;
   summary.classList.remove('hidden');
