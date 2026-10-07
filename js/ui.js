@@ -5,7 +5,7 @@ import { state, syncStateToUrl, sortedSamples } from './state.js';
 import { resolveZipToCountyFips, updateCountyCovidSummary } from './county.js';
 import { pickYearColor, getLatestSampleValue, summarize, inclusivePercentile, sortedSeriesValues, getPercentileEmoji, identifyWaves } from './stats.js';
 import { predictTrainedWaveEnd } from './wave-model.js';
-import { fuzzyMatchPlant, isZipCodeQuery, getPlantCoordinates, getReferenceCoordsFromZip, haversineDistance, isPlantInactive, loadAndRenderPlantSamples } from './data.js';
+import { fuzzyMatchPlant, isZipCodeQuery, getPlantCoordinates, getReferenceCoordsFromZip, haversineDistance, isPlantInactive, loadAndRenderPlantSamples, triangulateZipGraph } from './data.js';
 import { resetChartZoom, toggleAllYears, toggleYearVisibility, updateYScale, updateSmoothing, updateChart, updateChartMode } from './chart.js';
 import { downloadCSV, sortTableByDate, changePage, handleSearch } from './table.js';
 
@@ -28,6 +28,8 @@ import { downloadCSV, sortTableByDate, changePage, handleSearch } from './table.
     }
 
     export function handlePlantQueryChange(val) {
+      const triangulateButton = document.querySelector('[data-action="triangulate-zip"]');
+      if (triangulateButton) triangulateButton.classList.toggle('hidden', !isZipCodeQuery(val));
       const clearBtn = document.getElementById('clearPlantSearchBtn');
       if (clearBtn) {
         clearBtn.classList.toggle('hidden', !val);
@@ -193,6 +195,8 @@ import { downloadCSV, sortTableByDate, changePage, handleSearch } from './table.
       } else {
         state.selectedPlantUids = [plant.uid];
       }
+      state.triangulatedZip = null;
+      state.triangulationWeights = null;
       state.currentPlantUid = state.selectedPlantUids.includes(plant.uid)
         ? plant.uid
         : state.selectedPlantUids[0];
@@ -641,6 +645,7 @@ import { downloadCSV, sortTableByDate, changePage, handleSearch } from './table.
       'retry-load': () => loadAndRenderPlantSamples(),
       'plant-clear': () => clearPlantSearch(),
       'toggle-multi-facility': () => toggleMultiFacilityMode(),
+      'triangulate-zip': () => triangulateZipGraph(document.getElementById('plantSearchInput')?.value || ''),
       'chart-reset': () => resetChartZoom(),
       'years-all': el => toggleAllYears(el.dataset.visible === 'true'),
       'toggle-panel': el => togglePanel(el.dataset.target, el.dataset.icon),

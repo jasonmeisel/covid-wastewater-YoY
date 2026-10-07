@@ -16,6 +16,8 @@ export const state = {
   plantsCatalog: [], // Full list of plants loaded from plants.json
   currentPlantMetadata: null,
   selectedPlantUids: ["b9c02d34"],
+  triangulatedZip: null,
+  triangulationWeights: null,
 
   // PMC19 county data
   countyCovidDataByFips: new Map(),

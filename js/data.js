@@ -1,8 +1,9 @@
 // Source: index.html // [587-604] // [606-609] // [611-636] // [694-732] // [734-751] // [753-756] // [758-766] // [768-786] // [788-797] // [2188-2203] // [2216-2261]
 
-import { state, setSeries } from './state.js';
+import { state, setSeries, syncStateToUrl } from './state.js';
 import { updateCountyCovidSummary, resolveZipToCountyFips, showCountyDataError } from './county.js';
 import { buildSeries } from './stats.js';
+import { findEnclosingPlantTriangle } from './triangulation.js';
 import { updateChart, updateCustomLegendUI } from './chart.js';
 import { applyTableFiltering } from './table.js';
 import { updatePlantMetadataUI, renderPlantSearchResults, updateYearlyStatsSummaryPanel, renderSummaryMetricsRow, renderSampleAccounting, showStatusBanner } from './ui.js';
@@ -218,7 +219,9 @@ import { updatePlantMetadataUI, renderPlantSearchResults, updateYearlyStatsSumma
       const loader = document.getElementById('chartLoader');
       if (loader) loader.classList.remove('hidden');
       
-      const { byYear, years, skipped } = buildSeries(state.rawSamples);
+      const { byYear, years, skipped } = buildSeries(state.rawSamples, {
+        facilityWeights: state.triangulationWeights,
+      });
       setSeries(byYear, years, skipped);
       renderSummaryMetricsRow();
       updateChart();
@@ -228,6 +231,35 @@ import { updatePlantMetadataUI, renderPlantSearchResults, updateYearlyStatsSumma
       applyTableFiltering();
 
       if (loader) loader.classList.add('hidden');
+    }
+
+    export async function triangulateZipGraph(zip) {
+      if (!isZipCodeQuery(zip)) {
+        showStatusBanner('Enter a valid 5-digit ZIP code to build the experimental graph.', 'error');
+        return;
+      }
+      try {
+        const point = await getReferenceCoordsFromZip(zip);
+        if (!point) throw new Error(`Could not find coordinates for ZIP ${zip.slice(0, 5)}.`);
+        const triangle = findEnclosingPlantTriangle(
+          state.plantsCatalog.filter(plant => !isPlantInactive(plant)),
+          point,
+          getPlantCoordinates,
+          haversineDistance,
+        );
+        if (!triangle) throw new Error(`No enclosing plant triangle found for ZIP ${zip.slice(0, 5)}. Try another ZIP.`);
+        state.selectedPlantUids = triangle.plants.map(plant => String(plant.uid));
+        state.currentPlantUid = state.selectedPlantUids[0];
+        state.currentPlantMetadata = triangle.plants[0];
+        state.triangulatedZip = zip.slice(0, 5);
+        state.triangulationWeights = Object.fromEntries(state.selectedPlantUids.map((uid, index) => [uid, triangle.weights[index]]));
+        updatePlantMetadataUI();
+        syncStateToUrl();
+        await loadAndRenderPlantSamples();
+        showStatusBanner(`Experimental ZIP interpolation active for ${state.triangulatedZip}; weights: ${triangle.weights.map(weight => `${(weight * 100).toFixed(1)}%`).join(', ')}.`, 'info');
+      } catch (err) {
+        showStatusBanner(err?.message || String(err), 'error');
+      }
     }
 
     // Primary Async Loader fetching from GCS Target URL

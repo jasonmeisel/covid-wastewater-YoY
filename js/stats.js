@@ -2,6 +2,7 @@
 // DOM-free (apart from reading the shared state object) so `node --test` can import it.
 import { state } from './state.js';
 import { parseDateParts } from './util.js';
+import { interpolateAtDay } from './triangulation.js';
 
 // Color definitions for individual years (Tailwind `bg-*` classes are consumed by the legend cards).
 // Unknown years fall through to an ordered 6-entry cycle so consecutive years stay distinguishable.
@@ -74,7 +75,7 @@ export function extractPmMov(sample) {
 
 // Groups samples into per-year series aligned on the 1–365 day-of-year axis.
 // Every rejected sample is counted in `skipped` so the UI can report the loss honestly.
-export function buildSeries(samples, { scaleFactor = 1e6 } = {}) {
+export function buildSeries(samples, { scaleFactor = 1e6, facilityWeights = null } = {}) {
   const byFacilityYear = {};
   const skipped = { total: 0, missingDate: 0, missingValue: 0, nonPositive: 0, unparseableDate: 0 };
 
@@ -115,10 +116,29 @@ export function buildSeries(samples, { scaleFactor = 1e6 } = {}) {
 
   const byYear = {};
   for (const [year, facilities] of Object.entries(byFacilityYear)) {
-    const seriesByFacility = [...facilities.values()].map(series => series.sort((a, b) => a.x - b.x));
-    byYear[year] = seriesByFacility.length > 1
-      ? averageFacilitiesByDay(seriesByFacility)
-      : (seriesByFacility[0] || []);
+    const seriesEntries = [...facilities.entries()].map(([uid, series]) => [uid, series.sort((a, b) => a.x - b.x)]);
+    if (facilityWeights) {
+      const weightedEntries = seriesEntries.filter(([uid]) => Object.hasOwn(facilityWeights, uid));
+      if (weightedEntries.length === 3) {
+        const minDay = Math.max(...weightedEntries.map(([, series]) => series[0]?.x ?? Infinity));
+        const maxDay = Math.min(...weightedEntries.map(([, series]) => series.at(-1)?.x ?? -Infinity));
+        const result = [];
+        for (let day = minDay; day <= maxDay; day++) {
+          const values = weightedEntries.map(([uid, series]) => [facilityWeights[uid], interpolateAtDay(series, day)]);
+          if (values.some(([, value]) => value === null)) continue;
+          const representative = weightedEntries[0][1][0];
+          const date = new Date(Date.UTC(Number(year), 0, day));
+          const originalDate = date.toISOString().slice(0, 10);
+          result.push({ ...representative, x: day, originalDate, actualYear: Number(year), y: values.reduce((sum, [weight, value]) => sum + weight * value, 0) });
+        }
+        byYear[year] = result;
+      } else byYear[year] = [];
+    } else {
+      const seriesByFacility = seriesEntries.map(([, series]) => series);
+      byYear[year] = seriesByFacility.length > 1
+        ? averageFacilitiesByDay(seriesByFacility)
+        : (seriesByFacility[0] || []);
+    }
   }
 
   const years = Object.keys(byYear).map(Number).sort((a, b) => b - a); // descending sort
