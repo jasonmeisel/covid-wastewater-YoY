@@ -542,6 +542,8 @@ import { downloadCSV, sortTableByDate, changePage, handleSearch } from './table.
           latestDate: modelForecast.latestDate,
           remainingDays: modelForecast.remainingDays,
           method: modelForecast.method,
+          fittedCurve: modelForecast.fittedCurve,
+          threshold: modelForecast.threshold,
           modelPeakDate: modelForecast.activeWave.peakDate,
           cutoffDate: modelForecast.cutoffDate,
         };

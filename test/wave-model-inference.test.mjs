@@ -42,6 +42,8 @@ test('site Gaussian fit recovers a synthetic wave-end threshold crossing', () =>
   const forecast = predictGaussianWaveEnd(points, waves);
   assert.ok(forecast);
   assert.ok(forecast.endDate > points[80].originalDate);
+  assert.ok(forecast.fittedCurve.sigma > 0);
+  assert.ok(forecast.fittedCurve.amplitude > 0);
   assert.equal(forecast.method, 'Gaussian fit to daily observations; prior-baseline P90 crossing');
 });
 

@@ -185,6 +185,12 @@ export function predictGaussianWaveEnd(points, waves = identifyWaves(points)) {
     latestDate: endDate,
     remainingDays: Math.ceil(crossing) - latestDay,
     threshold: baseline.p90,
+    fittedCurve: {
+      mean: fit.mean,
+      sigma: fit.sigma,
+      amplitude: fit.amplitude,
+      baseline: baseline.median,
+    },
     cutoffDate: signal.at(-1).originalDate,
     method: 'Gaussian fit to daily observations; prior-baseline P90 crossing',
   };

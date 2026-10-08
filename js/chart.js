@@ -376,6 +376,7 @@ import { pickYearColor, dailyAggregate, movingAverage, sortedSeriesValues, inclu
           (!isTimeline && (startParts.year !== latestYear || peakParts.year !== latestYear ||
             endParts.year > latestYear + 1 || currentParts?.year !== latestYear))) return null;
 
+      if (!isTimeline && !state.visibleYears[latestYear]) return null;
       const currentDataset = seriesDatasets.find(dataset => isTimeline || Number(dataset.label) === latestYear);
       if (!currentDataset?.data?.length) return null;
       const startX = isTimeline ? Math.floor(Date.parse(`${wave.startDate}T00:00:00Z`) / 86400000) : dayOfYearIndex(startParts);
@@ -388,52 +389,22 @@ import { pickYearColor, dailyAggregate, movingAverage, sortedSeriesValues, inclu
       const lastDayThisYear = Math.floor(Date.parse(`${latestYear}-12-31T00:00:00Z`) / 86400000);
       if (!(startX < peakX && peakX < currentX && startDay < peakDay && peakDay < currentDay &&
           currentDay < forecastEndDay && (isTimeline || lastDayThisYear > currentDay))) return null;
-      const nearestPoint = x => currentDataset.data.reduce((closest, point) =>
-        Math.abs(Number(point.x) - x) < Math.abs(Number(closest.x) - x) ? point : closest,
-      currentDataset.data[0]);
-      const peakY = Number(nearestPoint(peakX).y);
-      const currentY = Number(currentDataset.data.at(-1).y);
-      const baselineRange = preWaveBaselineRange(sortedSamples(), state.detectedWaves);
-      const baseline = baselineRange?.p90 ?? wave.baseline;
-      const medianBaseline = baselineRange?.median ?? wave.baseline;
+      const fittedCurve = wave.forecast.fittedCurve;
+      if (!fittedCurve || !(fittedCurve.sigma > 0) || !(fittedCurve.amplitude > 0)) return null;
       const percentileValues = sortedSeriesValues();
-      const forecastBaselineY = state.yScaleType === 'percentile'
-        ? inclusivePercentile(baseline, percentileValues) : baseline;
-      const medianY = state.yScaleType === 'percentile'
-        ? inclusivePercentile(medianBaseline, percentileValues) : medianBaseline;
-      if (![peakY, currentY, forecastBaselineY, medianY].every(Number.isFinite) || currentY <= medianY) return null;
-      // Keep a downward projection even when the baseline's upper bound is above
-      // the current value; in that case anchor the forecast at the lower median.
-      const endY = forecastBaselineY < currentY ? forecastBaselineY : medianY;
-
-      // Fit a concave-down quadratic through the current point and forecast end,
-      // choosing curvature closest to the observed peak while keeping the
-      // projected segment descending. Continue this same curve until the median.
-      const tPeak = (peakDay - startDay) / (forecastEndDay - startDay);
-      const tCurrent = (currentDay - startDay) / (forecastEndDay - startDay);
-      const secant = (endY - currentY) / (1 - tCurrent);
-      const peakCurvature = (peakY - currentY - secant * (tPeak - tCurrent)) /
-        ((tPeak - tCurrent) * (tPeak - 1));
-      const minCurvature = secant / (1 - tCurrent);
-      const curvature = Math.min(-1e-9, Math.max(minCurvature, peakCurvature));
-      const linear = secant - curvature * (1 + tCurrent);
-      const constant = currentY - curvature * tCurrent * tCurrent - linear * tCurrent;
-      const evaluate = t => curvature * t * t + linear * t + constant;
-      // If the forecast crosses New Year, draw only through Dec 31.
+      const evaluate = day => fittedCurve.baseline + fittedCurve.amplitude *
+        Math.exp(-0.5 * ((day - fittedCurve.mean) / fittedCurve.sigma) ** 2);
+      const toChartY = value => state.yScaleType === 'percentile'
+        ? inclusivePercentile(value, percentileValues) : value;
       const projectionLimitDay = isTimeline ? currentDay + 365 : lastDayThisYear;
-      let displayedEndDay = projectionLimitDay;
-      for (let day = currentDay + 1; day <= projectionLimitDay; day++) {
-        const t = (day - startDay) / (forecastEndDay - startDay);
-        if (evaluate(t) <= medianY) {
-          displayedEndDay = day;
-          break;
-        }
-      }
+      const displayedEndDay = Math.min(forecastEndDay, projectionLimitDay);
       const data = [];
       for (let day = currentDay; day <= displayedEndDay; day++) {
-        const t = (day - startDay) / (forecastEndDay - startDay);
         const date = new Date(day * 86400000).toISOString().slice(0, 10);
-        data.push({ x: isTimeline ? day : dayOfYearIndex(parseDateParts(date)), y: evaluate(t) });
+        data.push({
+          x: isTimeline ? day : dayOfYearIndex(parseDateParts(date)),
+          y: toChartY(evaluate(day)),
+        });
       }
       const color = document.documentElement.classList.contains('dark')
         ? 'rgba(250, 204, 21, 0.95)' : 'rgba(180, 83, 9, 0.95)';
