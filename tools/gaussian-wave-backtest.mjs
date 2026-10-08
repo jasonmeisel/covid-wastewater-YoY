@@ -71,14 +71,19 @@ export function fitGaussian(points, baseline = 0) {
   return best;
 }
 
-function predictFromPrefix(prefix, active, baselineMedian, threshold, smoothingDays) {
+function predictFromPrefix(prefix, active, baselineMedian, threshold, smoothingDays, logTransform) {
   const startDay = dayNumber(active.startDate);
-  const daily = smoothTimelineLikeChart(prefix, smoothingDays)
+  const observed = smoothTimelineLikeChart(prefix, smoothingDays)
     .filter(point => point.day >= startDay && point.y > 0);
-  if (daily.length < 5 || !(threshold > 0)) return null;
-  const fit = fitGaussian(daily, baselineMedian);
-  if (!fit || !(threshold > baselineMedian) || !(fit.amplitude > threshold - baselineMedian)) return null;
-  const ratio = fit.amplitude / (threshold - baselineMedian);
+  if (observed.length < 5 || !(threshold > 0)) return null;
+  const daily = logTransform
+    ? observed.map(point => ({ ...point, y: Math.log(point.y) }))
+    : observed;
+  const fitBaseline = logTransform ? Math.log(baselineMedian) : baselineMedian;
+  const fitThreshold = logTransform ? Math.log(threshold) : threshold;
+  const fit = fitGaussian(daily, fitBaseline);
+  if (!fit || !(fitThreshold > fitBaseline) || !(fit.amplitude > fitThreshold - fitBaseline)) return null;
+  const ratio = fit.amplitude / (fitThreshold - fitBaseline);
   const crossingDay = fit.mean + fit.sigma * Math.sqrt(2 * Math.log(ratio));
   const latestDay = daily.at(-1).day;
   if (!(crossingDay > latestDay) || crossingDay - latestDay > 365) return null;
@@ -86,7 +91,7 @@ function predictFromPrefix(prefix, active, baselineMedian, threshold, smoothingD
 }
 
 /** Walk-forward evaluation for Gaussian fits against each completed wave. */
-export function backtestGaussianWaveEnd(points, { smoothingDays = 30 } = {}) {
+export function backtestGaussianWaveEnd(points, { smoothingDays = 30, logTransform = false } = {}) {
   const ordered = (points || [])
     .filter(point => /^\d{4}-\d{2}-\d{2}$/.test(String(point.originalDate)) && Number(point.y) > 0)
     .map(point => ({ ...point, originalDate: String(point.originalDate).slice(0, 10) }))
@@ -107,7 +112,7 @@ export function backtestGaussianWaveEnd(points, { smoothingDays = 30 } = {}) {
       const baseline = preWaveBaselineRange(prefix, detected);
       if (!baseline || !(baseline.p90 > 0)) continue;
       if (!(baseline.p90 > baseline.median)) continue;
-      const prediction = predictFromPrefix(prefix, active, baseline.median, baseline.p90, smoothingDays);
+      const prediction = predictFromPrefix(prefix, active, baseline.median, baseline.p90, smoothingDays, logTransform);
       if (!prediction) continue;
       const forecastDay = dayNumber(prediction.date);
       forecasts.push({
@@ -126,7 +131,7 @@ export function backtestGaussianWaveEnd(points, { smoothingDays = 30 } = {}) {
   }
   const errors = forecasts.map(row => row.absoluteErrorDays).sort((a, b) => a - b);
   return {
-    strategy: `${smoothingDays > 1 ? `${smoothingDays}-day triangular weighted average` : 'unsmoothed daily values'} + Gaussian curve over prior baseline median; crossing prior baseline P90`,
+    strategy: `${smoothingDays > 1 ? `${smoothingDays}-day triangular weighted average` : 'unsmoothed daily values'} + ${logTransform ? 'log-scale ' : ''}Gaussian curve over prior baseline median; crossing prior baseline P90`,
     completedWaves: waves.length,
     forecastCount: forecasts.length,
     meanAbsoluteErrorDays: errors.length ? errors.reduce((sum, value) => sum + value, 0) / errors.length : null,
