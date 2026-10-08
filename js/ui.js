@@ -4,7 +4,7 @@ import { formatShortDate, formatMonthDay, parseDateParts, escapeHtml } from './u
 import { state, syncStateToUrl, sortedSamples } from './state.js';
 import { resolveZipToCountyFips, updateCountyCovidSummary } from './county.js';
 import { pickYearColor, getLatestSampleValue, summarize, inclusivePercentile, sortedSeriesValues, getPercentileEmoji, identifyWaves } from './stats.js';
-import { predictTrainedWaveEnd } from './wave-model.js';
+import { predictGaussianWaveEnd } from './wave-model.js';
 import { fuzzyMatchPlant, isZipCodeQuery, getPlantCoordinates, getReferenceCoordsFromZip, haversineDistance, isPlantInactive, loadAndRenderPlantSamples, triangulateZipGraph } from './data.js';
 import { resetChartZoom, toggleAllYears, toggleYearVisibility, updateYScale, updateSmoothing, updateChart, updateChartMode } from './chart.js';
 import { downloadCSV, sortTableByDate, changePage, handleSearch } from './table.js';
@@ -528,8 +528,9 @@ import { downloadCSV, sortTableByDate, changePage, handleSearch } from './table.
         return;
       }
 
-      const modelForecast = predictTrainedWaveEnd(points);
-      const waves = identifyWaves(points).map(wave => ({
+      const detected = identifyWaves(points);
+      const modelForecast = predictGaussianWaveEnd(points, detected);
+      const waves = detected.map(wave => ({
         ...wave,
         forecast: null,
         highlightEndDate: wave.endDate || points[points.length - 1]?.originalDate,
@@ -550,10 +551,10 @@ import { downloadCSV, sortTableByDate, changePage, handleSearch } from './table.
       const currentWave = waves[waves.length - 1];
       const currentWaveForecast = currentWave?.forecast;
       if (forecastMessage && currentWaveForecast) {
-        forecastMessage.textContent = `The pooled ridge model estimates that the current wave will cross its end threshold around ${formatShortDate(currentWaveForecast.earliestDate)} (about ${Math.round(currentWaveForecast.remainingDays)} days after the latest sample). This estimate is shown from 14 days post-peak, before sustained decline is established, so it can be uncertain. No calibrated prediction interval is available.`;
+        forecastMessage.textContent = `A Gaussian fit to unsmoothed daily averages estimates that the current wave will fall below the previous quiet-period baseline’s 90th percentile around ${formatShortDate(currentWaveForecast.earliestDate)} (about ${Math.round(currentWaveForecast.remainingDays)} days after the latest sample). This point estimate is exploratory and has no calibrated prediction interval.`;
         forecastMessage.classList.remove('hidden');
       } else if (forecastMessage && currentWave?.ongoing) {
-        forecastMessage.textContent = 'A wave is still active, but the trained estimate is withheld until at least 14 days have passed since the detected peak.';
+        forecastMessage.textContent = 'A wave is active, but a Gaussian end-date estimate is unavailable. It requires at least 14 days since the peak and a preceding completed wave to define the prior quiet-period baseline.';
         forecastMessage.classList.remove('hidden');
       }
       state.highlightedWave = waves.find(wave => wave.startDate === state.highlightedWaveStartDate) || null;

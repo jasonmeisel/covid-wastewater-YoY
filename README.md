@@ -14,8 +14,8 @@ Served statically with no build step (GitHub Pages publishes the repo root).
 | `js/state.js` | Mutable state, `setSeries()`, `sortedSamples()`, URL sync |
 | `js/util.js` | DOM-free date/number/escaping helpers |
 | `js/stats.js` | DOM-free parsing, day-of-year bucketing, smoothing, percentiles and wave detection |
-| `js/wave-model.js` | Prefix-only 14-day-smoothed features and runtime pooled ridge inference |
-| `js/wave-model-weights.js` | Baked pooled ridge coefficients and training/validation metadata |
+| `js/wave-model.js` | Wave-end inference, including runtime Gaussian fitting to daily averages |
+| `js/wave-model-weights.js` | Baked pooled ridge coefficients and training/validation metadata for offline experiments |
 | `js/county.js` | PMC19 county card model (`buildCountyCard`) and renderer |
 | `js/{data,chart,table,ui}.js` | Fetching, Chart.js, the table, and DOM rendering |
 | `tools/build-zip-data.mjs` | Regenerates `data/zip-lookup.json` from GeoNames `US.txt` |

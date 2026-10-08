@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { trainedWaveFeatures, predictTrainedWaveEnd } from '../js/wave-model.js';
+import { trainedWaveFeatures, predictTrainedWaveEnd, fitGaussianWave, predictGaussianWaveEnd } from '../js/wave-model.js';
 import { waveTrainingRows } from '../tools/train-wave-model.mjs';
 
 function completedWaveSeries() {
@@ -16,6 +16,34 @@ function completedWaveSeries() {
   }
   return values;
 }
+
+test('site Gaussian fit recovers a synthetic wave-end threshold crossing', () => {
+  const points = [];
+  for (let day = 0; day <= 80; day++) {
+    const date = new Date(Date.UTC(2024, 0, 1 + day)).toISOString().slice(0, 10);
+    const y = day < 20
+      ? 10 + (day % 10)
+      : 14.5 + 100 * Math.exp(-0.5 * ((day - 55) / 20) ** 2);
+    points.push({ originalDate: date, y });
+  }
+  const active = {
+    startDate: points[20].originalDate,
+    peakDate: points[55].originalDate,
+    ongoing: true,
+    endDate: null,
+  };
+  const waves = [
+    { startDate: points[0].originalDate, endDate: points[10].originalDate, ongoing: false },
+    active,
+  ];
+  const fit = fitGaussianWave(points.slice(20).map((point, day) => ({ ...point, day: day + 20 })), 14.5);
+  assert.ok(fit);
+  assert.ok(Math.abs(fit.mean - 55) < 2);
+  const forecast = predictGaussianWaveEnd(points, waves);
+  assert.ok(forecast);
+  assert.ok(forecast.endDate > points[80].originalDate);
+  assert.equal(forecast.method, 'Gaussian fit to daily observations; prior-baseline P90 crossing');
+});
 
 test('site ridge features match the backtest at an eligible historical cutoff', () => {
   const points = completedWaveSeries();
