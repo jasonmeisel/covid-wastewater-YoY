@@ -1,6 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { fitGaussian, fitSkewNormal } from '../tools/gaussian-wave-backtest.mjs';
+import { fitGaussian, fitSkewNormal, inclusivePercentileOfSorted } from '../tools/gaussian-wave-backtest.mjs';
+
+test('inclusive percentile transform matches graph tie handling', () => {
+  assert.equal(inclusivePercentileOfSorted(2, [1, 2, 2, 4]), 75);
+  assert.equal(inclusivePercentileOfSorted(1, [1, 2, 2, 4]), 25);
+  assert.equal(inclusivePercentileOfSorted(3, []), null);
+});
 
 test('Gaussian curve fit recovers the peak and spread of a baseline-offset wave', () => {
   const points = Array.from({ length: 41 }, (_, index) => {

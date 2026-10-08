@@ -133,13 +133,31 @@ export function fitSkewNormal(points, baseline = 0) {
   return best;
 }
 
+export function inclusivePercentileOfSorted(value, sortedValues) {
+  let lower = 0;
+  let upper = sortedValues.length;
+  while (lower < upper) {
+    const middle = Math.floor((lower + upper) / 2);
+    if (sortedValues[middle] <= value) lower = middle + 1;
+    else upper = middle;
+  }
+  return sortedValues.length ? 100 * lower / sortedValues.length : null;
+}
+
 function predictFromPrefix(prefix, active, baselineMedian, threshold, smoothingDays, transform, curveType = 'gaussian', fitFromPeak = false) {
   const startDay = dayNumber(fitFromPeak ? active.peakDate : active.startDate);
   const observed = smoothTimelineLikeChart(prefix, smoothingDays)
     .filter(point => point.day >= startDay && point.y > 0);
   if (observed.length < 5 || !(threshold > 0)) return null;
+  // Match the graph's inclusive empirical percentile rank, but use only values
+  // available at this historical cutoff to avoid future-data leakage.
+  const percentileReference = transform === 'percentile'
+    ? prefix.map(point => Number(point.y)).filter(value => value > 0 && Number.isFinite(value)).sort((a, b) => a - b)
+    : null;
   const transformValue = value => transform === 'log' ? Math.log(value)
-    : transform === 'exp100' ? Math.exp(value / 100) : value;
+    : transform === 'exp100' ? Math.exp(value / 100)
+      : transform === 'percentile' ? inclusivePercentileOfSorted(value, percentileReference)
+        : value;
   const daily = transform === 'raw' ? observed
     : observed.map(point => ({ ...point, y: transformValue(point.y) }));
   const fitBaseline = transformValue(baselineMedian);
@@ -247,7 +265,7 @@ export function backtestGaussianWaveEnd(points, { smoothingDays = 30, transform 
   }
   const errors = forecasts.map(row => row.absoluteErrorDays).sort((a, b) => a - b);
   return {
-    strategy: `${smoothingDays > 1 ? `${smoothingDays}-day triangular weighted average` : 'unsmoothed daily values'} + ${transform === 'raw' ? '' : `${transform === 'exp100' ? 'exp(y/100)' : 'log(y)'}-scale `}${curveType === 'average-whole-postpeak' ? 'average whole-wave/post-peak Gaussian curve' : `${fitFromPeak ? 'post-peak ' : ''}${curveType} curve`} over prior baseline median; crossing prior baseline P90`,
+    strategy: `${smoothingDays > 1 ? `${smoothingDays}-day triangular weighted average` : 'unsmoothed daily values'} + ${transform === 'raw' ? '' : transform === 'percentile' ? 'prefix empirical-percentile ' : `${transform === 'exp100' ? 'exp(y/100)' : 'log(y)'}-scale `}${curveType === 'average-whole-postpeak' ? 'average whole-wave/post-peak Gaussian curve' : `${fitFromPeak ? 'post-peak ' : ''}${curveType} curve`} over prior baseline median; crossing prior baseline P90`,
     completedWaves: waves.length,
     forecastCount: forecasts.length,
     meanAbsoluteErrorDays: errors.length ? errors.reduce((sum, value) => sum + value, 0) / errors.length : null,
