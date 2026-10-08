@@ -71,7 +71,69 @@ export function fitGaussian(points, baseline = 0) {
   return best;
 }
 
-function predictFromPrefix(prefix, active, baselineMedian, threshold, smoothingDays, transform) {
+const normalCdf = value => {
+  const z = Math.abs(value) / Math.sqrt(2);
+  const t = 1 / (1 + 0.3275911 * z);
+  const erf = 1 - (((((1.061405429 * t - 1.453152027) * t + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t) * Math.exp(-z * z);
+  return 0.5 * (1 + (value < 0 ? -erf : erf));
+};
+const skewShape = (z, alpha) => Math.exp(-0.5 * z * z) * 2 * normalCdf(alpha * z);
+
+// Fit a baseline-offset skew-normal curve; amplitude is solved exactly for
+// each location / scale / skew candidate, then the least-squares loss is minimized.
+export function fitSkewNormal(points, baseline = 0) {
+  if (!Array.isArray(points) || points.length < 5) return null;
+  const origin = points[0].day;
+  const rows = points.map(point => ({ x: point.day - origin, y: Number(point.y) - baseline }));
+  if (rows.some(row => !(row.y > 0))) return null;
+  const gaussian = fitGaussian(points, baseline);
+  if (!gaussian) return null;
+  const center = gaussian.mean - origin;
+  const radius = Math.max(35, gaussian.sigma * 1.5);
+  const scales = [0.5, 0.7, 0.85, 1, 1.2, 1.5, 2].map(factor => gaussian.sigma * factor);
+  const shapes = [-8, -4, -2, -1, 0, 1, 2, 4, 8];
+  const evaluate = (location, scale, alpha) => {
+    if (!(scale > 0)) return null;
+    let xy = 0;
+    let xx = 0;
+    for (const row of rows) {
+      const shape = skewShape((row.x - location) / scale, alpha);
+      xy += row.y * shape;
+      xx += shape * shape;
+    }
+    if (!(xx > 0)) return null;
+    const amplitude = xy / xx;
+    let loss = 0;
+    for (const row of rows) loss += (row.y - amplitude * skewShape((row.x - location) / scale, alpha)) ** 2;
+    return { location: location + origin, scale, alpha, amplitude, loss };
+  };
+  let best = null;
+  for (let i = 0; i <= 40; i++) {
+    const location = center - radius + 2 * radius * i / 40;
+    for (const scale of scales) for (const alpha of shapes) {
+      const candidate = evaluate(location, scale, alpha);
+      if (candidate && (!best || candidate.loss < best.loss)) best = candidate;
+    }
+  }
+  if (!best) return null;
+  let locationStep = radius / 10;
+  for (let iteration = 0; iteration < 5; iteration++) {
+    let local = best;
+    for (let i = -4; i <= 4; i++) {
+      for (const scaleFactor of [0.85, 0.93, 1, 1.07, 1.15]) {
+        for (const alpha of shapes) {
+          const candidate = evaluate(best.location - origin + i * locationStep, best.scale * scaleFactor, alpha);
+          if (candidate && candidate.loss < local.loss) local = candidate;
+        }
+      }
+    }
+    best = local;
+    locationStep /= 2;
+  }
+  return best;
+}
+
+function predictFromPrefix(prefix, active, baselineMedian, threshold, smoothingDays, transform, curveType = 'gaussian') {
   const startDay = dayNumber(active.startDate);
   const observed = smoothTimelineLikeChart(prefix, smoothingDays)
     .filter(point => point.day >= startDay && point.y > 0);
@@ -82,17 +144,42 @@ function predictFromPrefix(prefix, active, baselineMedian, threshold, smoothingD
     : observed.map(point => ({ ...point, y: transformValue(point.y) }));
   const fitBaseline = transformValue(baselineMedian);
   const fitThreshold = transformValue(threshold);
-  const fit = fitGaussian(daily, fitBaseline);
+  const fit = curveType === 'skew-normal'
+    ? fitSkewNormal(daily, fitBaseline)
+    : fitGaussian(daily, fitBaseline);
   if (!fit || !(fitThreshold > fitBaseline) || !(fit.amplitude > fitThreshold - fitBaseline)) return null;
-  const ratio = fit.amplitude / (fitThreshold - fitBaseline);
-  const crossingDay = fit.mean + fit.sigma * Math.sqrt(2 * Math.log(ratio));
+  let crossingDay;
+  if (curveType === 'skew-normal') {
+    const latestDay = daily.at(-1).day;
+    let peakDay = fit.location - 5 * fit.scale;
+    let peakValue = -Infinity;
+    for (let day = Math.floor(fit.location - 5 * fit.scale); day <= Math.ceil(fit.location + 5 * fit.scale); day++) {
+      const value = skewShape((day - fit.location) / fit.scale, fit.alpha);
+      if (value > peakValue) { peakValue = value; peakDay = day; }
+    }
+    crossingDay = NaN;
+    for (let day = Math.max(latestDay + 1, peakDay + 1); day <= latestDay + 365; day++) {
+      if (fitBaseline + fit.amplitude * skewShape((day - fit.location) / fit.scale, fit.alpha) <= fitThreshold) {
+        crossingDay = day;
+        break;
+      }
+    }
+  } else {
+    const ratio = fit.amplitude / (fitThreshold - fitBaseline);
+    crossingDay = fit.mean + fit.sigma * Math.sqrt(2 * Math.log(ratio));
+  }
   const latestDay = daily.at(-1).day;
   if (!(crossingDay > latestDay) || crossingDay - latestDay > 365) return null;
-  return { date: formatDay(Math.ceil(crossingDay)), mean: fit.mean, sigma: fit.sigma, amplitude: fit.amplitude };
+  return {
+    date: formatDay(Math.ceil(crossingDay)),
+    mean: fit.mean ?? fit.location,
+    sigma: fit.sigma ?? fit.scale,
+    amplitude: fit.amplitude,
+  };
 }
 
 /** Walk-forward evaluation for Gaussian fits against each completed wave. */
-export function backtestGaussianWaveEnd(points, { smoothingDays = 30, transform = 'raw' } = {}) {
+export function backtestGaussianWaveEnd(points, { smoothingDays = 30, transform = 'raw', curveType = 'gaussian' } = {}) {
   const ordered = (points || [])
     .filter(point => /^\d{4}-\d{2}-\d{2}$/.test(String(point.originalDate)) && Number(point.y) > 0)
     .map(point => ({ ...point, originalDate: String(point.originalDate).slice(0, 10) }))
@@ -113,7 +200,7 @@ export function backtestGaussianWaveEnd(points, { smoothingDays = 30, transform 
       const baseline = preWaveBaselineRange(prefix, detected);
       if (!baseline || !(baseline.p90 > 0)) continue;
       if (!(baseline.p90 > baseline.median)) continue;
-      const prediction = predictFromPrefix(prefix, active, baseline.median, baseline.p90, smoothingDays, transform);
+      const prediction = predictFromPrefix(prefix, active, baseline.median, baseline.p90, smoothingDays, transform, curveType);
       if (!prediction) continue;
       const forecastDay = dayNumber(prediction.date);
       forecasts.push({
@@ -132,7 +219,7 @@ export function backtestGaussianWaveEnd(points, { smoothingDays = 30, transform 
   }
   const errors = forecasts.map(row => row.absoluteErrorDays).sort((a, b) => a - b);
   return {
-    strategy: `${smoothingDays > 1 ? `${smoothingDays}-day triangular weighted average` : 'unsmoothed daily values'} + ${transform === 'raw' ? '' : `${transform === 'exp100' ? 'exp(y/100)' : 'log(y)'}-scale `}Gaussian curve over prior baseline median; crossing prior baseline P90`,
+    strategy: `${smoothingDays > 1 ? `${smoothingDays}-day triangular weighted average` : 'unsmoothed daily values'} + ${transform === 'raw' ? '' : `${transform === 'exp100' ? 'exp(y/100)' : 'log(y)'}-scale `}${curveType} curve over prior baseline median; crossing prior baseline P90`,
     completedWaves: waves.length,
     forecastCount: forecasts.length,
     meanAbsoluteErrorDays: errors.length ? errors.reduce((sum, value) => sum + value, 0) / errors.length : null,
@@ -140,6 +227,10 @@ export function backtestGaussianWaveEnd(points, { smoothingDays = 30, transform 
     within14DaysPercent: errors.length ? 100 * errors.filter(value => value <= 14).length / errors.length : null,
     forecasts,
   };
+}
+
+export function backtestSkewNormalWaveEnd(points, { smoothingDays = 1 } = {}) {
+  return backtestGaussianWaveEnd(points, { smoothingDays, curveType: 'skew-normal' });
 }
 
 async function main() {

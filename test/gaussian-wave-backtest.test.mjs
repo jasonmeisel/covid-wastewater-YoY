@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { fitGaussian } from '../tools/gaussian-wave-backtest.mjs';
+import { fitGaussian, fitSkewNormal } from '../tools/gaussian-wave-backtest.mjs';
 
 test('Gaussian curve fit recovers the peak and spread of a baseline-offset wave', () => {
   const points = Array.from({ length: 41 }, (_, index) => {
@@ -12,6 +12,20 @@ test('Gaussian curve fit recovers the peak and spread of a baseline-offset wave'
   assert.ok(Math.abs(fit.mean - 60) < 2, `expected mean near 60, got ${fit.mean}`);
   assert.ok(Math.abs(fit.sigma - 24) < 2, `expected sigma near 24, got ${fit.sigma}`);
   assert.ok(Math.abs(fit.amplitude - 100) < 2, `expected amplitude near 100, got ${fit.amplitude}`);
+});
+
+test('skew-normal fit returns a finite asymmetric curve candidate', () => {
+  const points = Array.from({ length: 31 }, (_, index) => {
+    const day = index * 3;
+    const z = (day - 45) / 22;
+    const cdfApprox = value => 1 / (1 + Math.exp(-1.7 * value));
+    return { day, y: 10 + 100 * Math.exp(-0.5 * z * z) * 2 * cdfApprox(3 * z) };
+  });
+  const fit = fitSkewNormal(points, 10);
+  assert.ok(fit);
+  assert.ok(Number.isFinite(fit.location));
+  assert.ok(fit.scale > 0);
+  assert.ok(fit.amplitude > 0);
 });
 
 test('Gaussian fit rejects insufficient data', () => {
