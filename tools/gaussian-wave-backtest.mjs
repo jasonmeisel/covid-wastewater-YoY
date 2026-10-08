@@ -227,7 +227,11 @@ export function backtestGaussianWaveEnd(points, { smoothingDays = 30, transform 
       const prediction = predictFromPrefix(prefix, active, baseline.median, baseline.p90, smoothingDays, transform, curveType, fitFromPeak);
       if (!prediction) continue;
       const forecastDay = dayNumber(prediction.date);
+      const facilityId = ordered[0]?._facilityUid || ordered[0]?.facilityUid || ordered[0]?.uid || 'unknown-facility';
       forecasts.push({
+        facilityId,
+        waveId: `${facilityId}:${truth.peakDate}`,
+        daysSincePeak: cutoffDay - peakDay,
         peakDate: truth.peakDate,
         cutoffDate,
         actualEndDate: truth.endDate,
