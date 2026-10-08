@@ -133,8 +133,8 @@ export function fitSkewNormal(points, baseline = 0) {
   return best;
 }
 
-function predictFromPrefix(prefix, active, baselineMedian, threshold, smoothingDays, transform, curveType = 'gaussian') {
-  const startDay = dayNumber(active.startDate);
+function predictFromPrefix(prefix, active, baselineMedian, threshold, smoothingDays, transform, curveType = 'gaussian', fitFromPeak = false) {
+  const startDay = dayNumber(fitFromPeak ? active.peakDate : active.startDate);
   const observed = smoothTimelineLikeChart(prefix, smoothingDays)
     .filter(point => point.day >= startDay && point.y > 0);
   if (observed.length < 5 || !(threshold > 0)) return null;
@@ -144,6 +144,30 @@ function predictFromPrefix(prefix, active, baselineMedian, threshold, smoothingD
     : observed.map(point => ({ ...point, y: transformValue(point.y) }));
   const fitBaseline = transformValue(baselineMedian);
   const fitThreshold = transformValue(threshold);
+  if (curveType === 'average-whole-postpeak') {
+    if (!(fitThreshold > fitBaseline)) return null;
+    const peakDay = dayNumber(active.peakDate);
+    const postPeak = daily.filter(point => point.day >= peakDay);
+    const wholeFit = fitGaussian(daily, fitBaseline);
+    const declineFit = fitGaussian(postPeak, fitBaseline);
+    if (!wholeFit || !declineFit) return null;
+    const evaluate = (fit, day) => fitBaseline + fit.amplitude *
+      Math.exp(-0.5 * ((day - fit.mean) / fit.sigma) ** 2);
+    const averageAt = day => (evaluate(wholeFit, day) + evaluate(declineFit, day)) / 2;
+    const latestDay = daily.at(-1).day;
+    if (!(averageAt(latestDay) > fitThreshold)) return null;
+    let crossingDay = NaN;
+    for (let day = latestDay + 1; day <= latestDay + 365; day++) {
+      if (averageAt(day) <= fitThreshold) { crossingDay = day; break; }
+    }
+    if (!Number.isFinite(crossingDay)) return null;
+    return {
+      date: formatDay(crossingDay),
+      mean: (wholeFit.mean + declineFit.mean) / 2,
+      sigma: (wholeFit.sigma + declineFit.sigma) / 2,
+      amplitude: (wholeFit.amplitude + declineFit.amplitude) / 2,
+    };
+  }
   const fit = curveType === 'skew-normal'
     ? fitSkewNormal(daily, fitBaseline)
     : fitGaussian(daily, fitBaseline);
@@ -179,7 +203,7 @@ function predictFromPrefix(prefix, active, baselineMedian, threshold, smoothingD
 }
 
 /** Walk-forward evaluation for Gaussian fits against each completed wave. */
-export function backtestGaussianWaveEnd(points, { smoothingDays = 30, transform = 'raw', curveType = 'gaussian' } = {}) {
+export function backtestGaussianWaveEnd(points, { smoothingDays = 30, transform = 'raw', curveType = 'gaussian', fitFromPeak = false } = {}) {
   const ordered = (points || [])
     .filter(point => /^\d{4}-\d{2}-\d{2}$/.test(String(point.originalDate)) && Number(point.y) > 0)
     .map(point => ({ ...point, originalDate: String(point.originalDate).slice(0, 10) }))
@@ -200,7 +224,7 @@ export function backtestGaussianWaveEnd(points, { smoothingDays = 30, transform 
       const baseline = preWaveBaselineRange(prefix, detected);
       if (!baseline || !(baseline.p90 > 0)) continue;
       if (!(baseline.p90 > baseline.median)) continue;
-      const prediction = predictFromPrefix(prefix, active, baseline.median, baseline.p90, smoothingDays, transform, curveType);
+      const prediction = predictFromPrefix(prefix, active, baseline.median, baseline.p90, smoothingDays, transform, curveType, fitFromPeak);
       if (!prediction) continue;
       const forecastDay = dayNumber(prediction.date);
       forecasts.push({
@@ -219,7 +243,7 @@ export function backtestGaussianWaveEnd(points, { smoothingDays = 30, transform 
   }
   const errors = forecasts.map(row => row.absoluteErrorDays).sort((a, b) => a - b);
   return {
-    strategy: `${smoothingDays > 1 ? `${smoothingDays}-day triangular weighted average` : 'unsmoothed daily values'} + ${transform === 'raw' ? '' : `${transform === 'exp100' ? 'exp(y/100)' : 'log(y)'}-scale `}${curveType} curve over prior baseline median; crossing prior baseline P90`,
+    strategy: `${smoothingDays > 1 ? `${smoothingDays}-day triangular weighted average` : 'unsmoothed daily values'} + ${transform === 'raw' ? '' : `${transform === 'exp100' ? 'exp(y/100)' : 'log(y)'}-scale `}${curveType === 'average-whole-postpeak' ? 'average whole-wave/post-peak Gaussian curve' : `${fitFromPeak ? 'post-peak ' : ''}${curveType} curve`} over prior baseline median; crossing prior baseline P90`,
     completedWaves: waves.length,
     forecastCount: forecasts.length,
     meanAbsoluteErrorDays: errors.length ? errors.reduce((sum, value) => sum + value, 0) / errors.length : null,
@@ -231,6 +255,10 @@ export function backtestGaussianWaveEnd(points, { smoothingDays = 30, transform 
 
 export function backtestSkewNormalWaveEnd(points, { smoothingDays = 1 } = {}) {
   return backtestGaussianWaveEnd(points, { smoothingDays, curveType: 'skew-normal' });
+}
+
+export function backtestAveragedGaussianWaveEnd(points, { smoothingDays = 1 } = {}) {
+  return backtestGaussianWaveEnd(points, { smoothingDays, curveType: 'average-whole-postpeak' });
 }
 
 async function main() {
