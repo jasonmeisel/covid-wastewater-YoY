@@ -35,7 +35,8 @@ or matches on are committed and served.
 ```bash
 python3 -m http.server 8765      # module scripts and fetch() need HTTP, not file://
 node --test test/*.test.mjs      # unit tests (node:test only, no dependencies)
-node tools/backtest-wave-end.mjs points.json  # walk-forward wave-end forecast evaluation
+node tools/backtest-wave-end.mjs points.json  # walk-forward existing wave-end forecast evaluation
+node tools/gaussian-wave-backtest.mjs points.json  # 30-day weighted-average + Gaussian wave-curve experiment (prior-baseline P90 crossing)
 RUN_LA_WAVE_BACKTEST=1 node --test test/la-wave-backtest.test.mjs  # fetch/cache default LA data and evaluate
 node tools/train-wave-model.mjs             # top 16 active facilities; evaluate raw, smoothed, and survival/hazard variants
 node tools/build-wave-model-weights.mjs      # refresh js/wave-model-weights.js from cached training rows
