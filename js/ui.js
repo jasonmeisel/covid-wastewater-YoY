@@ -440,12 +440,17 @@ import { downloadCSV, sortTableByDate, changePage, handleSearch } from './table.
 
       const latestDate = points.reduce((latest, point) =>
         String(point.originalDate).slice(0, 10) > latest ? String(point.originalDate).slice(0, 10) : latest, '');
+      // Use the client's local calendar date for the current-wave day count.
+      const today = new Date();
+      const todayDate = [today.getFullYear(), String(today.getMonth() + 1).padStart(2, '0'), String(today.getDate()).padStart(2, '0')].join('-');
       const waveEndDate = wave.endDate || latestDate;
       const startDay = Date.parse(`${wave.startDate}T00:00:00Z`);
       const latestDay = Date.parse(`${latestDate}T00:00:00Z`);
+      const todayDay = Date.parse(`${todayDate}T00:00:00Z`);
+      const currentDay = activeWave ? todayDay : latestDay;
       const endDay = Date.parse(`${waveEndDate}T00:00:00Z`);
       if (activeWave) {
-        const daysInto = Math.max(1, Math.floor((latestDay - startDay) / 86400000) + 1);
+        const daysInto = Math.max(1, Math.floor((currentDay - startDay) / 86400000) + 1);
         if (elapsed) elapsed.textContent = `${daysInto} days in`;
         if (phase) {
           phase.textContent = '';
@@ -471,8 +476,8 @@ import { downloadCSV, sortTableByDate, changePage, handleSearch } from './table.
         } else if (wave.forecast) {
           const forecastMidpoint = (Date.parse(`${wave.forecast.earliestDate}T00:00:00Z`) +
             Date.parse(`${wave.forecast.latestDate}T00:00:00Z`)) / 2;
-          const daysRemaining = Math.max(0, Math.round((forecastMidpoint - latestDay) / 86400000));
-          const daysElapsed = Math.max(0, Math.floor((latestDay - startDay) / 86400000) + 1);
+          const daysRemaining = Math.max(0, Math.round((forecastMidpoint - currentDay) / 86400000));
+          const daysElapsed = Math.max(0, Math.floor((currentDay - startDay) / 86400000) + 1);
           const percentThrough = Math.round(100 * daysElapsed / (daysElapsed + daysRemaining));
           remaining.textContent = `~${daysRemaining} days to estimated end`;
           if (progress) progress.textContent = `~${percentThrough}% through wave`;
