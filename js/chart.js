@@ -66,7 +66,9 @@ import { pickYearColor, dailyAggregate, movingAverage, sortedSeriesValues, inclu
       const dates = points.map(point => Math.floor(Date.parse(`${String(point.originalDate).slice(0, 10)}T00:00:00Z`) / 86400000));
       const projection = state.chartInstance?.data?.datasets?.find(dataset => dataset.label === 'Projected wave decline');
       const min = Math.min(...dates);
-      const max = Math.max(...dates, ...(projection?.data || []).map(point => point.x));
+      const today = new Date();
+      const todayX = Math.floor(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()) / 86400000);
+      const max = Math.max(...dates, todayX, ...(projection?.data || []).map(point => point.x));
       return { min, max: max > min ? max : min + 1 };
     }
 
@@ -179,6 +181,28 @@ import { pickYearColor, dailyAggregate, movingAverage, sortedSeriesValues, inclu
           Math.abs(Number(context.raw?.x) - dayOfYearIndex(peakParts)) < 0.5);
       });
     }
+
+    const todayMarkerPlugin = {
+      id: 'todayMarker',
+      afterDraw: chart => {
+        const today = new Date();
+        const todayX = state.chartMode === 'timeline'
+          ? Math.floor(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()) / 86400000)
+          : dayOfYearIndex({ year: today.getFullYear(), month: today.getMonth() + 1, day: today.getDate() });
+        const x = chart.scales.x?.getPixelForValue(todayX);
+        const { ctx, chartArea } = chart;
+        if (!chartArea || !Number.isFinite(x) || x < chartArea.left || x > chartArea.right) return;
+        ctx.save();
+        ctx.strokeStyle = 'rgba(148, 163, 184, 0.45)';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([3, 4]);
+        ctx.beginPath();
+        ctx.moveTo(Math.round(x) + 0.5, chartArea.top);
+        ctx.lineTo(Math.round(x) + 0.5, chartArea.bottom);
+        ctx.stroke();
+        ctx.restore();
+      },
+    };
 
     const waveHighlightPlugin = {
       id: 'waveHighlightLabel',
@@ -669,7 +693,7 @@ import { pickYearColor, dailyAggregate, movingAverage, sortedSeriesValues, inclu
         data: {
           datasets: []
         },
-        plugins: [monthLabelPlugin, percentileLinesPlugin, waveHighlightPlugin],
+        plugins: [monthLabelPlugin, percentileLinesPlugin, todayMarkerPlugin, waveHighlightPlugin],
         options: {
           responsive: true,
           maintainAspectRatio: false,
